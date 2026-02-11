@@ -204,8 +204,9 @@ export function TeamPage() {
     onSuccess: () => {
       message.success(t('team.messages.resetLinkSent'));
     },
-    onError: () => {
-      message.error(t('team.messages.resetLinkError'));
+    onError: (error: any) => {
+      console.error('sendResetLink error:', error, error?.message, error?.response?.status, error?.response?.data);
+      message.error(error?.response?.data?.message || error?.message || t('team.messages.resetLinkError'));
     },
   });
 
