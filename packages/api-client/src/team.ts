@@ -52,6 +52,18 @@ export function createTeamApi(client: AxiosInstance) {
      */
     getProjects: (id: number) =>
       client.get<ApiResponse<Project[]>>(`/team/${id}/projects`),
+
+    /**
+     * Reset password for a team member (admin sets new password)
+     */
+    resetPassword: (id: number, password: string) =>
+      client.post<ApiResponse<null>>(`/team/${id}/reset-password`, { password }),
+
+    /**
+     * Send password reset link to team member's email
+     */
+    sendResetLink: (id: number) =>
+      client.post<ApiResponse<null>>(`/team/${id}/send-reset-link`),
   };
 }
 

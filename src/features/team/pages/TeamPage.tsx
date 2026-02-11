@@ -20,6 +20,8 @@ import {
   Modal,
   Form,
   App,
+  Tooltip,
+  Dropdown,
 } from 'antd';
 import {
   SearchOutlined,
@@ -28,6 +30,9 @@ import {
   UserOutlined,
   EditOutlined,
   DeleteOutlined,
+  KeyOutlined,
+  MailOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -44,6 +49,39 @@ const roleOptions = [
   { labelKey: 'team.roles.developer', value: 'developer' },
 ];
 
+/** Password validation rules for antd Form */
+function usePasswordRules(t: (key: string) => string, required: boolean) {
+  return [
+    { required, message: t('team.form.passwordPlaceholder') },
+    { min: 8, message: t('team.passwordRules.minLength') },
+    {
+      pattern: /[A-Z]/,
+      message: t('team.passwordRules.uppercase'),
+    },
+    {
+      pattern: /[a-z]/,
+      message: t('team.passwordRules.lowercase'),
+    },
+    {
+      pattern: /[0-9]/,
+      message: t('team.passwordRules.number'),
+    },
+    {
+      pattern: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
+      message: t('team.passwordRules.special'),
+    },
+  ];
+}
+
+/** Extract validation errors from API response */
+function getApiErrors(error: any): Record<string, string[]> | null {
+  const errors = error?.response?.data?.errors;
+  if (errors && typeof errors === 'object') {
+    return errors;
+  }
+  return null;
+}
+
 export function TeamPage() {
   const { message, modal } = App.useApp();
   const queryClient = useQueryClient();
@@ -55,7 +93,13 @@ export function TeamPage() {
   const [tagFilter, setTagFilter] = useState<string | undefined>();
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetUser, setResetUser] = useState<User | null>(null);
   const [form] = Form.useForm();
+  const [resetForm] = Form.useForm();
+
+  const passwordRules = usePasswordRules(t, false);
+  const requiredPasswordRules = usePasswordRules(t, true);
 
   // Fetch team
   const { data, isLoading } = useQuery({
@@ -79,8 +123,17 @@ export function TeamPage() {
       setShowModal(false);
       form.resetFields();
     },
-    onError: () => {
-      message.error(t('common.saveError'));
+    onError: (error: any) => {
+      const errors = getApiErrors(error);
+      if (errors) {
+        const fields = Object.entries(errors).map(([name, msgs]) => ({
+          name,
+          errors: msgs,
+        }));
+        form.setFields(fields);
+      } else {
+        message.error(t('common.saveError'));
+      }
     },
   });
 
@@ -95,8 +148,17 @@ export function TeamPage() {
       setEditingUser(null);
       form.resetFields();
     },
-    onError: () => {
-      message.error(t('common.saveError'));
+    onError: (error: any) => {
+      const errors = getApiErrors(error);
+      if (errors) {
+        const fields = Object.entries(errors).map(([name, msgs]) => ({
+          name,
+          errors: msgs,
+        }));
+        form.setFields(fields);
+      } else {
+        message.error(t('common.saveError'));
+      }
     },
   });
 
@@ -112,8 +174,47 @@ export function TeamPage() {
     },
   });
 
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ id, password }: { id: number; password: string }) =>
+      api.team.resetPassword(id, password),
+    onSuccess: () => {
+      message.success(t('team.messages.passwordReset'));
+      setShowResetModal(false);
+      setResetUser(null);
+      resetForm.resetFields();
+    },
+    onError: (error: any) => {
+      const errors = getApiErrors(error);
+      if (errors) {
+        const fields = Object.entries(errors).map(([name, msgs]) => ({
+          name,
+          errors: msgs,
+        }));
+        resetForm.setFields(fields);
+      } else {
+        message.error(t('team.messages.passwordResetError'));
+      }
+    },
+  });
+
+  // Send reset link mutation
+  const sendResetLinkMutation = useMutation({
+    mutationFn: (id: number) => api.team.sendResetLink(id),
+    onSuccess: () => {
+      message.success(t('team.messages.resetLinkSent'));
+    },
+    onError: () => {
+      message.error(t('team.messages.resetLinkError'));
+    },
+  });
+
   const handleSubmit = async (values: CreateUserRequest) => {
     if (editingUser) {
+      // Remove empty password when editing
+      if (!values.password) {
+        delete (values as any).password;
+      }
       updateMutation.mutate({ id: editingUser.id, data: values });
     } else {
       createMutation.mutate(values);
@@ -139,6 +240,22 @@ export function TeamPage() {
       okText: t('common.delete'),
       okType: 'danger',
       onOk: () => deleteMutation.mutate(user.id),
+    });
+  };
+
+  const handleResetPassword = (user: User) => {
+    setResetUser(user);
+    resetForm.resetFields();
+    setShowResetModal(true);
+  };
+
+  const handleSendResetLink = (user: User) => {
+    modal.confirm({
+      title: t('team.sendResetLink'),
+      content: t('team.sendResetLinkConfirm', { email: user.email }),
+      okText: t('team.sendResetLink'),
+      icon: <MailOutlined style={{ color: '#6366f1' }} />,
+      onOk: () => sendResetLinkMutation.mutate(user.id),
     });
   };
 
@@ -191,28 +308,48 @@ export function TeamPage() {
     {
       title: t('team.table.actions'),
       key: 'actions',
-      width: 140,
+      width: 180,
       render: (_, record) =>
         isAdmin && (
           <Space size="small">
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-              style={{ color: '#64748b' }}
+            <Tooltip title={t('common.edit')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+                style={{ color: '#64748b' }}
+              />
+            </Tooltip>
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'reset-password',
+                    label: t('team.resetPassword'),
+                    icon: <KeyOutlined />,
+                    onClick: () => handleResetPassword(record),
+                  },
+                  {
+                    key: 'send-reset-link',
+                    label: t('team.sendResetLink'),
+                    icon: <MailOutlined />,
+                    onClick: () => handleSendResetLink(record),
+                  },
+                  { type: 'divider' },
+                  {
+                    key: 'delete',
+                    label: t('common.delete'),
+                    icon: <DeleteOutlined />,
+                    danger: true,
+                    onClick: () => handleDelete(record),
+                  },
+                ],
+              }}
+              trigger={['click']}
             >
-              {t('common.edit')}
-            </Button>
-            <Button
-              type="text"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record)}
-            >
-              {t('common.delete')}
-            </Button>
+              <Button type="text" size="small" icon={<MoreOutlined />} style={{ color: '#64748b' }} />
+            </Dropdown>
           </Space>
         ),
     },
@@ -340,15 +477,22 @@ export function TeamPage() {
             <Input placeholder={t('team.form.emailPlaceholder')} />
           </Form.Item>
 
-          {!editingUser && (
-            <Form.Item
-              name="password"
-              label={t('team.form.password')}
-              rules={[{ required: true, message: t('team.form.passwordPlaceholder') }]}
-            >
-              <Input.Password placeholder={t('team.form.passwordPlaceholder')} />
-            </Form.Item>
-          )}
+          <Form.Item
+            name="password"
+            label={
+              <Space>
+                {t('team.form.password')}
+                {editingUser && (
+                  <Text type="secondary" style={{ fontSize: 12, fontWeight: 'normal' }}>
+                    ({t('team.form.passwordHint')})
+                  </Text>
+                )}
+              </Space>
+            }
+            rules={editingUser ? passwordRules : requiredPasswordRules}
+          >
+            <Input.Password placeholder={t('team.form.passwordPlaceholder')} />
+          </Form.Item>
 
           <Form.Item
             name="role"
@@ -401,6 +545,62 @@ export function TeamPage() {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        title={
+          <Space>
+            <KeyOutlined style={{ color: '#6366f1' }} />
+            {t('team.resetPasswordTitle')}
+          </Space>
+        }
+        open={showResetModal}
+        onCancel={() => {
+          setShowResetModal(false);
+          setResetUser(null);
+          resetForm.resetFields();
+        }}
+        footer={null}
+      >
+        {resetUser && (
+          <Form
+            form={resetForm}
+            layout="vertical"
+            onFinish={(values) => {
+              resetPasswordMutation.mutate({
+                id: resetUser.id,
+                password: values.password,
+              });
+            }}
+            style={{ marginTop: 16 }}
+          >
+            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+              {t('team.resetPasswordDesc', { name: resetUser.name })}
+            </Text>
+            <Form.Item
+              name="password"
+              label={t('team.form.newPassword')}
+              rules={requiredPasswordRules}
+            >
+              <Input.Password placeholder={t('team.form.newPasswordPlaceholder')} />
+            </Form.Item>
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Space style={{ float: 'right' }}>
+                <Button onClick={() => setShowResetModal(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={resetPasswordMutation.isPending}
+                >
+                  {t('team.resetPassword')}
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        )}
       </Modal>
     </div>
   );
