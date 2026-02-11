@@ -25,9 +25,7 @@ import {
   Popconfirm,
   Modal,
   Switch,
-  Dropdown,
 } from 'antd';
-import type { MenuProps } from 'antd';
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -45,11 +43,9 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import {
-  getHealthStatusConfig,
-  getSecurityStatusConfig,
-} from '@lsm/utils';
+import { getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
+import { useAuthStore, useIsAdmin, useCurrentUser } from '@/stores/auth';
 import { ProjectFormModal } from '../components/ProjectFormModal';
 import { ProjectSubNav } from '../components/ProjectSubNav';
 import { OverviewSection } from '../components/sections/OverviewSection';
@@ -89,6 +85,8 @@ export function ProjectDetailPageV2() {
   const queryClient = useQueryClient();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
+  const currentUser = useCurrentUser();
+  const isAdmin = useIsAdmin();
 
   // Active section from URL or default to 'overview'
   const activeSection = searchParams.get('section') || 'overview';
@@ -187,28 +185,16 @@ export function ProjectDetailPageV2() {
     return <Empty description="Project not found" />;
   }
 
+  // Permission checks
+  const canEdit = isAdmin || (currentUser?.role === 'manager' && project.manager_id === currentUser?.id);
+  const canDelete = isAdmin; // Only admins can delete
+
   const healthConfig = getHealthStatusConfig(project.health_status);
   const securityConfig = getSecurityStatusConfig(project.security_status);
 
   // Counts for badges
   const pendingTodosCount = project.todos?.filter((t: any) => t.status !== 'completed').length || 0;
   const resourcesCount = project.resources?.length || 0;
-
-  // Header actions dropdown
-  const headerActions: MenuProps['items'] = [
-    {
-      key: 'edit',
-      icon: <EditOutlined />,
-      label: 'Edit Project',
-      onClick: () => setShowEditModal(true),
-    },
-    {
-      key: 'delete',
-      icon: <DeleteOutlined />,
-      label: 'Delete Project',
-      danger: true,
-    },
-  ];
 
   // Render active section content
   const renderSectionContent = () => {
@@ -329,9 +315,25 @@ export function ProjectDetailPageV2() {
               Admin
             </Button>
           )}
-          <Dropdown menu={{ items: headerActions }} trigger={['click']}>
-            <Button icon={<MoreOutlined />} size="small" />
-          </Dropdown>
+          {canEdit && (
+            <Button icon={<EditOutlined />} onClick={() => setShowEditModal(true)} size="small">
+              Edit
+            </Button>
+          )}
+          {canDelete && (
+            <Popconfirm
+              title="Delete project?"
+              description="This action cannot be undone. All associated data will be deleted."
+              onConfirm={() => deleteMutation.mutate()}
+              okText="Yes, delete"
+              cancelText="Cancel"
+              okButtonProps={{ danger: true }}
+            >
+              <Button icon={<DeleteOutlined />} danger size="small">
+                Delete
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       </div>
 

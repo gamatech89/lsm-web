@@ -13,9 +13,9 @@
   "dependencies": {
     "@ant-design/charts": "^2.6.7",
     "@ant-design/icons": "^5.5.0",
-    "@lsm/api-client": "*",
-    "@lsm/types": "*",
-    "@lsm/utils": "*",
+    "@lsm/api-client": "file:./packages/api-client",
+    "@lsm/types": "file:./packages/types",
+    "@lsm/utils": "file:./packages/utils",
     "@tanstack/react-query": "^5.60.0",
     "antd": "^5.22.0",
     "axios": "^1.7.0",

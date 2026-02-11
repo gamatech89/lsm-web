@@ -69,29 +69,29 @@ const AiChatPanel = lazy(() => import('@/components/chat/AiChatPanel').then(m =>
 /**
  * Menu items for the sidebar - grouped by category
  */
-function useMenuItems(): ItemType[] {
+function useMenuItems(isCollapsed: boolean = false): ItemType[] {
   const isAdmin = useIsAdmin();
   const canManageProjects = useCanManageProjects();
   const { t } = useTranslation();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
 
-  const labelStyle = {
+  const labelStyle = (isCollapsed: boolean) => ({
     color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.5)',
     fontSize: 11,
     fontWeight: 600,
     letterSpacing: '0.5px',
     textTransform: 'uppercase' as const,
     padding: '16px 24px 8px',
-    display: 'block',
-  };
+    display: isCollapsed ? 'none' : 'block',
+  });
 
   const items: ItemType[] = [
     // Main section label
     {
       key: 'main-label',
       type: 'group',
-      label: <span style={labelStyle}>{t('nav.main')}</span>,
+      label: <span style={labelStyle(isCollapsed)}>{t('nav.main')}</span>,
       children: [
         {
           key: '/dashboard',
@@ -159,7 +159,7 @@ function useMenuItems(): ItemType[] {
   items.push({
     key: 'time-label',
     type: 'group',
-    label: <span style={labelStyle}>{t('nav.timeTracking')}</span>,
+    label: <span style={labelStyle(isCollapsed)}>{t('nav.timeTracking')}</span>,
     children: timeItems,
   });
 
@@ -199,7 +199,7 @@ function useMenuItems(): ItemType[] {
       items.push({
         key: 'management-label',
         type: 'group',
-        label: <span style={labelStyle}>{t('nav.management')}</span>,
+        label: <span style={labelStyle(isCollapsed)}>{t('nav.management')}</span>,
         children: managementItems,
       });
     }
@@ -219,7 +219,7 @@ export function AuthenticatedLayout() {
   const { user, logout } = useAuthStore();
   const { resolvedTheme, toggleTheme } = useThemeStore();
   const { t, i18n } = useTranslation();
-  const menuItems = useMenuItems();
+  const menuItems = useMenuItems(collapsed);
   const isDark = resolvedTheme === 'dark';
 
   // Auto-collapse on tablet
@@ -342,7 +342,7 @@ export function AuthenticatedLayout() {
           <img
             src="/logo-landeseiten.svg"
             alt="L"
-            style={{ width: 32, height: 32, objectFit: 'contain' }}
+            style={{ width: 40, height: 40, objectFit: 'contain' }}
           />
         ) : (
           <img
@@ -441,10 +441,12 @@ export function AuthenticatedLayout() {
               icon={isMobile ? <MenuUnfoldOutlined /> : (collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />)}
               onClick={() => isMobile ? setDrawerOpen(true) : setCollapsed(!collapsed)}
               style={{ 
-                fontSize: 18, 
-                width: 44, 
-                height: 44,
-                color: textSecondary,
+                fontSize: 16, 
+                width: 40, 
+                height: 40,
+                borderRadius: 10,
+                background: isDark ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.08)',
+                color: '#A855F7',
               }}
             />
           </Space>

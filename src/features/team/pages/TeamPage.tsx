@@ -189,15 +189,6 @@ export function TeamPage() {
       },
     },
     {
-      title: t('team.table.hourlyRate'),
-      key: 'hourly_rate',
-      width: 100,
-      render: (_, record) => {
-        const rate = (record as any).hourly_rate ?? 22;
-        return <Text strong style={{ color: '#3AA68D' }}>${rate}/hr</Text>;
-      },
-    },
-    {
       title: t('team.table.actions'),
       key: 'actions',
       width: 140,
