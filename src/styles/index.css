@@ -1,0 +1,488 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Background color handled by Ant Design ConfigProvider theme */
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Ant Design overrides */
+.ant-layout-sider {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+.ant-card {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.ant-table-wrapper {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Remove unwanted button shadows */
+.ant-btn {
+  box-shadow: none !important;
+}
+
+/* Status badge styles */
+.status-online {
+  color: #22c55e;
+  background-color: #f0fdf4;
+}
+
+.status-offline {
+  color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.status-updating {
+  color: #f59e0b;
+  background-color: #fffbeb;
+}
+
+.status-secure {
+  color: #22c55e;
+  background-color: #f0fdf4;
+}
+
+.status-hacked {
+  color: #ef4444;
+  background-color: #fef2f2;
+}
+
+/* Animation utilities */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Layout utilities */
+.page-container {
+  padding: 24px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  /* Color handled by Ant Design Typography */
+  margin: 0;
+}
+
+/* ============================================
+   DARK MODE FIXES FOR ANT DESIGN COMPONENTS
+   ============================================ */
+
+/* TimePicker / DatePicker Panel - Selected items */
+.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected {
+  background-color: #6B21A8 !important;
+}
+
+.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+  color: #fff !important;
+}
+
+/* DatePicker - Selected date */
+.ant-picker-cell-selected .ant-picker-cell-inner {
+  background-color: #6B21A8 !important;
+  color: #fff !important;
+}
+
+/* DatePicker - Today highlight */
+.ant-picker-cell-today .ant-picker-cell-inner::before {
+  border-color: #6B21A8 !important;
+}
+
+/* Scrollbar in dark mode */
+html.dark ::-webkit-scrollbar-track,
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+html.dark ::-webkit-scrollbar-thumb,
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Table row selection in dark mode - fix white background */
+.ant-table-row-selected > td {
+  background-color: rgba(107, 33, 168, 0.15) !important;
+}
+
+.ant-table-row-selected:hover > td {
+  background-color: rgba(107, 33, 168, 0.25) !important;
+}
+
+/* Alert info bar - better dark mode contrast */
+.ant-alert-info {
+  background-color: rgba(107, 33, 168, 0.1) !important;
+  border-color: rgba(107, 33, 168, 0.3) !important;
+}
+
+/* Checkbox selected state */
+.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #6B21A8 !important;
+  border-color: #6B21A8 !important;
+}
+
+/* Select dropdown items */
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background-color: rgba(107, 33, 168, 0.2) !important;
+}
+
+/* Segmented control active state */
+.ant-segmented-item-selected {
+  background-color: #6B21A8 !important;
+  color: #fff !important;
+}
+
+/* Input focus state */
+.ant-input:focus,
+.ant-input-focused,
+.ant-picker-focused,
+.ant-select-focused .ant-select-selector {
+  border-color: #6B21A8 !important;
+  box-shadow: 0 0 0 2px rgba(107, 33, 168, 0.2) !important;
+}
+
+/* Modal in dark mode */
+.ant-modal-content {
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3) !important;
+}
+
+/* ============================================
+   PROJECT SUB-NAVIGATION (WP Umbrella Style)
+   ============================================ */
+
+.project-subnav-container {
+  padding: 8px 0;
+}
+
+.project-subnav-menu .ant-menu-item-group-title {
+  padding: 16px 16px 8px !important;
+  color: rgba(148, 163, 184, 0.9) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px !important;
+}
+
+.project-subnav-menu .ant-menu-item {
+  margin: 2px 8px !important;
+  border-radius: 8px !important;
+  padding-left: 16px !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  font-size: 13px !important;
+}
+
+.project-subnav-menu .ant-menu-item .ant-menu-title-content {
+  width: 100%;
+}
+
+.project-subnav-menu .ant-menu-item:hover {
+  background: rgba(107, 33, 168, 0.08) !important;
+}
+
+.project-subnav-menu .ant-menu-item-selected {
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #6366f1 !important;
+  font-weight: 500;
+}
+
+.project-subnav-menu .ant-menu-item-selected .anticon {
+  color: #6366f1 !important;
+}
+
+.project-subnav-menu .ant-menu-item-selected::after {
+  display: none !important;
+}
+
+.project-subnav-menu .ant-menu-item-disabled {
+  opacity: 0.5 !important;
+}
+
+/* Dark mode adjustments */
+html.dark .project-subnav-menu .ant-menu-item:hover,
+[data-theme="dark"] .project-subnav-menu .ant-menu-item:hover {
+  background: rgba(124, 58, 237, 0.15) !important;
+}
+
+html.dark .project-subnav-menu .ant-menu-item-selected,
+[data-theme="dark"] .project-subnav-menu .ant-menu-item-selected {
+  background: rgba(99, 102, 241, 0.25) !important;
+  color: #818cf8 !important;
+}
+
+html.dark .project-subnav-menu .ant-menu-item-selected .anticon,
+[data-theme="dark"] .project-subnav-menu .ant-menu-item-selected .anticon {
+  color: #818cf8 !important;
+}
+
+/* Sidebar card scrollbar */
+.project-sidebar-card::-webkit-scrollbar {
+  width: 4px;
+}
+
+.project-sidebar-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.project-sidebar-card::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+
+.project-sidebar-card::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Group header hover */
+.project-subnav-menu .ant-menu-item-group-title:hover {
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 6px;
+}
+
+/* Content area scrollbar */
+.project-content-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.project-content-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.project-content-area::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+
+.project-content-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* ============================================
+   DESIGN CONSISTENCY UTILITIES
+   ============================================ */
+
+/* Standard Card Styles */
+.card-standard {
+  border-radius: 12px !important;
+  border: none !important;
+}
+
+.card-standard .ant-card-body {
+  padding: 16px !important;
+}
+
+/* Unified Status Pill Badges */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-pill-online {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-pill-down {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-pill-updating {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-pill-secure {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-pill-monitoring {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-pill-compromised {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.status-pill-hacked {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Standard Filter Bar */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(241, 245, 249, 0.5);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+html.dark .filter-bar,
+[data-theme="dark"] .filter-bar {
+  background: rgba(30, 41, 59, 0.5);
+}
+
+/* Standard Action Buttons with Text */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  height: auto !important;
+}
+
+.action-btn-primary {
+  background: linear-gradient(135deg, #6B21A8 0%, #A855F7 100%) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.action-btn-primary:hover {
+  background: linear-gradient(135deg, #7C3AED 0%, #C084FC 100%) !important;
+  color: #fff !important;
+}
+
+.action-btn-secondary {
+  background: transparent !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.action-btn-secondary:hover {
+  background: rgba(107, 33, 168, 0.1) !important;
+  color: #6B21A8 !important;
+  border-color: #6B21A8 !important;
+}
+
+.action-btn-danger {
+  background: transparent !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.action-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: #ef4444 !important;
+}
+
+/* Standard Page Header */
+.page-header-standard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.page-header-standard h1,
+.page-header-standard .ant-typography {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+}
+
+.page-header-standard .anticon {
+  font-size: 20px !important;
+}
+
+.page-header-standard .count-badge {
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748b;
+  margin-left: 8px;
+}
+
+/* Table Row Hover Consistency */
+.ant-table-tbody > tr:hover > td {
+  background: rgba(107, 33, 168, 0.04) !important;
+}
+
+html.dark .ant-table-tbody > tr:hover > td,
+[data-theme="dark"] .ant-table-tbody > tr:hover > td {
+  background: rgba(107, 33, 168, 0.1) !important;
+}
+
+/* Consistent Table Header */
+.ant-table-thead > tr > th {
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  color: #64748b !important;
+}
+
+html.dark .ant-table-thead > tr > th,
+[data-theme="dark"] .ant-table-thead > tr > th {
+  color: #94a3b8 !important;
+}
+
