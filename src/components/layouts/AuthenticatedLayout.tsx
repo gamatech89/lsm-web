@@ -606,7 +606,7 @@ export function AuthenticatedLayout() {
           open={isAvailabilityModalOpen} 
           onClose={() => setIsAvailabilityModalOpen(false)} 
         />
-        <AiChatPanel />
+        {user?.role === 'admin' && <AiChatPanel />}
       </Suspense>
 
       {/* Sidebar Styles */}
