@@ -1,14 +1,13 @@
 /**
  * Login Page
  * 
- * Redesigned with:
- * - Landeseiten.de brand colors (purple gradient)
- * - Dribbble-inspired layout (glassmorphism, rounded cards)
- * - Dark/Light theme support
- * - German/English i18n
+ * Responsive design:
+ * - Desktop (>1024px): Side-by-side branding + form
+ * - Tablet (768-1024px): Stacked branding (compact) + form
+ * - Mobile (<768px): Form-only with compact branding header
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Form, Input, Button, Typography, App, Switch, Dropdown } from 'antd';
 import { 
@@ -29,6 +28,363 @@ import type { LoginRequest } from '@lsm/types';
 
 const { Title, Text } = Typography;
 
+// Inject responsive styles once
+const STYLE_ID = 'auth-responsive-styles';
+
+const responsiveCSS = `
+  /* ==================== AUTH PAGES RESPONSIVE ==================== */
+  
+  .auth-container {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+  }
+
+  /* Controls */
+  .auth-controls {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Left Column - Branding */
+  .auth-branding {
+    background: linear-gradient(135deg, #440C71 0%, #6B21A8 50%, #7C3AED 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .auth-branding-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(255,255,255,0.03) 0%, transparent 30%);
+    pointer-events: none;
+  }
+
+  .auth-branding-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    max-width: 420px;
+    width: 100%;
+  }
+
+  .auth-logo {
+    width: 180px;
+    height: auto;
+    max-height: 160px;
+    filter: brightness(1.1);
+    margin-bottom: 16px;
+  }
+
+  .auth-tagline {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 17px;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 40px;
+  }
+
+  .auth-features {
+    text-align: left;
+  }
+
+  .auth-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+  }
+  .auth-feature-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateX(4px);
+  }
+
+  .auth-feature-icon {
+    font-size: 22px;
+    color: #52B37C;
+    line-height: 1;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .auth-feature-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .auth-feature-title {
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    display: block;
+  }
+
+  .auth-feature-desc {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 13px;
+    display: block;
+  }
+
+  /* Right Column - Form */
+  .auth-form-column {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+  }
+
+  .auth-form-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 40px;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  }
+  .auth-form-card[data-theme="dark"] {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .auth-form-title {
+    font-weight: 700 !important;
+    margin: 0 !important;
+    font-size: 28px !important;
+  }
+
+  .auth-form-subtitle {
+    display: block;
+    margin-top: 8px;
+    margin-bottom: 32px;
+    font-size: 15px;
+  }
+
+  .auth-submit-btn {
+    height: 52px;
+    font-weight: 600;
+    font-size: 16px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #52B37C 0%, #3AA68D 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(82, 179, 124, 0.3);
+    transition: all 0.3s ease;
+  }
+  .auth-submit-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+  }
+
+  .auth-footer {
+    font-size: 13px;
+    display: block;
+    text-align: center;
+    margin-top: 24px;
+  }
+
+  .auth-input {
+    height: 50px;
+    border-radius: 12px;
+  }
+
+  /* ==================== TABLET (768px - 1024px) ==================== */
+  @media (max-width: 1024px) {
+    .auth-container {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+
+    .auth-branding {
+      padding: 32px 24px;
+    }
+
+    .auth-branding-content {
+      max-width: 600px;
+    }
+
+    .auth-features {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .auth-feature-item {
+      flex: 1 1 calc(33% - 8px);
+      min-width: 180px;
+      margin-bottom: 0;
+      padding: 12px 16px;
+    }
+
+    .auth-tagline {
+      margin-bottom: 24px;
+      font-size: 15px;
+    }
+
+    .auth-logo {
+      width: 140px;
+      margin-bottom: 12px;
+    }
+
+    .auth-form-column {
+      padding: 32px 24px;
+    }
+  }
+
+  /* ==================== MOBILE (<768px) ==================== */
+  @media (max-width: 767px) {
+    .auth-container {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      min-height: 100dvh;
+    }
+
+    .auth-branding {
+      padding: 28px 20px 20px;
+    }
+
+    .auth-branding-content {
+      max-width: 100%;
+    }
+
+    .auth-logo {
+      width: 100px;
+      margin-bottom: 8px;
+    }
+
+    .auth-tagline {
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .auth-features {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+    }
+
+    .auth-feature-item {
+      flex: 0 0 auto;
+      min-width: 150px;
+      max-width: 180px;
+      margin-bottom: 0;
+      padding: 10px 14px;
+    }
+
+    .auth-feature-title {
+      font-size: 13px;
+    }
+
+    .auth-feature-desc {
+      font-size: 12px;
+    }
+
+    .auth-feature-icon {
+      font-size: 18px;
+    }
+
+    .auth-form-column {
+      padding: 24px 20px 32px;
+      align-items: flex-start;
+    }
+
+    .auth-form-card {
+      padding: 28px 24px;
+      border-radius: 20px;
+      max-width: 100%;
+    }
+
+    .auth-form-title {
+      font-size: 24px !important;
+    }
+
+    .auth-form-subtitle {
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .auth-submit-btn {
+      height: 48px;
+      font-size: 15px;
+    }
+
+    .auth-input {
+      height: 46px;
+    }
+
+    .auth-controls {
+      top: 12px;
+      right: 12px;
+    }
+  }
+
+  /* ==================== SMALL MOBILE (<400px) ==================== */
+  @media (max-width: 400px) {
+    .auth-form-card {
+      padding: 24px 16px;
+    }
+
+    .auth-branding {
+      padding: 24px 16px 16px;
+    }
+
+    .auth-feature-item {
+      min-width: 130px;
+    }
+  }
+
+  /* ==================== DARK MODE STYLES ==================== */
+  [data-theme="dark"] .auth-input,
+  [data-theme="dark"] .ant-input,
+  [data-theme="dark"] .ant-input-password input {
+    background: #2D2735 !important;
+    border-color: #3D3347 !important;
+    color: #F8FAFC !important;
+  }
+
+  [data-theme="dark"] .ant-input::placeholder,
+  [data-theme="dark"] .ant-input-password input::placeholder {
+    color: #64748B !important;
+  }
+
+  [data-theme="dark"] .ant-input-affix-wrapper {
+    background: #2D2735 !important;
+    border-color: #3D3347 !important;
+  }
+
+  [data-theme="dark"] .ant-form-item-label > label {
+    color: #E2E8F0 !important;
+  }
+`;
+
+function injectStyles() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(STYLE_ID)) return;
+  const el = document.createElement('style');
+  el.id = STYLE_ID;
+  el.textContent = responsiveCSS;
+  document.head.appendChild(el);
+}
+
 export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -38,7 +394,8 @@ export function LoginPage() {
   const { t, i18n } = useTranslation();
   const isDark = resolvedTheme === 'dark';
 
-  // Redirect if already authenticated
+  useEffect(() => { injectStyles(); }, []);
+
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -96,9 +453,12 @@ export function LoginPage() {
   ];
 
   return (
-    <div style={styles.container(isDark)}>
-      {/* Controls - Theme & Language */}
-      <div style={styles.controls}>
+    <div
+      className="auth-container"
+      style={{ background: isDark ? '#161218' : '#F8F9FC' }}
+    >
+      {/* Controls */}
+      <div className="auth-controls">
         <Dropdown
           menu={{
             items: languageItems,
@@ -110,7 +470,7 @@ export function LoginPage() {
           <Button
             type="text"
             icon={<GlobalOutlined />}
-            style={styles.controlButton(isDark)}
+            style={{ color: isDark ? '#E2E8F0' : '#64748B', fontWeight: 500 }}
           >
             {i18n.language?.split('-')[0].toUpperCase() || 'EN'}
           </Button>
@@ -120,38 +480,28 @@ export function LoginPage() {
           onChange={toggleTheme}
           checkedChildren={<MoonOutlined />}
           unCheckedChildren={<SunOutlined />}
-          style={{ marginLeft: 8 }}
         />
       </div>
 
-      {/* Left Column - Branding */}
-      <div style={styles.leftColumn}>
-        {/* Animated Background Pattern */}
-        <div style={styles.backgroundPattern} />
-        
-        <div style={styles.brandingContent}>
-          {/* Logo */}
-          <div style={styles.logoContainer}>
-            <img
-              src="/logo-landeseiten.svg"
-              alt="Landeseiten.de"
-              style={styles.logo}
-            />
-          </div>
-
-          {/* Tagline */}
-          <Text style={styles.tagline}>
+      {/* Left - Branding */}
+      <div className="auth-branding">
+        <div className="auth-branding-bg" />
+        <div className="auth-branding-content">
+          <img
+            src="/logo-landeseiten.svg"
+            alt="Landeseiten.de"
+            className="auth-logo"
+          />
+          <Text className="auth-tagline">
             {t('login.branding.tagline')}
           </Text>
-
-          {/* Features */}
-          <div style={styles.features}>
+          <div className="auth-features">
             {features.map((feature, index) => (
-              <div key={index} style={styles.featureItem}>
-                <div style={styles.featureIcon}>{feature.icon}</div>
-                <div style={styles.featureText}>
-                  <Text style={styles.featureTitle}>{feature.title}</Text>
-                  <Text style={styles.featureDesc}>{feature.desc}</Text>
+              <div key={index} className="auth-feature-item">
+                <div className="auth-feature-icon">{feature.icon}</div>
+                <div className="auth-feature-text">
+                  <Text className="auth-feature-title">{feature.title}</Text>
+                  <Text className="auth-feature-desc">{feature.desc}</Text>
                 </div>
               </div>
             ))}
@@ -159,13 +509,22 @@ export function LoginPage() {
         </div>
       </div>
 
-      {/* Right Column - Form */}
-      <div style={styles.rightColumn(isDark)}>
-        <div style={styles.formCard(isDark)}>
-          <Title level={2} style={styles.formTitle(isDark)}>
+      {/* Right - Form */}
+      <div
+        className="auth-form-column"
+        style={{ background: isDark ? '#161218' : '#F8F9FC' }}
+      >
+        <div
+          className="auth-form-card"
+          data-theme={isDark ? 'dark' : 'light'}
+          style={{
+            background: isDark ? '#1F1A23' : '#FFFFFF',
+          }}
+        >
+          <Title level={2} className="auth-form-title" style={{ color: isDark ? '#F8FAFC' : '#1F1A23' }}>
             {t('login.title')}
           </Title>
-          <Text style={styles.formSubtitle(isDark)}>
+          <Text className="auth-form-subtitle" style={{ color: isDark ? '#94A3B8' : '#64748B' }}>
             {t('login.subtitle')}
           </Text>
 
@@ -175,302 +534,62 @@ export function LoginPage() {
             layout="vertical"
             size="large"
             requiredMark={false}
-            style={styles.form}
           >
             <Form.Item
               name="email"
-              label={<span style={styles.label(isDark)}>{t('login.email')}</span>}
+              label={<span style={{ color: isDark ? '#E2E8F0' : '#334155', fontWeight: 500, fontSize: 14 }}>{t('login.email')}</span>}
               rules={[
                 { required: true, message: t('login.errors.emailRequired') },
                 { type: 'email', message: t('login.errors.emailInvalid') },
               ]}
             >
               <Input
-                prefix={<MailOutlined style={{ color: isDark ? '#94A3B8' : '#94a3b8' }} />}
+                prefix={<MailOutlined style={{ color: '#94A3B8' }} />}
                 placeholder={t('login.emailPlaceholder')}
                 autoComplete="email"
-                style={styles.input(isDark)}
+                className="auth-input"
+                style={{
+                  background: isDark ? '#2D2735' : '#F8F9FC',
+                  border: isDark ? '1px solid #3D3347' : '1px solid #E2E8F0',
+                }}
               />
             </Form.Item>
 
             <Form.Item
               name="password"
-              label={<span style={styles.label(isDark)}>{t('login.password')}</span>}
+              label={<span style={{ color: isDark ? '#E2E8F0' : '#334155', fontWeight: 500, fontSize: 14 }}>{t('login.password')}</span>}
               rules={[{ required: true, message: t('login.errors.passwordRequired') }]}
             >
               <Input.Password
-                prefix={<LockOutlined style={{ color: isDark ? '#94A3B8' : '#94a3b8' }} />}
+                prefix={<LockOutlined style={{ color: '#94A3B8' }} />}
                 placeholder={t('login.passwordPlaceholder')}
                 autoComplete="current-password"
-                style={styles.input(isDark)}
+                className="auth-input"
+                style={{
+                  background: isDark ? '#2D2735' : '#F8F9FC',
+                  border: isDark ? '1px solid #3D3347' : '1px solid #E2E8F0',
+                }}
               />
             </Form.Item>
 
-            <Form.Item style={{ marginBottom: 0, marginTop: 32 }}>
+            <Form.Item style={{ marginBottom: 0, marginTop: 28 }}>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={loading}
                 block
-                style={styles.submitButton}
+                className="auth-submit-btn"
               >
                 {loading ? t('login.signingIn') : t('login.signIn')}
               </Button>
             </Form.Item>
           </Form>
 
-          <Text style={styles.footer(isDark)}>
+          <Text className="auth-footer" style={{ color: isDark ? '#64748B' : '#94A3B8' }}>
             {t('login.contactAdmin')}
           </Text>
         </div>
       </div>
     </div>
   );
-}
-
-// Styles with theme support
-const styles = {
-  container: (isDark: boolean): React.CSSProperties => ({
-    minHeight: '100vh',
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    background: isDark ? '#161218' : '#F8F9FC',
-  }),
-
-  controls: {
-    position: 'fixed' as const,
-    top: 24,
-    right: 24,
-    zIndex: 100,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-  },
-
-  controlButton: (isDark: boolean): React.CSSProperties => ({
-    color: isDark ? '#E2E8F0' : '#64748B',
-    fontWeight: 500,
-  }),
-
-  // Left Column - Purple Gradient
-  leftColumn: {
-    background: 'linear-gradient(135deg, #440C71 0%, #6B21A8 50%, #7C3AED 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 60,
-    position: 'relative' as const,
-    overflow: 'hidden',
-  },
-
-  backgroundPattern: {
-    position: 'absolute' as const,
-    inset: 0,
-    background: `
-      radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, rgba(255,255,255,0.03) 0%, transparent 30%)
-    `,
-    pointerEvents: 'none' as const,
-  },
-
-  brandingContent: {
-    position: 'relative' as const,
-    zIndex: 1,
-    textAlign: 'center' as const,
-    maxWidth: 420,
-  },
-
-  logoContainer: {
-    marginBottom: 24,
-  },
-
-  logo: {
-    width: 220,
-    height: 'auto',
-    maxHeight: 200,
-    filter: 'brightness(1.1)',
-  },
-
-  tagline: {
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 18,
-    fontWeight: 500,
-    display: 'block',
-    marginBottom: 48,
-  },
-
-  features: {
-    textAlign: 'left' as const,
-  },
-
-  featureItem: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 16,
-    marginBottom: 20,
-    padding: '20px 24px',
-    background: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 16,
-    backdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    transition: 'all 0.3s ease',
-  },
-
-  featureIcon: {
-    fontSize: 24,
-    color: '#52B37C',
-    lineHeight: 1,
-    marginTop: 2,
-  },
-
-  featureText: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 4,
-  },
-
-  featureTitle: {
-    color: '#FFFFFF',
-    fontWeight: 600,
-    fontSize: 15,
-    display: 'block',
-  },
-
-  featureDesc: {
-    color: 'rgba(255, 255, 255, 0.65)',
-    fontSize: 13,
-    display: 'block',
-  },
-
-  // Right Column - Form
-  rightColumn: (isDark: boolean): React.CSSProperties => ({
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 60,
-    background: isDark ? '#161218' : '#F8F9FC',
-  }),
-
-  formCard: (isDark: boolean): React.CSSProperties => ({
-    width: '100%',
-    maxWidth: 420,
-    padding: 40,
-    background: isDark ? '#1F1A23' : '#FFFFFF',
-    borderRadius: 24,
-    boxShadow: isDark 
-      ? '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)'
-      : '0 8px 32px rgba(0, 0, 0, 0.08)',
-    border: isDark ? '1px solid rgba(255,255,255,0.06)' : 'none',
-  }),
-
-  formTitle: (isDark: boolean): React.CSSProperties => ({
-    color: isDark ? '#F8FAFC' : '#1F1A23',
-    fontWeight: 700,
-    margin: 0,
-    fontSize: 28,
-  }),
-
-  formSubtitle: (isDark: boolean): React.CSSProperties => ({
-    color: isDark ? '#94A3B8' : '#64748B',
-    display: 'block',
-    marginTop: 8,
-    marginBottom: 36,
-    fontSize: 15,
-  }),
-
-  form: {
-    width: '100%',
-  },
-
-  label: (isDark: boolean): React.CSSProperties => ({
-    color: isDark ? '#E2E8F0' : '#334155',
-    fontWeight: 500,
-    fontSize: 14,
-  }),
-
-  input: (isDark: boolean): React.CSSProperties => ({
-    height: 52,
-    borderRadius: 12,
-    background: isDark ? '#2D2735' : '#F8F9FC',
-    border: isDark ? '1px solid #3D3347' : '1px solid #E2E8F0',
-  }),
-
-  submitButton: {
-    height: 56,
-    fontWeight: 600,
-    fontSize: 16,
-    borderRadius: 12,
-    background: 'linear-gradient(135deg, #52B37C 0%, #3AA68D 100%)',
-    border: 'none',
-    boxShadow: '0 4px 16px rgba(82, 179, 124, 0.3)',
-    transition: 'all 0.3s ease',
-  },
-
-  footer: (isDark: boolean): React.CSSProperties => ({
-    color: isDark ? '#64748B' : '#94A3B8',
-    fontSize: 13,
-    display: 'block',
-    textAlign: 'center' as const,
-    marginTop: 28,
-  }),
-};
-
-// Add responsive styles
-const responsiveStyles = `
-  @media (max-width: 900px) {
-    .login-container > div:first-child {
-      display: none !important;
-    }
-    .login-container {
-      grid-template-columns: 1fr !important;
-    }
-  }
-  
-  /* Style Ant Design inputs in dark mode */
-  [data-theme="dark"] .ant-input,
-  [data-theme="dark"] .ant-input-password input {
-    background: #2D2735 !important;
-    border-color: #3D3347 !important;
-    color: #F8FAFC !important;
-  }
-  
-  [data-theme="dark"] .ant-input::placeholder,
-  [data-theme="dark"] .ant-input-password input::placeholder {
-    color: #64748B !important;
-  }
-  
-  [data-theme="dark"] .ant-input-affix-wrapper {
-    background: #2D2735 !important;
-    border-color: #3D3347 !important;
-  }
-  
-  [data-theme="dark"] .ant-form-item-label > label {
-    color: #E2E8F0 !important;
-  }
-  
-  /* Green button hover effect */
-  .ant-btn-primary:hover {
-    filter: brightness(1.1) !important;
-    transform: translateY(-1px);
-  }
-  
-  /* Feature card hover */
-  .feature-item:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
-    transform: translateX(4px);
-  }
-`;
-
-// Inject responsive styles
-if (typeof document !== 'undefined') {
-  const existingStyle = document.getElementById('login-responsive-styles');
-  if (existingStyle) {
-    existingStyle.textContent = responsiveStyles;
-  } else {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'login-responsive-styles';
-    styleEl.textContent = responsiveStyles;
-    document.head.appendChild(styleEl);
-  }
 }

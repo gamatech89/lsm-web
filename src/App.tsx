@@ -5,6 +5,7 @@ import type { AuthState } from './stores/auth';
 
 // Auth Pages
 import { LoginPage } from './features/auth/pages/LoginPage';
+import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage';
 
 // Public Pages
 import { PublicSharePage } from './features/share/pages/PublicSharePage';
@@ -62,6 +63,7 @@ export function App() {
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/share/:token" element={<PublicSharePage />} />
       
       {/* Protected Routes */}

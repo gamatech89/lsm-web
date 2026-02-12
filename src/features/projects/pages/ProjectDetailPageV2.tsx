@@ -186,7 +186,7 @@ export function ProjectDetailPageV2() {
   }
 
   // Permission checks
-  const canEdit = isAdmin || (currentUser?.role === 'manager' && project.manager_id === currentUser?.id);
+  const canEdit = isAdmin || (currentUser?.role === 'manager' && (project.manager_id === currentUser?.id || project.managers?.some(m => m.id === currentUser?.id)));
   const canDelete = isAdmin; // Only admins can delete
 
   const healthConfig = getHealthStatusConfig(project.health_status);

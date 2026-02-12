@@ -623,7 +623,7 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [isAddingDeveloper, setIsAddingDeveloper] = useState(false);
-  const [isChangingPM, setIsChangingPM] = useState(false);
+  const [isAddingPM, setIsAddingPM] = useState(false);
 
   // Fetch available developers and managers
   const { data: filterOptions } = useQuery({
@@ -646,27 +646,31 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
     },
   });
 
-  // Update project manager mutation
-  const updateManagerMutation = useMutation({
-    mutationFn: (managerId: number | null) => 
-      api.projects.update(project.id, { manager_id: managerId } as any),
+  // Update project managers mutation
+  const updateManagersMutation = useMutation({
+    mutationFn: (managerIds: number[]) => 
+      api.projects.update(project.id, { manager_ids: managerIds } as any),
     onSuccess: () => {
-      message.success('Manager updated successfully');
+      message.success('Managers updated successfully');
       queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
-      setIsChangingPM(false);
+      setIsAddingPM(false);
     },
     onError: () => {
-      message.error('Failed to update manager');
+      message.error('Failed to update managers');
     },
   });
 
   const currentDeveloperIds = project.developers?.map((d: any) => d.id) || [];
+  const currentManagerIds = project.managers?.map((m: any) => m.id) || [];
   const availableDevelopers = filterOptions?.developers || [];
   const availableManagers = filterOptions?.managers || [];
   
-  // Filter out already assigned developers
+  // Filter out already assigned developers and managers
   const unassignedDevelopers = availableDevelopers.filter(
     (dev: any) => !currentDeveloperIds.includes(dev.id)
+  );
+  const unassignedManagers = availableManagers.filter(
+    (m: any) => !currentManagerIds.includes(m.id)
   );
 
   const handleAddDeveloper = (developerId: number) => {
@@ -679,8 +683,14 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
     updateDevelopersMutation.mutate(newDeveloperIds);
   };
 
-  const handleChangeManager = (managerId: number) => {
-    updateManagerMutation.mutate(managerId);
+  const handleAddManager = (managerId: number) => {
+    const newManagerIds = [...currentManagerIds, managerId];
+    updateManagersMutation.mutate(newManagerIds);
+  };
+
+  const handleRemoveManager = (managerId: number) => {
+    const newManagerIds = currentManagerIds.filter((id: number) => id !== managerId);
+    updateManagersMutation.mutate(newManagerIds);
   };
 
   return (
@@ -694,40 +704,57 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
           <Col xs={24} sm={12}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                <UserOutlined /> Project Manager
+                <UserOutlined /> Project Managers
               </Text>
-              {!isChangingPM && (
+              {!isAddingPM && (
                 <Button 
                   type="text" 
                   size="small" 
-                  icon={<EditOutlined />}
-                  onClick={() => setIsChangingPM(true)}
+                  icon={<PlusOutlined />}
+                  onClick={() => setIsAddingPM(true)}
+                  disabled={unassignedManagers.length === 0}
                 >
-                  {project.manager ? 'Change' : 'Assign'}
+                  Add
                 </Button>
               )}
             </div>
             
-            {isChangingPM ? (
-              <Select
-                placeholder="Select manager"
-                style={{ width: '100%' }}
-                value={project.manager?.id}
-                onChange={handleChangeManager}
-                loading={updateManagerMutation.isPending}
-                options={availableManagers.map((m: any) => ({
-                  label: m.name,
-                  value: m.id,
-                }))}
-                autoFocus
-                onBlur={() => setIsChangingPM(false)}
-              />
-            ) : project.manager ? (
-              <Tag color="purple" style={{ fontSize: 13, padding: '4px 12px' }}>
-                {project.manager.name}
-              </Tag>
+            {isAddingPM && (
+              <div style={{ marginBottom: 12 }}>
+                <Select
+                  placeholder="Select manager to add"
+                  style={{ width: '100%' }}
+                  onChange={handleAddManager}
+                  loading={updateManagersMutation.isPending}
+                  options={unassignedManagers.map((m: any) => ({
+                    label: m.name,
+                    value: m.id,
+                  }))}
+                  autoFocus
+                  onBlur={() => setIsAddingPM(false)}
+                />
+              </div>
+            )}
+            
+            {project.managers && project.managers.length > 0 ? (
+              <Space wrap>
+                {project.managers.map((m: any) => (
+                  <Tag 
+                    key={m.id} 
+                    color="purple"
+                    closable
+                    onClose={(e) => {
+                      e.preventDefault();
+                      handleRemoveManager(m.id);
+                    }}
+                    style={{ fontSize: 13, padding: '4px 12px' }}
+                  >
+                    {m.name}
+                  </Tag>
+                ))}
+              </Space>
             ) : (
-              <Text type="secondary">Unassigned</Text>
+              <Text type="secondary">No managers assigned</Text>
             )}
           </Col>
           <Col xs={24} sm={12}>

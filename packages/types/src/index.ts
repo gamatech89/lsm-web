@@ -97,6 +97,7 @@ export interface Project {
 
   // Relationships (when loaded)
   manager?: User;
+  managers?: User[];
   developer?: User;
   developers?: User[];
   credentials?: Credential[];
@@ -344,6 +345,7 @@ export interface CreateProjectRequest {
   health_status?: HealthStatus;
   security_status?: SecurityStatus;
   manager_id?: number;
+  manager_ids?: number[];
   developer_ids?: number[];
   tag_ids?: number[];
   project_external_id?: string;

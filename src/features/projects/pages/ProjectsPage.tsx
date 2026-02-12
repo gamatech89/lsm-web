@@ -204,36 +204,38 @@ export function ProjectsPage() {
     {
       title: t('projects.table.team'),
       key: 'team',
-      width: 160,
+      width: 180,
       render: (_, record) => {
-        const pm = record.manager;
+        const pms = record.managers || (record.manager ? [record.manager] : []);
         const devs = record.developers || [];
         
-        if (!pm && devs.length === 0) {
+        if (pms.length === 0 && devs.length === 0) {
           return <Text type="secondary" style={{ fontSize: 12, opacity: 0.5 }}>—</Text>;
         }
 
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {pm && (
-              <Tooltip title={`${pm.name} (PM)`}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Avatar
-                    size={24}
-                    style={{
-                      background: 'rgba(139, 92, 246, 0.15)',
-                      color: '#8b5cf6',
-                      fontSize: 10,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {pm.name.split(' ')[0][0]}{pm.name.split(' ')[1]?.[0] || ''}
-                  </Avatar>
-                  <Text style={{ fontSize: 12, fontWeight: 500, color: isDark ? '#c4b5fd' : '#7c3aed' }}>
-                    {pm.name.split(' ')[0]}
-                  </Text>
-                </div>
-              </Tooltip>
+            {pms.length > 0 && (
+              <Avatar.Group
+                max={{ count: 2, style: { backgroundColor: '#8b5cf6', fontSize: 10, width: 24, height: 24 } }}
+                size={24}
+              >
+                {pms.map((pm: any, idx: number) => (
+                  <Tooltip key={idx} title={`${pm.name} (PM)`}>
+                    <Avatar
+                      size={24}
+                      style={{
+                        background: 'rgba(139, 92, 246, 0.15)',
+                        color: '#8b5cf6',
+                        fontSize: 10,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {pm.name.split(' ')[0][0]}{pm.name.split(' ')[1]?.[0] || ''}
+                    </Avatar>
+                  </Tooltip>
+                ))}
+              </Avatar.Group>
             )}
             {devs.length > 0 && (
               <Avatar.Group

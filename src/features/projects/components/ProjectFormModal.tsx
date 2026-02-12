@@ -101,7 +101,7 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
         notes: project.notes,
         health_status: project.health_status,
         security_status: project.security_status,
-        manager_id: project.manager_id,
+        manager_ids: project.managers?.map(m => m.id) || [],
         developer_ids: project.developers?.map(d => d.id) || [],
         tag_ids: project.tags?.map(t => t.id) || [],
         health_check_secret: project.health_check_secret,
@@ -222,10 +222,11 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
 
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item name="manager_id" label="Manager">
+            <Form.Item name="manager_ids" label="Managers">
               <Select
+                mode="multiple"
                 options={managerOptions}
-                placeholder="Select manager"
+                placeholder="Select managers"
                 allowClear
                 showSearch
                 optionFilterProp="label"

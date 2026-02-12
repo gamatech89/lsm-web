@@ -41,6 +41,12 @@ export function createAuthApi(client: AxiosInstance) {
      */
     refreshToken: () =>
       client.post<ApiResponse<{ token: string; token_type: 'Bearer' }>>('/refresh-token'),
+
+    /**
+     * Reset password using token from email link (public endpoint)
+     */
+    resetPassword: (data: { token: string; email: string; password: string; password_confirmation: string }) =>
+      client.post<ApiResponse<null>>('/reset-password', data),
   };
 }
 
