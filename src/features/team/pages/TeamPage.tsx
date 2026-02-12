@@ -35,6 +35,7 @@ import {
   MailOutlined,
   MoreOutlined,
   CrownOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -50,6 +51,31 @@ const roleOptions = [
   { labelKey: 'team.roles.manager', value: 'manager' },
   { labelKey: 'team.roles.developer', value: 'developer' },
 ];
+
+/** Generate a random password that satisfies all validation rules */
+function generatePassword(length = 16): string {
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lower = 'abcdefghijklmnopqrstuvwxyz';
+  const digits = '0123456789';
+  const symbols = '!@#$%^&*';
+  const all = upper + lower + digits + symbols;
+  // Guarantee at least one of each required type
+  const required = [
+    upper[Math.floor(Math.random() * upper.length)],
+    lower[Math.floor(Math.random() * lower.length)],
+    digits[Math.floor(Math.random() * digits.length)],
+    symbols[Math.floor(Math.random() * symbols.length)],
+  ];
+  for (let i = required.length; i < length; i++) {
+    required.push(all[Math.floor(Math.random() * all.length)]);
+  }
+  // Shuffle
+  for (let i = required.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [required[i], required[j]] = [required[j], required[i]];
+  }
+  return required.join('');
+}
 
 /** Password validation rules for antd Form */
 function usePasswordRules(t: (key: string) => string, required: boolean) {
@@ -522,7 +548,21 @@ export function TeamPage() {
             }
             rules={editingUser ? passwordRules : requiredPasswordRules}
           >
-            <Input.Password placeholder={t('team.form.passwordPlaceholder')} />
+            <Input.Password
+              placeholder={t('team.form.passwordPlaceholder')}
+              addonAfter={
+                <Tooltip title={t('team.form.generatePassword')}>
+                  <ThunderboltOutlined
+                    style={{ cursor: 'pointer', color: '#6366f1' }}
+                    onClick={() => {
+                      const pwd = generatePassword();
+                      form.setFieldsValue({ password: pwd });
+                      message.success(`${t('team.form.passwordGenerated')}: ${pwd}`);
+                    }}
+                  />
+                </Tooltip>
+              }
+            />
           </Form.Item>
 
           <Form.Item
