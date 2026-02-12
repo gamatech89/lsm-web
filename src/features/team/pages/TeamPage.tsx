@@ -22,6 +22,7 @@ import {
   App,
   Tooltip,
   Dropdown,
+  Switch,
 } from 'antd';
 import {
   SearchOutlined,
@@ -33,6 +34,7 @@ import {
   KeyOutlined,
   MailOutlined,
   MoreOutlined,
+  CrownOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -228,6 +230,7 @@ export function TeamPage() {
       name: user.name,
       email: user.email,
       role: user.role,
+      is_admin: user.is_admin,
       hourly_rate: (user as any).hourly_rate ?? 22,
       tag_ids: (user as any).tags?.map((tag: any) => tag.id) || [],
     });
@@ -286,7 +289,34 @@ export function TeamPage() {
       width: 120,
       render: (_, record) => {
         const config = getRoleConfig(record.role);
-        return <Tag color={config.color}>{config.label}</Tag>;
+        return (
+          <Space size={4}>
+            <Tag color={config.color}>{config.label}</Tag>
+            {record.is_admin && record.role !== 'admin' && (
+              <Tooltip title="Admin Access">
+                <CrownOutlined style={{ color: '#f59e0b', fontSize: 14 }} />
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
+    },
+    {
+      title: t('team.table.adminAccess'),
+      key: 'is_admin',
+      width: 120,
+      render: (_, record) => {
+        if (record.role === 'admin') return <Text type="secondary" style={{ fontSize: 12 }}>—</Text>;
+        return (
+          <Switch
+            size="small"
+            checked={record.is_admin}
+            loading={updateMutation.isPending}
+            onChange={(checked) => {
+              updateMutation.mutate({ id: record.id, data: { is_admin: checked } });
+            }}
+          />
+        );
       },
     },
     {
@@ -504,6 +534,15 @@ export function TeamPage() {
               options={roleOptions.map(r => ({ label: t(r.labelKey), value: r.value }))}
               placeholder={t('team.form.selectRole')}
             />
+          </Form.Item>
+
+          <Form.Item
+            name="is_admin"
+            label={t('team.form.adminAccess')}
+            valuePropName="checked"
+            tooltip={t('team.form.adminAccessHint')}
+          >
+            <Switch />
           </Form.Item>
 
           <Form.Item

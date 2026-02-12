@@ -616,6 +616,7 @@ const resources = {
           hourlyRate: 'Hourly Rate',
           status: 'Status',
           actions: 'Actions',
+          adminAccess: 'Admin Access',
         },
         form: {
           name: 'Full Name',
@@ -635,6 +636,8 @@ const resources = {
           selectTags: 'Select tags',
           hourlyRate: 'Hourly Rate',
           hourlyRatePlaceholder: 'e.g., 50.00',
+          adminAccess: 'Admin Access',
+          adminAccessHint: 'Grant this user full admin-level permissions while keeping their role',
         },
         passwordRules: {
           minLength: 'At least 8 characters',
@@ -1735,6 +1738,7 @@ const resources = {
           hourlyRate: 'Stundensatz',
           status: 'Status',
           actions: 'Aktionen',
+          adminAccess: 'Admin-Zugang',
         },
         form: {
           name: 'Vollständiger Name',
@@ -1754,6 +1758,8 @@ const resources = {
           selectTags: 'Tags auswählen',
           hourlyRate: 'Stundensatz',
           hourlyRatePlaceholder: 'z.B. 50.00',
+          adminAccess: 'Admin-Zugang',
+          adminAccessHint: 'Diesem Benutzer volle Admin-Rechte gewähren, ohne seine Rolle zu ändern',
         },
         passwordRules: {
           minLength: 'Mindestens 8 Zeichen',

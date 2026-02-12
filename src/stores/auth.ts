@@ -78,15 +78,17 @@ export function useHasRole(roles: User['role'] | User['role'][]) {
 }
 
 /**
- * Hook to check if user is admin
+ * Hook to check if user is admin (by role or is_admin flag)
  */
 export function useIsAdmin() {
-  return useHasRole('admin');
+  const user = useCurrentUser();
+  return user ? (user.role === 'admin' || user.is_admin) : false;
 }
 
 /**
  * Hook to check if user can manage projects
  */
 export function useCanManageProjects() {
-  return useHasRole(['admin', 'manager']);
+  const user = useCurrentUser();
+  return user ? (user.role === 'admin' || user.role === 'manager' || user.is_admin) : false;
 }
