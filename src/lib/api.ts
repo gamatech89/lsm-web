@@ -25,7 +25,7 @@ import {
   createResourcesApi,
 } from '@lsm/api-client';
 import { createAvailabilityApi } from './availability-api';
-import { createRmbApi } from './rmb-api';
+import { createLsmApi } from './lsm-api';
 import { createSupportTicketsApi } from './support-tickets-api';
 import { createBackupsApi } from './backups-api';
 import { createPhpErrorsApi } from './php-errors-api';
@@ -63,7 +63,7 @@ export const api = {
   invoices: createInvoicesApi(client),
   availability: createAvailabilityApi(client),
   resources: createResourcesApi(client),
-  rmb: createRmbApi(client),
+  lsm: createLsmApi(client),
   supportTickets: createSupportTicketsApi(client),
   backups: createBackupsApi(client),
   phpErrors: createPhpErrorsApi(client),

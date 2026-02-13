@@ -48,7 +48,7 @@ interface ProjectSubNavProps {
     todos?: number;
     resources?: number;
   };
-  hasRmbConnection?: boolean;
+  hasLsmConnection?: boolean;
 }
 
 export function ProjectSubNav({
@@ -56,7 +56,7 @@ export function ProjectSubNav({
   activeSection,
   onSectionChange,
   counts = {},
-  hasRmbConnection = false,
+  hasLsmConnection = false,
 }: ProjectSubNavProps) {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
@@ -185,49 +185,49 @@ export function ProjectSubNav({
           key: 'plugins',
           icon: <AppstoreOutlined />,
           label: withBadge('Plugins', counts.plugins, '#f59e0b'),
-          disabled: !hasRmbConnection,
+          disabled: !hasLsmConnection,
         },
         {
           key: 'themes',
           icon: <AppstoreOutlined />,
           label: withBadge('Themes', counts.themes, '#f59e0b'),
-          disabled: !hasRmbConnection,
+          disabled: !hasLsmConnection,
         },
         {
           key: 'core',
           icon: <DesktopOutlined />,
           label: withBadge('Core', counts.core, '#f59e0b'),
-          disabled: !hasRmbConnection,
+          disabled: !hasLsmConnection,
         },
         {
           key: 'backups',
           icon: <CloudOutlined />,
           label: 'Backups',
-          disabled: !hasRmbConnection,
+          disabled: !hasLsmConnection,
         },
         {
           key: 'security',
           icon: <SafetyOutlined />,
           label: withBadge('Security', counts.vulnerabilities, '#ef4444'),
-          disabled: !hasRmbConnection,
+          disabled: !hasLsmConnection,
         },
         {
           key: 'issues',
           icon: <BugOutlined />,
           label: withBadge('PHP Errors', counts.issues, '#ef4444'),
-          disabled: !hasRmbConnection,
+          disabled: !hasLsmConnection,
         },
         {
           key: 'maintenance',
           icon: <ToolOutlined />,
           label: 'Maintenance',
-          disabled: !hasRmbConnection,
+          disabled: !hasLsmConnection,
         },
         {
           key: 'activity',
           icon: <HistoryOutlined />,
           label: 'Activity Log',
-          disabled: !hasRmbConnection,
+          disabled: !hasLsmConnection,
         },
       ] : [],
     },

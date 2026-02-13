@@ -39,7 +39,7 @@ const { Text, Title } = Typography;
 
 interface OverviewSectionProps {
   project: Project;
-  rmbStatus?: { connected: boolean };
+  lsmStatus?: { connected: boolean };
   recoveryStatus?: { maintenance_mode: boolean };
   onSsoLogin: () => void;
   ssoLoading: boolean;
@@ -47,7 +47,7 @@ interface OverviewSectionProps {
 
 export function OverviewSection({
   project,
-  rmbStatus,
+  lsmStatus,
   onSsoLogin,
   ssoLoading,
 }: OverviewSectionProps) {
@@ -136,8 +136,8 @@ export function OverviewSection({
 
   // Fetch site info (content stats)
   const { data: siteInfo, isLoading: isLoadingSiteInfo } = useQuery({
-    queryKey: ['rmb-site-info', project.id],
-    queryFn: () => api.rmb.getSiteInfo(project.id).then(r => r.data?.data || r.data),
+    queryKey: ['lsm-site-info', project.id],
+    queryFn: () => api.lsm.getSiteInfo(project.id).then(r => r.data?.data || r.data),
     enabled: isPluginConnected,
     staleTime: 60000, // 1 minute
   });
@@ -204,7 +204,7 @@ export function OverviewSection({
                 Visit Site
               </Button>
             )}
-            {rmbStatus?.connected && (
+            {lsmStatus?.connected && (
               <Button 
                 type="primary" 
                 icon={<LoginOutlined />} 

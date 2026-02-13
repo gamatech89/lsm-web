@@ -1,7 +1,7 @@
 /**
  * WordPress Management Panel Component
  * 
- * Comprehensive WordPress site management via RMB plugin.
+ * Comprehensive WordPress site management via LSM plugin.
  * Features: SSO Login, Cache Control, Updates, Recovery/Killswitch
  */
 
@@ -55,18 +55,18 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
   const queryClient = useQueryClient();
   const [ssoLoading, setSsoLoading] = useState(false);
 
-  // Check RMB status
-  const { data: rmbStatus, isLoading: statusLoading } = useQuery({
-    queryKey: ['rmb-status', project.id],
-    queryFn: () => api.rmb.getStatus(project.id).then(r => r.data),
+  // Check LSM status
+  const { data: lsmStatus, isLoading: statusLoading } = useQuery({
+    queryKey: ['lsm-status', project.id],
+    queryFn: () => api.lsm.getStatus(project.id).then(r => r.data),
     enabled: !!project.health_check_secret,
   });
 
   // Get available updates
   const { data: updates, isLoading: updatesLoading, refetch: refetchUpdates } = useQuery({
-    queryKey: ['rmb-updates', project.id],
-    queryFn: () => api.rmb.getUpdates(project.id).then(r => r.data),
-    enabled: !!project.health_check_secret && rmbStatus?.connected,
+    queryKey: ['lsm-updates', project.id],
+    queryFn: () => api.lsm.getUpdates(project.id).then(r => r.data),
+    enabled: !!project.health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
   });
 
@@ -74,7 +74,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
   const handleSsoLogin = async () => {
     setSsoLoading(true);
     try {
-      const response = await api.rmb.generateLoginToken(project.id);
+      const response = await api.lsm.generateLoginToken(project.id);
       if (response.data.success && response.data.login_url) {
         window.open(response.data.login_url, '_blank');
         message.success('Opening WordPress admin...');
@@ -90,7 +90,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
 
   // Clear cache mutation
   const clearCacheMutation = useMutation({
-    mutationFn: () => api.rmb.clearCache(project.id),
+    mutationFn: () => api.lsm.clearCache(project.id),
     onSuccess: (response) => {
       const cleared = response.data.cleared?.length || 0;
       message.success(`Cleared ${cleared} cache type(s)`);
@@ -100,7 +100,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
 
   // Optimize DB mutation
   const optimizeDbMutation = useMutation({
-    mutationFn: () => api.rmb.optimizeDatabase(project.id),
+    mutationFn: () => api.lsm.optimizeDatabase(project.id),
     onSuccess: (response) => {
       message.success(`Optimized ${response.data.tables_count || 0} tables`);
     },
@@ -109,14 +109,14 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
 
   // Flush rewrite mutation
   const flushRewriteMutation = useMutation({
-    mutationFn: () => api.rmb.flushRewrite(project.id),
+    mutationFn: () => api.lsm.flushRewrite(project.id),
     onSuccess: () => message.success('Rewrite rules flushed'),
     onError: () => message.error('Failed to flush rewrite rules'),
   });
 
   // Update all plugins mutation
   const updateAllPluginsMutation = useMutation({
-    mutationFn: () => api.rmb.updateAllPlugins(project.id),
+    mutationFn: () => api.lsm.updateAllPlugins(project.id),
     onSuccess: (response) => {
       const updated = response.data.updated_count || 0;
       message.success(`Updated ${updated} plugin(s)`);
@@ -128,7 +128,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
 
   // Update core mutation
   const updateCoreMutation = useMutation({
-    mutationFn: () => api.rmb.updateCore(project.id),
+    mutationFn: () => api.lsm.updateCore(project.id),
     onSuccess: () => {
       message.success('WordPress core updated');
       refetchUpdates();
@@ -139,21 +139,21 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
 
   // Enable maintenance mutation
   const enableMaintenanceMutation = useMutation({
-    mutationFn: () => api.rmb.enableMaintenance(project.id),
+    mutationFn: () => api.lsm.enableMaintenance(project.id),
     onSuccess: () => message.success('Maintenance mode enabled'),
     onError: () => message.error('Failed to enable maintenance mode'),
   });
 
   // Disable maintenance mutation  
   const disableMaintenanceMutation = useMutation({
-    mutationFn: () => api.rmb.disableMaintenance(project.id),
+    mutationFn: () => api.lsm.disableMaintenance(project.id),
     onSuccess: () => message.success('Maintenance mode disabled'),
     onError: () => message.error('Failed to disable maintenance mode'),
   });
 
   // Disable all plugins mutation
   const disablePluginsMutation = useMutation({
-    mutationFn: () => api.rmb.disablePlugins(project.id),
+    mutationFn: () => api.lsm.disablePlugins(project.id),
     onSuccess: (response) => {
       message.warning(`Disabled ${response.data.disabled_count || 0} plugin(s)`);
     },
@@ -162,7 +162,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
 
   // Restore plugins mutation
   const restorePluginsMutation = useMutation({
-    mutationFn: () => api.rmb.restorePlugins(project.id),
+    mutationFn: () => api.lsm.restorePlugins(project.id),
     onSuccess: (response) => {
       message.success(`Restored ${response.data.restored_count || 0} plugin(s)`);
     },
@@ -171,7 +171,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
 
   // Emergency recovery mutation
   const emergencyRecoveryMutation = useMutation({
-    mutationFn: () => api.rmb.emergencyRecovery(project.id),
+    mutationFn: () => api.lsm.emergencyRecovery(project.id),
     onSuccess: () => {
       message.warning('Emergency recovery executed!');
     },
@@ -197,8 +197,8 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
                 To enable remote WordPress management, install the <strong>Remote Management Bridge</strong> plugin 
                 on this WordPress site and add the API key in project settings.
               </Paragraph>
-              <Button type="primary" onClick={() => window.open('https://github.com/your-org/rmb-plugin', '_blank')}>
-                Get RMB Plugin
+              <Button type="primary" onClick={() => window.open('https://github.com/your-org/lsm-plugin', '_blank')}>
+                Get LSM Plugin
               </Button>
             </div>
           }
@@ -219,12 +219,12 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
   }
 
   // Not connected state
-  if (!rmbStatus?.connected) {
+  if (!lsmStatus?.connected) {
     return (
       <div style={{ padding: '24px 0' }}>
         <Alert
           message="Cannot Connect to WordPress"
-          description={rmbStatus?.message || 'Failed to connect to the RMB plugin on this site.'}
+          description={lsmStatus?.message || 'Failed to connect to the LSM plugin on this site.'}
           type="error"
           showIcon
         />
@@ -244,7 +244,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
       <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
         <Badge status="success" />
         <Text type="secondary">
-          Connected to RMB Plugin v{rmbStatus.plugin_version || 'Unknown'}
+          Connected to LSM Plugin v{lsmStatus.plugin_version || 'Unknown'}
         </Text>
         {project.last_health_check_at && (
           <Text type="secondary" style={{ marginLeft: 'auto' }}>
@@ -477,7 +477,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
 
               <Popconfirm
                 title="Disable All Plugins?"
-                description="This will deactivate all plugins except RMB."
+                description="This will deactivate all plugins except LSM."
                 onConfirm={() => disablePluginsMutation.mutate()}
                 okText="Disable All"
                 okButtonProps={{ danger: true }}

@@ -53,7 +53,7 @@ export function ConnectWordPressCard({ project, compact = false }: ConnectWordPr
       message.success('API key saved successfully! Connection established.');
       // Invalidate and refetch to update UI
       await queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
-      await queryClient.invalidateQueries({ queryKey: ['rmb-status', project.id] });
+      await queryClient.invalidateQueries({ queryKey: ['lsm-status', project.id] });
       await queryClient.refetchQueries({ queryKey: ['projects', project.id] });
     } catch (error) {
       message.error('Failed to save API key');
@@ -66,7 +66,7 @@ export function ConnectWordPressCard({ project, compact = false }: ConnectWordPr
   const handleDownloadPlugin = async () => {
     setDownloadingPlugin(true);
     try {
-      const response = await api.rmb.downloadPlugin(project.id);
+      const response = await api.lsm.downloadPlugin(project.id);
       
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));

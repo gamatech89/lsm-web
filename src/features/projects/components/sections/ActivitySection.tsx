@@ -61,31 +61,31 @@ interface ActivityEntry {
 export default function ActivitySection({ project }: ActivitySectionProps) {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
-  const hasRmbConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.health_check_secret;
   
   const [actionFilter, setActionFilter] = useState<string | undefined>(undefined);
 
   // Fetch activity from WordPress
   const { data: activityData, isLoading, refetch } = useQuery({
     queryKey: ['activity-log', project.id, actionFilter],
-    queryFn: () => api.rmb.getActivityFromWp(project.id, { 
+    queryFn: () => api.lsm.getActivityFromWp(project.id, { 
       action: actionFilter,
       limit: 100,
     }).then(r => r.data),
-    enabled: hasRmbConnection,
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
   // Fetch activity stats
   const { data: statsData, refetch: refetchStats } = useQuery({
     queryKey: ['activity-stats', project.id],
-    queryFn: () => api.rmb.getActivityStatsFromWp(project.id).then(r => r.data),
-    enabled: hasRmbConnection,
+    queryFn: () => api.lsm.getActivityStatsFromWp(project.id).then(r => r.data),
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
   // Show empty state if not connected
-  if (!hasRmbConnection) {
+  if (!hasLsmConnection) {
     return (
       <Empty
         image={<HistoryOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}

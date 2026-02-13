@@ -1,19 +1,19 @@
 /**
- * RMB (Remote Management Bridge) API Helper
+ * LSM (Landeseiten Maintenance) API Helper
  * 
- * API client for WordPress site management via the RMB plugin.
+ * API client for WordPress site management via the LSM plugin.
  */
 
 import type { AxiosInstance } from 'axios';
 
-export interface RmbStatus {
+export interface LsmStatus {
   configured: boolean;
   connected?: boolean;
   plugin_version?: string;
   message: string;
 }
 
-export interface RmbHealth {
+export interface LsmHealth {
   timestamp: string;
   status: string;
   site_url: string;
@@ -47,14 +47,14 @@ export interface RmbHealth {
   };
 }
 
-export interface RmbLoginToken {
+export interface LsmLoginToken {
   success: boolean;
   token: string;
   login_url: string;
   expires_in: number;
 }
 
-export interface RmbUpdates {
+export interface LsmUpdates {
   core: { current_version: string; new_version: string } | null;
   plugins: Array<{
     plugin: string;
@@ -69,13 +69,13 @@ export interface RmbUpdates {
   }>;
 }
 
-export interface RmbCacheResult {
+export interface LsmCacheResult {
   success: boolean;
   cleared: string[];
   message: string;
 }
 
-export interface RmbRecoveryStatus {
+export interface LsmRecoveryStatus {
   maintenance_mode: boolean;
   disabled_plugins: string[];
   current_theme: string;
@@ -83,21 +83,21 @@ export interface RmbRecoveryStatus {
   recovery_token_exists: boolean;
 }
 
-export function createRmbApi(client: AxiosInstance) {
-  const basePath = (projectId: number) => `/projects/${projectId}/rmb`;
+export function createLsmApi(client: AxiosInstance) {
+  const basePath = (projectId: number) => `/projects/${projectId}/lsm`;
 
   return {
     /**
-     * Get RMB connection status
+     * Get LSM connection status
      */
     getStatus: (projectId: number) =>
-      client.get<RmbStatus>(`${basePath(projectId)}/status`),
+      client.get<LsmStatus>(`${basePath(projectId)}/status`),
 
     /**
      * Get full health data
      */
     getHealth: (projectId: number) =>
-      client.get<RmbHealth>(`${basePath(projectId)}/health`),
+      client.get<LsmHealth>(`${basePath(projectId)}/health`),
 
     /**
      * Get all installed themes
@@ -109,13 +109,13 @@ export function createRmbApi(client: AxiosInstance) {
      * Generate SSO login token
      */
     generateLoginToken: (projectId: number) =>
-      client.post<RmbLoginToken>(`${basePath(projectId)}/login-token`),
+      client.post<LsmLoginToken>(`${basePath(projectId)}/login-token`),
 
     /**
      * Clear all caches
      */
     clearCache: (projectId: number) =>
-      client.post<RmbCacheResult>(`${basePath(projectId)}/clear-cache`),
+      client.post<LsmCacheResult>(`${basePath(projectId)}/clear-cache`),
 
     /**
      * Optimize database
@@ -152,7 +152,7 @@ export function createRmbApi(client: AxiosInstance) {
      * Get available updates
      */
     getUpdates: (projectId: number) =>
-      client.get<RmbUpdates>(`${basePath(projectId)}/updates`),
+      client.get<LsmUpdates>(`${basePath(projectId)}/updates`),
 
     /**
      * Get all installed plugins
@@ -200,7 +200,7 @@ export function createRmbApi(client: AxiosInstance) {
      * Get recovery status
      */
     getRecoveryStatus: (projectId: number) =>
-      client.get<RmbRecoveryStatus>(`${basePath(projectId)}/recovery-status`),
+      client.get<LsmRecoveryStatus>(`${basePath(projectId)}/recovery-status`),
 
     /**
      * Enable maintenance mode
@@ -437,4 +437,4 @@ export function createRmbApi(client: AxiosInstance) {
   };
 }
 
-export type RmbApi = ReturnType<typeof createRmbApi>;
+export type LsmApi = ReturnType<typeof createLsmApi>;

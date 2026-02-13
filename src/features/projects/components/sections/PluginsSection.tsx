@@ -73,21 +73,21 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   // Check if WordPress is connected
-  const hasRmbConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.health_check_secret;
 
   // Fetch all plugins
   const { data: pluginsData, isLoading: pluginsLoading, refetch } = useQuery({
     queryKey: ['project-plugins', project.id],
-    queryFn: () => api.rmb.getPlugins(project.id).then(r => r.data),
-    enabled: hasRmbConnection,
+    queryFn: () => api.lsm.getPlugins(project.id).then(r => r.data),
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
   // Fetch updates data for available plugin updates
   const { data: updatesData, isLoading: updatesLoading } = useQuery({
     queryKey: ['project-updates', project.id],
-    queryFn: () => api.rmb.getUpdates(project.id).then(r => r.data),
-    enabled: hasRmbConnection,
+    queryFn: () => api.lsm.getUpdates(project.id).then(r => r.data),
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
@@ -170,7 +170,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
   // Update plugin mutation - REAL API
   const updatePluginMutation = useMutation({
     mutationFn: async (pluginSlug: string) => {
-      return api.rmb.updatePlugin(project.id, pluginSlug).then(r => r.data);
+      return api.lsm.updatePlugin(project.id, pluginSlug).then(r => r.data);
     },
     onSuccess: () => {
       message.success('Plugin updated successfully');
@@ -184,9 +184,9 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ slug, active }: { slug: string; active: boolean }) => {
       if (active) {
-        return api.rmb.activatePlugin(project.id, slug).then(r => r.data);
+        return api.lsm.activatePlugin(project.id, slug).then(r => r.data);
       } else {
-        return api.rmb.deactivatePlugin(project.id, slug).then(r => r.data);
+        return api.lsm.deactivatePlugin(project.id, slug).then(r => r.data);
       }
     },
     onSuccess: (data, variables) => {
@@ -214,12 +214,12 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
   // Delete plugin mutation - REAL API
   const deletePluginMutation = useMutation({
     mutationFn: async (pluginSlug: string) => {
-      return api.rmb.deletePlugin(project.id, pluginSlug).then(r => r.data);
+      return api.lsm.deletePlugin(project.id, pluginSlug).then(r => r.data);
     },
     onSuccess: (_, pluginSlug) => {
       message.success('Plugin deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['project-plugins', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['rmb-health', project.id] });
+      queryClient.invalidateQueries({ queryKey: ['lsm-health', project.id] });
     },
     onError: (error: any) => {
       const errorMsg = error?.response?.data?.error || 'Failed to delete plugin';
@@ -230,7 +230,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
   // Update ALL plugins mutation - REAL API
   const updateAllPluginsMutation = useMutation({
     mutationFn: async () => {
-      return api.rmb.updateAllPlugins(project.id).then(r => r.data);
+      return api.lsm.updateAllPlugins(project.id).then(r => r.data);
     },
     onSuccess: () => {
       message.success('All plugins updated successfully');
@@ -403,7 +403,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
   ];
 
   // Show empty state if not connected
-  if (!hasRmbConnection) {
+  if (!hasLsmConnection) {
     return (
       <Empty
         image={<AppstoreOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}

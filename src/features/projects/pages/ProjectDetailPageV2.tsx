@@ -106,19 +106,19 @@ export function ProjectDetailPageV2() {
     enabled: !!projectId,
   });
 
-  // Check RMB connection status
-  const { data: rmbStatus } = useQuery({
-    queryKey: ['rmb-status', projectId],
-    queryFn: () => api.rmb.getStatus(projectId).then(r => (r.data as any)?.data || r.data),
+  // Check LSM connection status
+  const { data: lsmStatus } = useQuery({
+    queryKey: ['lsm-status', projectId],
+    queryFn: () => api.lsm.getStatus(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.health_check_secret,
     staleTime: 30000,
   });
 
   // Get recovery status
   const { data: recoveryStatus, refetch: refetchRecoveryStatus } = useQuery({
-    queryKey: ['rmb-recovery-status', projectId],
-    queryFn: () => api.rmb.getRecoveryStatus(projectId).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project?.health_check_secret && rmbStatus?.connected,
+    queryKey: ['lsm-recovery-status', projectId],
+    queryFn: () => api.lsm.getRecoveryStatus(projectId).then(r => (r.data as any)?.data || r.data),
+    enabled: !!project?.health_check_secret && lsmStatus?.connected,
     staleTime: 10000,
   });
 
@@ -128,7 +128,7 @@ export function ProjectDetailPageV2() {
     if (!project) return;
     setSsoLoading(true);
     try {
-      const response = await api.rmb.generateLoginToken(projectId);
+      const response = await api.lsm.generateLoginToken(projectId);
       // Handle both response formats: direct or nested in .data
       const responseData = response.data as any;
       const data = responseData?.data || responseData;
@@ -146,7 +146,7 @@ export function ProjectDetailPageV2() {
 
   // Maintenance mode
   const enableMaintenanceMutation = useMutation({
-    mutationFn: () => api.rmb.enableMaintenance(projectId),
+    mutationFn: () => api.lsm.enableMaintenance(projectId),
     onSuccess: () => {
       message.success('Maintenance mode enabled');
       refetchRecoveryStatus();
@@ -155,7 +155,7 @@ export function ProjectDetailPageV2() {
   });
 
   const disableMaintenanceMutation = useMutation({
-    mutationFn: () => api.rmb.disableMaintenance(projectId),
+    mutationFn: () => api.lsm.disableMaintenance(projectId),
     onSuccess: () => {
       message.success('Maintenance mode disabled');
       refetchRecoveryStatus();
@@ -205,7 +205,7 @@ export function ProjectDetailPageV2() {
         return (
           <OverviewSection
             project={project}
-            rmbStatus={rmbStatus}
+            lsmStatus={lsmStatus}
             recoveryStatus={recoveryStatus}
             onSsoLogin={handleSsoLogin}
             ssoLoading={ssoLoading}
@@ -240,7 +240,7 @@ export function ProjectDetailPageV2() {
       case 'settings':
         return <SettingsSection {...commonProps} />;
       default:
-        return <OverviewSection {...commonProps} rmbStatus={rmbStatus} recoveryStatus={recoveryStatus} onSsoLogin={handleSsoLogin} ssoLoading={ssoLoading} />;
+        return <OverviewSection {...commonProps} lsmStatus={lsmStatus} recoveryStatus={recoveryStatus} onSsoLogin={handleSsoLogin} ssoLoading={ssoLoading} />;
     }
   };
 
@@ -310,7 +310,7 @@ export function ProjectDetailPageV2() {
             <Button icon={<GlobalOutlined />} href={project.url} target="_blank" size="small" />
           )}
           <Button icon={<SyncOutlined />} size="small">Re-sync</Button>
-          {rmbStatus?.connected && (
+          {lsmStatus?.connected && (
             <Button type="primary" icon={<LoginOutlined />} onClick={handleSsoLogin} loading={ssoLoading} size="small">
               Admin
             </Button>
@@ -360,7 +360,7 @@ export function ProjectDetailPageV2() {
               todos: pendingTodosCount,
               resources: resourcesCount,
             }}
-            hasRmbConnection={!!project.health_check_secret && rmbStatus?.connected}
+            hasLsmConnection={!!project.health_check_secret && lsmStatus?.connected}
           />
         </div>
 
@@ -435,7 +435,7 @@ export function ProjectDetailPageV2() {
             todos: pendingTodosCount,
             resources: resourcesCount,
           }}
-          hasRmbConnection={!!project.health_check_secret && rmbStatus?.connected}
+          hasLsmConnection={!!project.health_check_secret && lsmStatus?.connected}
         />
       </Modal>
     </div>

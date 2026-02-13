@@ -61,27 +61,27 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
     optimize_tables: true,
   });
   // Check if WordPress is connected
-  const hasRmbConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.health_check_secret;
 
   // Fetch recovery status (includes maintenance mode)
   const { data: recoveryStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
     queryKey: ['project-recovery-status', project.id],
-    queryFn: () => api.rmb.getRecoveryStatus(project.id).then(r => r.data),
-    enabled: hasRmbConnection,
+    queryFn: () => api.lsm.getRecoveryStatus(project.id).then(r => r.data),
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
   // Fetch database stats for cleanup preview
   const { data: dbStats, isLoading: dbStatsLoading, refetch: refetchDbStats } = useQuery({
     queryKey: ['project-db-stats', project.id],
-    queryFn: () => api.rmb.getDatabaseStats(project.id).then(r => r.data?.data || r.data),
-    enabled: hasRmbConnection,
+    queryFn: () => api.lsm.getDatabaseStats(project.id).then(r => r.data?.data || r.data),
+    enabled: hasLsmConnection,
     staleTime: 60000,
   });
 
   // Quick Actions Mutations
   const clearCacheMutation = useMutation({
-    mutationFn: () => api.rmb.clearCache(project.id),
+    mutationFn: () => api.lsm.clearCache(project.id),
     onSuccess: (response) => {
       const data = response.data?.data || response.data;
       const clearedList = data?.cleared?.join(', ') || 'all caches';
@@ -91,13 +91,13 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
   });
 
   const flushRewriteMutation = useMutation({
-    mutationFn: () => api.rmb.flushRewrite(project.id),
+    mutationFn: () => api.lsm.flushRewrite(project.id),
     onSuccess: () => message.success('Permalinks flushed successfully'),
     onError: () => message.error('Failed to flush permalinks'),
   });
 
   const optimizeDbMutation = useMutation({
-    mutationFn: () => api.rmb.optimizeDatabase(project.id),
+    mutationFn: () => api.lsm.optimizeDatabase(project.id),
     onSuccess: (response) => {
       const data = response.data?.data || response.data;
       const saved = data?.saved || '0 B';
@@ -110,7 +110,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
   const cleanupDbMutation = useMutation({
     mutationFn: async () => {
       // First cleanup selected items
-      const cleanupResult = await api.rmb.cleanupDatabase(project.id, {
+      const cleanupResult = await api.lsm.cleanupDatabase(project.id, {
         revisions: cleanupOptions.revisions,
         transients: cleanupOptions.transients,
         drafts: cleanupOptions.drafts,
@@ -120,7 +120,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
       });
       // Then optimize tables if selected
       if (cleanupOptions.optimize_tables) {
-        await api.rmb.optimizeDatabase(project.id);
+        await api.lsm.optimizeDatabase(project.id);
       }
       return cleanupResult;
     },
@@ -138,7 +138,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
 
   // Maintenance Mode Mutations
   const enableMaintenanceMutation = useMutation({
-    mutationFn: () => api.rmb.enableMaintenance(project.id),
+    mutationFn: () => api.lsm.enableMaintenance(project.id),
     onSuccess: () => {
       message.success('Maintenance mode enabled');
       refetchStatus();
@@ -147,7 +147,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
   });
 
   const disableMaintenanceMutation = useMutation({
-    mutationFn: () => api.rmb.disableMaintenance(project.id),
+    mutationFn: () => api.lsm.disableMaintenance(project.id),
     onSuccess: () => {
       message.success('Maintenance mode disabled');
       refetchStatus();
@@ -157,7 +157,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
 
   // Emergency Recovery Mutations
   const disablePluginsMutation = useMutation({
-    mutationFn: () => api.rmb.disablePlugins(project.id),
+    mutationFn: () => api.lsm.disablePlugins(project.id),
     onSuccess: () => {
       message.success('All plugins disabled');
       refetchStatus();
@@ -167,7 +167,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
   });
 
   const restorePluginsMutation = useMutation({
-    mutationFn: () => api.rmb.restorePlugins(project.id),
+    mutationFn: () => api.lsm.restorePlugins(project.id),
     onSuccess: () => {
       message.success('Plugins restored');
       refetchStatus();
@@ -177,7 +177,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
   });
 
   const emergencyRecoveryMutation = useMutation({
-    mutationFn: () => api.rmb.emergencyRecovery(project.id),
+    mutationFn: () => api.lsm.emergencyRecovery(project.id),
     onSuccess: () => {
       message.success('Emergency recovery executed');
       refetchStatus();
@@ -199,7 +199,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
   };
 
   // Not connected state - show connection UI
-  if (!hasRmbConnection) {
+  if (!hasLsmConnection) {
     return <ConnectWordPressCard project={project} />;
   }
 

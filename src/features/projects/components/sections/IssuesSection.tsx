@@ -57,7 +57,7 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { message, modal } = App.useApp();
   const queryClient = useQueryClient();
-  const hasRmbConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.health_check_secret;
   
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | undefined>(undefined);
@@ -69,7 +69,7 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
       type: typeFilter, 
       search: searchTerm || undefined 
     }).then(r => (r.data as any)?.data || r.data),
-    enabled: hasRmbConnection,
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
@@ -77,7 +77,7 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
   const { data: statsData, refetch: refetchStats } = useQuery({
     queryKey: ['php-errors-stats', project.id],
     queryFn: () => api.phpErrors.stats(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: hasRmbConnection,
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
@@ -94,7 +94,7 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
 
   // Sync errors from WordPress mutation
   const syncMutation = useMutation({
-    mutationFn: () => api.rmb.syncPhpErrors(project.id).then(r => r.data),
+    mutationFn: () => api.lsm.syncPhpErrors(project.id).then(r => r.data),
     onSuccess: (data) => {
       if (data.synced > 0) {
         message.success(`Synced ${data.synced} error(s) from WordPress`);
@@ -133,7 +133,7 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
   });
 
   // Show empty state if not connected
-  if (!hasRmbConnection) {
+  if (!hasLsmConnection) {
     return (
       <Empty
         image={<BugOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}

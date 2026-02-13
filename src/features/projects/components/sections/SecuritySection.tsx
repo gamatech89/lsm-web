@@ -71,30 +71,30 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const hasRmbConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.health_check_secret;
   const [updatingSetting, setUpdatingSetting] = useState<string | null>(null);
 
   // Fetch health data
   const { data: healthData, isLoading, refetch } = useQuery({
-    queryKey: ['rmb-health', project.id],
-    queryFn: () => api.rmb.getHealth(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: hasRmbConnection,
+    queryKey: ['lsm-health', project.id],
+    queryFn: () => api.lsm.getHealth(project.id).then(r => (r.data as any)?.data || r.data),
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
   // Fetch security settings
   const { data: securitySettings, isLoading: isLoadingSettings } = useQuery({
-    queryKey: ['rmb-security-settings', project.id],
-    queryFn: () => api.rmb.getSecuritySettings(project.id).then(r => r.data?.data || r.data),
-    enabled: hasRmbConnection,
+    queryKey: ['lsm-security-settings', project.id],
+    queryFn: () => api.lsm.getSecuritySettings(project.id).then(r => r.data?.data || r.data),
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
   // Fetch security headers
   const { data: securityHeaders, isLoading: isLoadingHeaders } = useQuery({
-    queryKey: ['rmb-security-headers', project.id],
-    queryFn: () => api.rmb.getSecurityHeaders(project.id).then(r => r.data?.data || r.data),
-    enabled: hasRmbConnection,
+    queryKey: ['lsm-security-headers', project.id],
+    queryFn: () => api.lsm.getSecurityHeaders(project.id).then(r => r.data?.data || r.data),
+    enabled: hasLsmConnection,
     staleTime: 60000, // Cache for 1 minute
   });
 
@@ -103,20 +103,20 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
 
   // Fetch security header snippets (only when modal is open)
   const { data: headerSnippets, isLoading: isLoadingSnippets } = useQuery({
-    queryKey: ['rmb-security-header-snippets', project.id],
-    queryFn: () => api.rmb.getSecurityHeaderSnippets(project.id).then(r => r.data?.data || r.data),
-    enabled: hasRmbConnection && snippetModalOpen,
+    queryKey: ['lsm-security-header-snippets', project.id],
+    queryFn: () => api.lsm.getSecurityHeaderSnippets(project.id).then(r => r.data?.data || r.data),
+    enabled: hasLsmConnection && snippetModalOpen,
     staleTime: 300000, // Cache for 5 minutes
   });
 
   // Update security setting mutation
   const updateSettingMutation = useMutation({
     mutationFn: (settings: Record<string, boolean>) =>
-      api.rmb.updateSecuritySettings(project.id, settings),
+      api.lsm.updateSecuritySettings(project.id, settings),
     onSuccess: (_, variables) => {
       const settingName = Object.keys(variables)[0];
       message.success(`${settingName.replace('_', ' ')} updated`);
-      queryClient.invalidateQueries({ queryKey: ['rmb-security-settings', project.id] });
+      queryClient.invalidateQueries({ queryKey: ['lsm-security-settings', project.id] });
       setUpdatingSetting(null);
     },
     onError: (error: any) => {
@@ -131,7 +131,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
   };
 
   // Show empty state if not connected
-  if (!hasRmbConnection) {
+  if (!hasLsmConnection) {
     return (
       <Empty
         image={<SafetyOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}

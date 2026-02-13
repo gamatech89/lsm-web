@@ -66,19 +66,19 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const hasRmbConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.health_check_secret;
 
   // Fetch all themes
   const { data: themesData, isLoading, refetch } = useQuery({
     queryKey: ['project-themes', project.id],
-    queryFn: () => api.rmb.getThemes(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: hasRmbConnection,
+    queryFn: () => api.lsm.getThemes(project.id).then(r => (r.data as any)?.data || r.data),
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
   // Switch to default theme mutation
   const switchThemeMutation = useMutation({
-    mutationFn: () => api.rmb.switchTheme(project.id),
+    mutationFn: () => api.lsm.switchTheme(project.id),
     onSuccess: () => {
       message.success('Switched to default theme');
       queryClient.invalidateQueries({ queryKey: ['project-themes', project.id] });
@@ -88,7 +88,7 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
 
   // Activate theme mutation
   const activateThemeMutation = useMutation({
-    mutationFn: (slug: string) => api.rmb.activateTheme(project.id, slug),
+    mutationFn: (slug: string) => api.lsm.activateTheme(project.id, slug),
     onSuccess: () => {
       message.success('Theme activated');
       queryClient.invalidateQueries({ queryKey: ['project-themes', project.id] });
@@ -97,7 +97,7 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
   });
 
   // Show empty state if not connected
-  if (!hasRmbConnection) {
+  if (!hasLsmConnection) {
     return (
       <Empty
         image={<PictureOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}

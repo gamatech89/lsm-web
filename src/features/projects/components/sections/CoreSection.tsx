@@ -48,27 +48,27 @@ export default function CoreSection({ project }: CoreSectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const hasRmbConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.health_check_secret;
 
   // Fetch health data
   const { data: healthData, isLoading: isLoadingHealth, refetch: refetchHealth } = useQuery({
-    queryKey: ['rmb-health', project.id],
-    queryFn: () => api.rmb.getHealth(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: hasRmbConnection,
+    queryKey: ['lsm-health', project.id],
+    queryFn: () => api.lsm.getHealth(project.id).then(r => (r.data as any)?.data || r.data),
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
   // Fetch updates to check for core updates
   const { data: updatesData, isLoading: isLoadingUpdates, refetch: refetchUpdates } = useQuery({
-    queryKey: ['rmb-updates', project.id],
-    queryFn: () => api.rmb.getUpdates(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: hasRmbConnection,
+    queryKey: ['lsm-updates', project.id],
+    queryFn: () => api.lsm.getUpdates(project.id).then(r => (r.data as any)?.data || r.data),
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
   // Update core mutation
   const updateCoreMutation = useMutation({
-    mutationFn: () => api.rmb.updateCore(project.id),
+    mutationFn: () => api.lsm.updateCore(project.id),
     onSuccess: () => {
       message.success('WordPress core updated successfully');
       refetchHealth();
@@ -84,7 +84,7 @@ export default function CoreSection({ project }: CoreSectionProps) {
   };
 
   // Show empty state if not connected
-  if (!hasRmbConnection) {
+  if (!hasLsmConnection) {
     return (
       <Empty
         image={<CodeOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}

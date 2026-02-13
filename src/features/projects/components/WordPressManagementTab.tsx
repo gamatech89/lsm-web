@@ -60,35 +60,35 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   const [savingApiKey, setSavingApiKey] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
 
-  // Check RMB status
-  const { data: rmbStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
-    queryKey: ['rmb-status', project.id],
-    queryFn: () => api.rmb.getStatus(project.id).then(r => (r.data as any)?.data || r.data),
+  // Check LSM status
+  const { data: lsmStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
+    queryKey: ['lsm-status', project.id],
+    queryFn: () => api.lsm.getStatus(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: !!project.health_check_secret,
     staleTime: 30000,
   });
 
   // Get health data
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
-    queryKey: ['rmb-health', project.id],
-    queryFn: () => api.rmb.getHealth(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project.health_check_secret && rmbStatus?.connected,
+    queryKey: ['lsm-health', project.id],
+    queryFn: () => api.lsm.getHealth(project.id).then(r => (r.data as any)?.data || r.data),
+    enabled: !!project.health_check_secret && lsmStatus?.connected,
     staleTime: 30000,
   });
 
   // Get available updates
   const { data: updates, isLoading: updatesLoading, refetch: refetchUpdates } = useQuery({
-    queryKey: ['rmb-updates', project.id],
-    queryFn: () => api.rmb.getUpdates(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project.health_check_secret && rmbStatus?.connected,
+    queryKey: ['lsm-updates', project.id],
+    queryFn: () => api.lsm.getUpdates(project.id).then(r => (r.data as any)?.data || r.data),
+    enabled: !!project.health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
   });
 
   // Get recovery status (includes maintenance_mode)
   const { data: recoveryStatus, refetch: refetchRecoveryStatus } = useQuery({
-    queryKey: ['rmb-recovery-status', project.id],
-    queryFn: () => api.rmb.getRecoveryStatus(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project.health_check_secret && rmbStatus?.connected,
+    queryKey: ['lsm-recovery-status', project.id],
+    queryFn: () => api.lsm.getRecoveryStatus(project.id).then(r => (r.data as any)?.data || r.data),
+    enabled: !!project.health_check_secret && lsmStatus?.connected,
     staleTime: 10000,
   });
 
@@ -96,7 +96,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   const handleSsoLogin = async () => {
     setSsoLoading(true);
     try {
-      const response = await api.rmb.generateLoginToken(project.id);
+      const response = await api.lsm.generateLoginToken(project.id);
       if (response.data.success && response.data.login_url) {
         window.open(response.data.login_url, '_blank');
         message.success('Opening WordPress admin...');
@@ -112,7 +112,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
 
   // Mutations
   const clearCacheMutation = useMutation({
-    mutationFn: () => api.rmb.clearCache(project.id),
+    mutationFn: () => api.lsm.clearCache(project.id),
     onSuccess: (response) => {
       const cleared = response.data.cleared?.length || 0;
       message.success(`Cleared ${cleared} cache type(s)`);
@@ -121,7 +121,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   });
 
   const optimizeDbMutation = useMutation({
-    mutationFn: () => api.rmb.optimizeDatabase(project.id),
+    mutationFn: () => api.lsm.optimizeDatabase(project.id),
     onSuccess: (response) => {
       message.success(`Optimized ${response.data.tables_count || 0} tables`);
     },
@@ -129,13 +129,13 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   });
 
   const flushRewriteMutation = useMutation({
-    mutationFn: () => api.rmb.flushRewrite(project.id),
+    mutationFn: () => api.lsm.flushRewrite(project.id),
     onSuccess: () => message.success('Rewrite rules flushed'),
     onError: () => message.error('Failed to flush rewrite rules'),
   });
 
   const updateAllPluginsMutation = useMutation({
-    mutationFn: () => api.rmb.updateAllPlugins(project.id),
+    mutationFn: () => api.lsm.updateAllPlugins(project.id),
     onSuccess: (response) => {
       message.success(`Updated ${response.data.updated_count || 0} plugin(s)`);
       refetchUpdates();
@@ -146,7 +146,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   });
 
   const updateCoreMutation = useMutation({
-    mutationFn: () => api.rmb.updateCore(project.id),
+    mutationFn: () => api.lsm.updateCore(project.id),
     onSuccess: () => {
       message.success('WordPress core updated');
       refetchUpdates();
@@ -156,7 +156,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   });
 
   const enableMaintenanceMutation = useMutation({
-    mutationFn: () => api.rmb.enableMaintenance(project.id),
+    mutationFn: () => api.lsm.enableMaintenance(project.id),
     onSuccess: () => {
       message.success('Maintenance mode enabled');
       refetchRecoveryStatus();
@@ -165,7 +165,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   });
 
   const disableMaintenanceMutation = useMutation({
-    mutationFn: () => api.rmb.disableMaintenance(project.id),
+    mutationFn: () => api.lsm.disableMaintenance(project.id),
     onSuccess: () => {
       message.success('Maintenance mode disabled');
       refetchRecoveryStatus();
@@ -174,7 +174,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   });
 
   const disablePluginsMutation = useMutation({
-    mutationFn: () => api.rmb.disablePlugins(project.id),
+    mutationFn: () => api.lsm.disablePlugins(project.id),
     onSuccess: (response) => {
       message.warning(`Disabled ${response.data.disabled_count || 0} plugin(s)`);
     },
@@ -182,7 +182,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   });
 
   const restorePluginsMutation = useMutation({
-    mutationFn: () => api.rmb.restorePlugins(project.id),
+    mutationFn: () => api.lsm.restorePlugins(project.id),
     onSuccess: (response) => {
       message.success(`Restored ${response.data.restored_count || 0} plugin(s)`);
     },
@@ -190,7 +190,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   });
 
   const emergencyRecoveryMutation = useMutation({
-    mutationFn: () => api.rmb.emergencyRecovery(project.id),
+    mutationFn: () => api.lsm.emergencyRecovery(project.id),
     onSuccess: () => message.warning('Emergency recovery executed!'),
     onError: () => message.error('Failed to execute emergency recovery'),
   });
@@ -214,7 +214,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
       setShowApiKeyModal(false);
       // Invalidate and refetch to ensure UI updates
       await queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
-      await queryClient.invalidateQueries({ queryKey: ['rmb-status', project.id] });
+      await queryClient.invalidateQueries({ queryKey: ['lsm-status', project.id] });
       await queryClient.refetchQueries({ queryKey: ['projects', project.id] });
       refetchStatus();
     } catch (error) {
@@ -231,7 +231,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
     setDownloadingPlugin(true);
     try {
       // Use helper method
-      const response = await api.rmb.downloadPlugin(project.id);
+      const response = await api.lsm.downloadPlugin(project.id);
       
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -326,7 +326,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   }
 
   // Connection error state
-  if (!rmbStatus?.connected) {
+  if (!lsmStatus?.connected) {
     return (
       <div style={{ padding: 24 }}>
         {/* API Key Update Modal */}
@@ -358,7 +358,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
 
         <Alert
           message="Cannot Connect to WordPress"
-          description={rmbStatus?.message || 'Check if the plugin is active and API key is correct.'}
+          description={lsmStatus?.message || 'Check if the plugin is active and API key is correct.'}
           type="error"
           showIcon
           action={
@@ -419,7 +419,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
           <Col>
             <Space>
               <Badge status="success" />
-              <Text style={{ color: '#fff' }}>Connected to RMB v{rmbStatus?.plugin_version || '1.0.0'}</Text>
+              <Text style={{ color: '#fff' }}>Connected to LSM v{lsmStatus?.plugin_version || '1.0.0'}</Text>
               <Tooltip title="Update API Key">
                 <Button
                   type="text"

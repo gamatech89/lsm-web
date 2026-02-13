@@ -53,13 +53,13 @@ export default function BackupsSection({ project }: BackupsSectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { message, modal } = App.useApp();
   const queryClient = useQueryClient();
-  const hasRmbConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.health_check_secret;
 
   // Fetch backups from API
   const { data: backupsData, isLoading, refetch } = useQuery({
     queryKey: ['backups', project.id],
     queryFn: () => api.backups.list(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: hasRmbConnection,
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
@@ -67,7 +67,7 @@ export default function BackupsSection({ project }: BackupsSectionProps) {
   const { data: statsData } = useQuery({
     queryKey: ['backups-stats', project.id],
     queryFn: () => api.backups.stats(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: hasRmbConnection,
+    enabled: hasLsmConnection,
     staleTime: 30000,
   });
 
@@ -162,7 +162,7 @@ export default function BackupsSection({ project }: BackupsSectionProps) {
   };
 
   // Show empty state if not connected
-  if (!hasRmbConnection) {
+  if (!hasLsmConnection) {
     return (
       <Empty
         image={<DatabaseOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}

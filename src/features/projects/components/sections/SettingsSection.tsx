@@ -132,7 +132,7 @@ export default function SettingsSection({ project }: SettingsSectionProps) {
     onSuccess: () => {
       message.success('API key saved! Connection established.');
       queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['rmb-status', project.id] });
+      queryClient.invalidateQueries({ queryKey: ['lsm-status', project.id] });
       setApiKeyInput('');
     },
     onError: (err: any) => message.error(err?.message || 'Failed to save API key'),
@@ -153,7 +153,7 @@ export default function SettingsSection({ project }: SettingsSectionProps) {
   const handleDownloadPlugin = async () => {
     setDownloadingPlugin(true);
     try {
-      const response = await api.rmb.downloadPlugin(project.id);
+      const response = await api.lsm.downloadPlugin(project.id);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;

@@ -63,26 +63,26 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
   const queryClient = useQueryClient();
   const [ssoLoading, setSsoLoading] = useState(false);
 
-  // Check RMB status
-  const { data: rmbStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
-    queryKey: ['rmb-status', project.id],
-    queryFn: () => api.rmb.getStatus(project.id).then(r => r.data),
+  // Check LSM status
+  const { data: lsmStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
+    queryKey: ['lsm-status', project.id],
+    queryFn: () => api.lsm.getStatus(project.id).then(r => r.data),
     enabled: open && !!project.health_check_secret,
   });
 
   // Get health data
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
-    queryKey: ['rmb-health', project.id],
-    queryFn: () => api.rmb.getHealth(project.id).then(r => r.data),
-    enabled: open && !!project.health_check_secret && rmbStatus?.connected,
+    queryKey: ['lsm-health', project.id],
+    queryFn: () => api.lsm.getHealth(project.id).then(r => r.data),
+    enabled: open && !!project.health_check_secret && lsmStatus?.connected,
     staleTime: 30000,
   });
 
   // Get available updates
   const { data: updates, isLoading: updatesLoading, refetch: refetchUpdates } = useQuery({
-    queryKey: ['rmb-updates', project.id],
-    queryFn: () => api.rmb.getUpdates(project.id).then(r => r.data),
-    enabled: open && !!project.health_check_secret && rmbStatus?.connected,
+    queryKey: ['lsm-updates', project.id],
+    queryFn: () => api.lsm.getUpdates(project.id).then(r => r.data),
+    enabled: open && !!project.health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
   });
 
@@ -90,7 +90,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
   const handleSsoLogin = async () => {
     setSsoLoading(true);
     try {
-      const response = await api.rmb.generateLoginToken(project.id);
+      const response = await api.lsm.generateLoginToken(project.id);
       if (response.data.success && response.data.login_url) {
         window.open(response.data.login_url, '_blank');
         message.success('Opening WordPress admin...');
@@ -106,7 +106,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
 
   // Mutations
   const clearCacheMutation = useMutation({
-    mutationFn: () => api.rmb.clearCache(project.id),
+    mutationFn: () => api.lsm.clearCache(project.id),
     onSuccess: (response) => {
       const cleared = response.data.cleared?.length || 0;
       message.success(`Cleared ${cleared} cache type(s)`);
@@ -115,7 +115,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
   });
 
   const optimizeDbMutation = useMutation({
-    mutationFn: () => api.rmb.optimizeDatabase(project.id),
+    mutationFn: () => api.lsm.optimizeDatabase(project.id),
     onSuccess: (response) => {
       message.success(`Optimized ${response.data.tables_count || 0} tables`);
     },
@@ -123,13 +123,13 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
   });
 
   const flushRewriteMutation = useMutation({
-    mutationFn: () => api.rmb.flushRewrite(project.id),
+    mutationFn: () => api.lsm.flushRewrite(project.id),
     onSuccess: () => message.success('Rewrite rules flushed'),
     onError: () => message.error('Failed to flush rewrite rules'),
   });
 
   const updateAllPluginsMutation = useMutation({
-    mutationFn: () => api.rmb.updateAllPlugins(project.id),
+    mutationFn: () => api.lsm.updateAllPlugins(project.id),
     onSuccess: (response) => {
       message.success(`Updated ${response.data.updated_count || 0} plugin(s)`);
       refetchUpdates();
@@ -140,7 +140,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
   });
 
   const updateCoreMutation = useMutation({
-    mutationFn: () => api.rmb.updateCore(project.id),
+    mutationFn: () => api.lsm.updateCore(project.id),
     onSuccess: () => {
       message.success('WordPress core updated');
       refetchUpdates();
@@ -150,19 +150,19 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
   });
 
   const enableMaintenanceMutation = useMutation({
-    mutationFn: () => api.rmb.enableMaintenance(project.id),
+    mutationFn: () => api.lsm.enableMaintenance(project.id),
     onSuccess: () => message.success('Maintenance mode enabled'),
     onError: () => message.error('Failed to enable maintenance mode'),
   });
 
   const disableMaintenanceMutation = useMutation({
-    mutationFn: () => api.rmb.disableMaintenance(project.id),
+    mutationFn: () => api.lsm.disableMaintenance(project.id),
     onSuccess: () => message.success('Maintenance mode disabled'),
     onError: () => message.error('Failed to disable maintenance mode'),
   });
 
   const disablePluginsMutation = useMutation({
-    mutationFn: () => api.rmb.disablePlugins(project.id),
+    mutationFn: () => api.lsm.disablePlugins(project.id),
     onSuccess: (response) => {
       message.warning(`Disabled ${response.data.disabled_count || 0} plugin(s)`);
     },
@@ -170,7 +170,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
   });
 
   const restorePluginsMutation = useMutation({
-    mutationFn: () => api.rmb.restorePlugins(project.id),
+    mutationFn: () => api.lsm.restorePlugins(project.id),
     onSuccess: (response) => {
       message.success(`Restored ${response.data.restored_count || 0} plugin(s)`);
     },
@@ -178,7 +178,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
   });
 
   const emergencyRecoveryMutation = useMutation({
-    mutationFn: () => api.rmb.emergencyRecovery(project.id),
+    mutationFn: () => api.lsm.emergencyRecovery(project.id),
     onSuccess: () => message.warning('Emergency recovery executed!'),
     onError: () => message.error('Failed to execute emergency recovery'),
   });
@@ -211,10 +211,10 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
       </Paragraph>
       <Space direction="vertical" size={16} style={{ width: '100%', maxWidth: 300 }}>
         <Button type="primary" size="large" icon={<RocketOutlined />} block>
-          Get RMB Plugin
+          Get LSM Plugin
         </Button>
         <Alert
-          message="After installation, copy the API key from WordPress → Settings → RMB, 
+          message="After installation, copy the API key from WordPress → Settings → LSM, 
           then paste it in this project's edit form under WordPress Integration."
           type="info"
           showIcon
@@ -238,7 +238,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
           <Col>
             <Space>
               <Badge status="success" />
-              <Text style={{ color: '#fff' }}>Connected to RMB v{rmbStatus?.plugin_version || '1.0.0'}</Text>
+              <Text style={{ color: '#fff' }}>Connected to LSM v{lsmStatus?.plugin_version || '1.0.0'}</Text>
             </Space>
             <div style={{ marginTop: 8 }}>
               <Title level={4} style={{ color: '#fff', margin: 0 }}>{project.name}</Title>
@@ -501,7 +501,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
 
           <Popconfirm
             title="Disable All Plugins?"
-            description="This will deactivate all plugins except RMB."
+            description="This will deactivate all plugins except LSM."
             onConfirm={() => disablePluginsMutation.mutate()}
             okText="Disable All"
             okButtonProps={{ danger: true }}
@@ -572,10 +572,10 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
         <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
           <Spin size="large" />
         </div>
-      ) : !rmbStatus?.connected ? (
+      ) : !lsmStatus?.connected ? (
         <Alert
           message="Cannot Connect to WordPress"
-          description={rmbStatus?.message || 'Failed to connect to the RMB plugin on this site. Check if the plugin is installed and API key is correct.'}
+          description={lsmStatus?.message || 'Failed to connect to the LSM plugin on this site. Check if the plugin is installed and API key is correct.'}
           type="error"
           showIcon
           style={{ margin: '24px 0' }}
