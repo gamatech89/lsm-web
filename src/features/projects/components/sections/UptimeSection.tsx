@@ -340,29 +340,29 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
             <Col xs={12} md={6}>
               <Statistic
                 title="SSL Status"
-                value={healthDetails.ssl?.enabled ? 'Valid' : 'Not Enabled'}
-                valueStyle={{ color: healthDetails.ssl?.enabled ? '#22c55e' : '#ef4444', fontSize: 16 }}
+                value={(healthDetails.data?.ssl?.enabled ?? healthDetails.ssl?.enabled) ? 'Valid' : 'Not Enabled'}
+                valueStyle={{ color: (healthDetails.data?.ssl?.enabled ?? healthDetails.ssl?.enabled) ? '#22c55e' : '#ef4444', fontSize: 16 }}
               />
             </Col>
             <Col xs={12} md={6}>
               <Statistic
                 title="PHP Version"
-                value={healthDetails.php?.version || project.php_version || 'Unknown'}
+                value={healthDetails.data?.php?.version || healthDetails.php?.version || project.php_version || 'Unknown'}
                 valueStyle={{ fontSize: 16 }}
               />
             </Col>
             <Col xs={12} md={6}>
               <Statistic
                 title="WordPress"
-                value={healthDetails.wordpress?.version || project.wp_version || 'Unknown'}
+                value={healthDetails.data?.wordpress?.version || healthDetails.wordpress?.version || project.wp_version || 'Unknown'}
                 valueStyle={{ fontSize: 16 }}
               />
             </Col>
             <Col xs={12} md={6}>
               <Statistic
                 title="Debug Mode"
-                value={healthDetails.security?.debug_mode ? 'Enabled' : 'Disabled'}
-                valueStyle={{ color: healthDetails.security?.debug_mode ? '#f59e0b' : '#22c55e', fontSize: 16 }}
+                value={(healthDetails.data?.wordpress?.debug_mode ?? healthDetails.security?.debug_mode) ? 'Enabled' : 'Disabled'}
+                valueStyle={{ color: (healthDetails.data?.wordpress?.debug_mode ?? healthDetails.security?.debug_mode) ? '#f59e0b' : '#22c55e', fontSize: 16 }}
               />
             </Col>
           </Row>
