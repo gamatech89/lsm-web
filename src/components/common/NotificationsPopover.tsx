@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button, Badge, Popover, List, Typography, Empty, Spin } from 'antd';
 import { BellOutlined, CheckCircleOutlined, InfoCircleOutlined, WarningOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,18 +16,30 @@ export function NotificationsPopover() {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
 
-  // Fetch unread count
+  // Fetch unread count (every 10s for near-real-time updates)
   const { data: unreadData } = useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: () => api.notifications.getUnreadCount().then(r => r.data),
-    refetchInterval: 30000,
+    refetchInterval: 10000,
   });
 
-  // Fetch notifications list
+  const unreadCount = unreadData?.data?.count || 0;
+  const prevUnreadRef = useRef(unreadCount);
+
+  // Auto-refresh notification list when unread count changes
+  useEffect(() => {
+    if (unreadCount !== prevUnreadRef.current) {
+      prevUnreadRef.current = unreadCount;
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] });
+    }
+  }, [unreadCount, queryClient]);
+
+  // Fetch notifications list (also refetch when popover opens)
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ['notifications', 'list'],
     queryFn: () => api.notifications.list().then(r => r.data),
-    enabled: open, // Only fetch when open
+    enabled: open,
+    refetchInterval: open ? 10000 : false,
   });
 
   // Mark as read mutation
@@ -69,7 +81,6 @@ export function NotificationsPopover() {
   };
 
   const notifications = notificationsData?.data?.data || [];
-  const unreadCount = unreadData?.data?.count || 0;
 
   const content = (
     <div style={{ width: 350, maxHeight: 400, display: 'flex', flexDirection: 'column' }}>
