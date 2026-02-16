@@ -473,6 +473,14 @@ export function createLsmApi(client: AxiosInstance) {
       client.get<{ success: boolean; data: any }>(
         `${basePath(projectId)}/security-scans/stats`
       ),
+
+    /**
+     * Delete a security scan
+     */
+    deleteSecurityScan: (projectId: number, scanId: number) =>
+      client.delete<{ success: boolean; message: string }>(
+        `${basePath(projectId)}/security-scans/${scanId}`
+      ),
   };
 }
 

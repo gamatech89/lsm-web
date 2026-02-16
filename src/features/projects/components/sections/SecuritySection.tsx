@@ -31,6 +31,7 @@ import {
   Table,
   Collapse,
   Badge,
+  Popconfirm,
 } from 'antd';
 import {
   SafetyOutlined,
@@ -57,6 +58,7 @@ import {
   DatabaseOutlined,
   FolderOutlined,
   KeyOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -149,6 +151,19 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
     },
     onError: (error: any) => {
       message.error(error?.response?.data?.message || 'Scan failed. Ensure the site is reachable.');
+    },
+  });
+
+  // Delete scan mutation
+  const deleteScanMutation = useMutation({
+    mutationFn: (scanId: number) => api.lsm.deleteSecurityScan(project.id, scanId),
+    onSuccess: () => {
+      message.success('Scan deleted');
+      queryClient.invalidateQueries({ queryKey: ['security-scans', project.id] });
+      queryClient.invalidateQueries({ queryKey: ['security-scan-latest', project.id] });
+    },
+    onError: () => {
+      message.error('Failed to delete scan');
     },
   });
 
@@ -514,7 +529,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
             )}
 
             {/* Scan History */}
-            {scanHistory && scanHistory.length > 1 && (
+            {scanHistory && scanHistory.length > 0 && (
               <div style={{ marginTop: 12 }}>
                 <Divider style={{ margin: '12px 0' }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -526,6 +541,65 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
                   dataSource={scanHistory}
                   rowKey="id"
                   pagination={false}
+                  expandable={{
+                    expandedRowRender: (record: any) => {
+                      const findings = record.results?.findings;
+                      const modules = record.results?.modules;
+                      const details = findings || modules;
+                      if (!details || Object.keys(details).length === 0) {
+                        return <Text type="secondary" style={{ fontSize: 12 }}>No detailed findings available for this scan.</Text>;
+                      }
+                      return (
+                        <div style={{ padding: '4px 0' }}>
+                          {Object.entries(details).map(([module, data]: [string, any]) => {
+                            const issues = data.issues || [];
+                            const moduleName = module.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+                            return (
+                              <div key={module} style={{ marginBottom: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                  {getModuleIcon(module)}
+                                  <Text strong style={{ fontSize: 12 }}>{moduleName}</Text>
+                                  {issues.length > 0 ? (
+                                    <Badge count={issues.length} style={{ backgroundColor: issues.some((i: any) => i.severity === 'critical') ? '#ef4444' : '#f59e0b' }} />
+                                  ) : (
+                                    <Tag color="green" style={{ fontSize: 10 }}>Clean</Tag>
+                                  )}
+                                </div>
+                                {issues.length > 0 && (
+                                  <List
+                                    size="small"
+                                    style={{ marginLeft: 24 }}
+                                    dataSource={issues}
+                                    renderItem={(issue: any) => (
+                                      <List.Item style={{ padding: '4px 0', borderBottom: 'none' }}>
+                                        <Space size={6}>
+                                          <Tag
+                                            color={issue.severity === 'critical' ? 'red' : issue.severity === 'high' ? 'orange' : 'gold'}
+                                            style={{ fontSize: 10 }}
+                                          >
+                                            {issue.severity}
+                                          </Tag>
+                                          <Text style={{ fontSize: 12 }}>{issue.description || issue.message}</Text>
+                                          {issue.file && (
+                                            <Text code style={{ fontSize: 10, wordBreak: 'break-all' }}>{issue.file}</Text>
+                                          )}
+                                        </Space>
+                                      </List.Item>
+                                    )}
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    },
+                    rowExpandable: (record: any) => (
+                      (record.threats_found > 0 || record.warnings_found > 0) ||
+                      (record.results?.findings && Object.keys(record.results.findings).length > 0) ||
+                      (record.results?.modules && Object.keys(record.results.modules).length > 0)
+                    ),
+                  }}
                   columns={[
                     {
                       title: 'Date',
@@ -566,7 +640,28 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
                       title: 'By',
                       dataIndex: 'triggered_by',
                       render: (v: string) => <Tag style={{ fontSize: 11 }}>{v}</Tag>,
-                      width: 90,
+                      width: 70,
+                    },
+                    {
+                      title: '',
+                      key: 'actions',
+                      width: 40,
+                      render: (_: any, record: any) => (
+                        <Popconfirm
+                          title="Delete this scan?"
+                          onConfirm={() => deleteScanMutation.mutate(record.id)}
+                          okText="Delete"
+                          cancelText="Cancel"
+                        >
+                          <Button
+                            type="text"
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                            loading={deleteScanMutation.isPending}
+                          />
+                        </Popconfirm>
+                      ),
                     },
                   ]}
                 />
