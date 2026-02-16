@@ -53,6 +53,19 @@ export function OverviewSection({
 }: OverviewSectionProps) {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
+  const { message } = App.useApp();
+  const queryClient = useQueryClient();
+
+  // Re-sync (health check)
+  const resyncMutation = useMutation({
+    mutationFn: () => apiClient.post(`/projects/${project.id}/check-health`),
+    onSuccess: () => {
+      message.success('Project synced successfully');
+      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: ['lsm-health', project.id] });
+    },
+    onError: () => message.error('Failed to sync project'),
+  });
 
   const healthConfig = getHealthStatusConfig(project.health_status);
   const securityConfig = getSecurityStatusConfig(project.security_status);
@@ -214,7 +227,11 @@ export function OverviewSection({
                 WP Admin Login
               </Button>
             )}
-            <Button icon={<SyncOutlined />}>
+            <Button
+              icon={<SyncOutlined spin={resyncMutation.isPending} />}
+              onClick={() => resyncMutation.mutate()}
+              loading={resyncMutation.isPending}
+            >
               Re-sync
             </Button>
           </Space>

@@ -27,9 +27,11 @@ export function createMaintenanceReportsApi(client: AxiosInstance) {
     get: (reportId: number): Promise<AxiosResponse<ApiResponse<MaintenanceReport>>> =>
       client.get(`/maintenance-reports/${reportId}`),
 
-    // Create uses nested route
-    create: (projectId: number, data: CreateMaintenanceReportRequest): Promise<AxiosResponse<ApiResponse<MaintenanceReport>>> =>
-      client.post(`/projects/${projectId}/maintenance-reports`, data),
+    // Create uses nested route - accepts JSON or FormData (for PDF upload)
+    create: (projectId: number, data: CreateMaintenanceReportRequest | FormData): Promise<AxiosResponse<ApiResponse<MaintenanceReport>>> =>
+      client.post(`/projects/${projectId}/maintenance-reports`, data, 
+        data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined
+      ),
 
     // Update uses shallow route (no project prefix)
     update: (reportId: number, data: Partial<CreateMaintenanceReportRequest>): Promise<AxiosResponse<ApiResponse<MaintenanceReport>>> =>

@@ -191,6 +191,18 @@ export function ProjectSubNav({
       type: 'group',
       children: expandedGroups.includes('wordpress') ? [
         {
+          key: 'security',
+          icon: <SafetyOutlined />,
+          label: withBadge('Security', counts.vulnerabilities, '#ef4444'),
+          disabled: !hasLsmConnection,
+        },
+        {
+          key: 'maintenance',
+          icon: <ToolOutlined />,
+          label: 'Maintenance',
+          disabled: !hasLsmConnection,
+        },
+        {
           key: 'plugins',
           icon: <AppstoreOutlined />,
           label: withBadge('Plugins', counts.plugins, '#f59e0b'),
@@ -203,33 +215,15 @@ export function ProjectSubNav({
           disabled: !hasLsmConnection,
         },
         {
-          key: 'core',
-          icon: <DesktopOutlined />,
-          label: withBadge('Core', counts.core, '#f59e0b'),
-          disabled: !hasLsmConnection,
-        },
-        {
           key: 'backups',
           icon: <CloudOutlined />,
           label: 'Backups',
           disabled: !hasLsmConnection,
         },
         {
-          key: 'security',
-          icon: <SafetyOutlined />,
-          label: withBadge('Security', counts.vulnerabilities, '#ef4444'),
-          disabled: !hasLsmConnection,
-        },
-        {
           key: 'issues',
           icon: <BugOutlined />,
           label: withBadge('PHP Errors', counts.issues, '#ef4444'),
-          disabled: !hasLsmConnection,
-        },
-        {
-          key: 'maintenance',
-          icon: <ToolOutlined />,
-          label: 'Maintenance',
           disabled: !hasLsmConnection,
         },
         {

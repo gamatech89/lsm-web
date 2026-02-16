@@ -28,6 +28,9 @@ import {
   Tooltip,
   Modal,
   Tabs,
+  Table,
+  Collapse,
+  Badge,
 } from 'antd';
 import {
   SafetyOutlined,
@@ -47,6 +50,13 @@ import {
   InfoCircleOutlined,
   CodeOutlined,
   CopyOutlined,
+  SecurityScanOutlined,
+  ThunderboltOutlined,
+  HistoryOutlined,
+  FileSearchOutlined,
+  DatabaseOutlined,
+  FolderOutlined,
+  KeyOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -73,6 +83,8 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
   const queryClient = useQueryClient();
   const hasLsmConnection = !!project.health_check_secret;
   const [updatingSetting, setUpdatingSetting] = useState<string | null>(null);
+  const [scanDetailsOpen, setScanDetailsOpen] = useState(false);
+  const [selectedScan, setSelectedScan] = useState<any>(null);
 
   // Fetch health data
   const { data: healthData, isLoading, refetch } = useQuery({
@@ -107,6 +119,37 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
     queryFn: () => api.lsm.getSecurityHeaderSnippets(project.id).then(r => r.data?.data || r.data),
     enabled: hasLsmConnection && snippetModalOpen,
     staleTime: 300000, // Cache for 5 minutes
+  });
+
+  // Fetch latest security scan
+  const { data: latestScan, isLoading: isLoadingScan, refetch: refetchScan } = useQuery({
+    queryKey: ['security-scan-latest', project.id],
+    queryFn: () => api.lsm.getLatestScan(project.id).then(r => r.data?.data || r.data),
+    enabled: hasLsmConnection,
+    staleTime: 60000,
+  });
+
+  // Fetch scan history
+  const { data: scanHistory, isLoading: isLoadingHistory } = useQuery({
+    queryKey: ['security-scans', project.id],
+    queryFn: () => api.lsm.getSecurityScans(project.id, 10).then(r => r.data?.data || r.data),
+    enabled: hasLsmConnection,
+    staleTime: 60000,
+  });
+
+  // Trigger scan mutation
+  const scanMutation = useMutation({
+    mutationFn: ({ scanType }: { scanType: 'full' | 'quick' }) =>
+      api.lsm.triggerSecurityScan(project.id, scanType),
+    onSuccess: () => {
+      message.success('Security scan completed!');
+      refetchScan();
+      queryClient.invalidateQueries({ queryKey: ['security-scans', project.id] });
+      queryClient.invalidateQueries({ queryKey: ['security-scan-latest', project.id] });
+    },
+    onError: (error: any) => {
+      message.error(error?.response?.data?.message || 'Scan failed. Ensure the site is reachable.');
+    },
   });
 
   // Update security setting mutation
@@ -152,44 +195,49 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
     );
   }
 
-  const security = healthData?.security;
   const ssl = healthData?.ssl;
   const plugins = healthData?.plugins;
 
-  // Build security checks
+  // Detect active security plugins from the plugins list
+  const securityPluginNames = ['wordfence', 'sucuri', 'ithemes-security', 'better-wp-security', 'all-in-one-wp-security', 'jetpack', 'solid-security'];
+  const activeSecurityPlugin = plugins?.list?.find(
+    (p: any) => p.active && securityPluginNames.some(name => p.name?.toLowerCase().includes(name))
+  );
+
+  // Build security checks using correct data sources
   const securityChecks: SecurityCheck[] = [
     {
       key: 'ssl',
       label: 'SSL Certificate',
-      description: 'Site is secured with HTTPS',
+      description: ssl?.enabled ? 'Site is secured with HTTPS' : 'Site is not using HTTPS',
       status: ssl?.enabled ? 'pass' : 'fail',
       recommendation: !ssl?.enabled ? 'Enable SSL to encrypt data in transit' : undefined,
     },
     {
       key: 'debug',
       label: 'Debug Mode',
-      description: 'WordPress debug mode is disabled',
-      status: security?.debug_mode ? 'fail' : 'pass',
-      recommendation: security?.debug_mode ? 'Disable WP_DEBUG in production' : undefined,
+      description: securitySettings?.debug_enabled ? 'Debug mode is enabled in production' : 'Debug mode is disabled',
+      status: securitySettings?.debug_enabled ? 'fail' : 'pass',
+      recommendation: securitySettings?.debug_enabled ? 'Disable WP_DEBUG in production' : undefined,
     },
     {
       key: 'file_editing',
       label: 'File Editing',
-      description: 'Plugin/theme file editing is disabled',
-      status: security?.file_editing ? 'warning' : 'pass',
-      recommendation: security?.file_editing ? 'Add DISALLOW_FILE_EDIT to wp-config.php' : undefined,
+      description: securitySettings?.file_editing_disabled ? 'Plugin/theme file editing is disabled' : 'Plugin/theme file editing is enabled',
+      status: securitySettings?.file_editing_disabled ? 'pass' : 'warning',
+      recommendation: !securitySettings?.file_editing_disabled ? 'Add DISALLOW_FILE_EDIT to wp-config.php' : undefined,
     },
     {
-      key: 'wordfence',
+      key: 'security_plugin',
       label: 'Security Plugin',
-      description: 'Wordfence security plugin is active',
-      status: security?.wordfence_active ? 'pass' : 'warning',
-      recommendation: !security?.wordfence_active ? 'Consider installing a security plugin' : undefined,
+      description: activeSecurityPlugin ? `${activeSecurityPlugin.name} is active` : 'No security plugin detected',
+      status: activeSecurityPlugin ? 'pass' : 'warning',
+      recommendation: !activeSecurityPlugin ? 'Consider installing a security plugin like Wordfence' : undefined,
     },
     {
       key: 'outdated_plugins',
       label: 'Plugin Updates',
-      description: 'All plugins are up to date',
+      description: plugins?.outdated_count > 0 ? `${plugins.outdated_count} plugin(s) need updating` : 'All plugins are up to date',
       status: plugins?.outdated_count > 0 ? (plugins.outdated_count > 3 ? 'fail' : 'warning') : 'pass',
       recommendation: plugins?.outdated_count > 0 ? `Update ${plugins.outdated_count} outdated plugin(s)` : undefined,
     },
@@ -237,6 +285,46 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
     }
   };
 
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case 'critical': return '#ef4444';
+      case 'high': return '#f97316';
+      case 'medium': return '#f59e0b';
+      case 'low': return '#22c55e';
+      case 'clean': return '#22c55e';
+      default: return '#94a3b8';
+    }
+  };
+
+  const getRiskTag = (risk: string) => {
+    const colorMap: Record<string, string> = {
+      critical: 'red',
+      high: 'orange',
+      medium: 'gold',
+      low: 'green',
+      clean: 'green',
+    };
+    const labelMap: Record<string, string> = {
+      critical: '🔴 Critical',
+      high: '🟠 High Risk',
+      medium: '🟡 Medium',
+      low: '🟢 Low Risk',
+      clean: '✅ Clean',
+    };
+    return <Tag color={colorMap[risk] || 'default'}>{labelMap[risk] || risk}</Tag>;
+  };
+
+  const getModuleIcon = (module: string) => {
+    switch (module) {
+      case 'core_integrity': return <SafetyOutlined />;
+      case 'malware_signatures': return <BugOutlined />;
+      case 'suspicious_files': return <FileSearchOutlined />;
+      case 'database_anomalies': return <DatabaseOutlined />;
+      case 'file_permissions': return <KeyOutlined />;
+      default: return <FolderOutlined />;
+    }
+  };
+
   return (
     <div style={{ padding: '24px 0' }}>
       {/* Header */}
@@ -258,6 +346,245 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
           icon={<WarningOutlined />}
         />
       )}
+
+      {/* Malware Scanner Card */}
+      <Card
+        title={
+          <Space>
+            <SecurityScanOutlined style={{ color: '#8b5cf6' }} />
+            <span>Malware Scanner</span>
+            {latestScan?.risk_level && getRiskTag(latestScan.risk_level)}
+          </Space>
+        }
+        extra={
+          <Space>
+            <Button
+              icon={<ThunderboltOutlined />}
+              size="small"
+              onClick={() => scanMutation.mutate({ scanType: 'quick' })}
+              loading={scanMutation.isPending && scanMutation.variables?.scanType === 'quick'}
+              disabled={scanMutation.isPending}
+            >
+              Quick Scan
+            </Button>
+            <Button
+              type="primary"
+              icon={<SecurityScanOutlined />}
+              size="small"
+              onClick={() => scanMutation.mutate({ scanType: 'full' })}
+              loading={scanMutation.isPending && scanMutation.variables?.scanType === 'full'}
+              disabled={scanMutation.isPending}
+              style={{ background: '#8b5cf6', borderColor: '#8b5cf6' }}
+            >
+              Full Scan
+            </Button>
+          </Space>
+        }
+        style={{
+          borderRadius: 12,
+          background: isDark ? '#1e293b' : '#fff',
+          marginBottom: 16,
+        }}
+      >
+        {scanMutation.isPending ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16 }}>
+              <Text type="secondary">Scanning files for malware and vulnerabilities...</Text>
+            </div>
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>This may take 1-2 minutes</Text>
+            </div>
+          </div>
+        ) : isLoadingScan ? (
+          <Spin />
+        ) : latestScan ? (
+          <div>
+            {/* Latest scan summary */}
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              <Col xs={12} sm={6}>
+                <div style={{
+                  textAlign: 'center',
+                  padding: 12,
+                  borderRadius: 8,
+                  background: isDark ? '#0f172a' : '#f8fafc',
+                }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: getRiskColor(latestScan.risk_level) }}>
+                    {latestScan.threats_found}
+                  </div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Threats</Text>
+                </div>
+              </Col>
+              <Col xs={12} sm={6}>
+                <div style={{
+                  textAlign: 'center',
+                  padding: 12,
+                  borderRadius: 8,
+                  background: isDark ? '#0f172a' : '#f8fafc',
+                }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: '#f59e0b' }}>
+                    {latestScan.warnings_found}
+                  </div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Warnings</Text>
+                </div>
+              </Col>
+              <Col xs={12} sm={6}>
+                <div style={{
+                  textAlign: 'center',
+                  padding: 12,
+                  borderRadius: 8,
+                  background: isDark ? '#0f172a' : '#f8fafc',
+                }}>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>
+                    {latestScan.files_scanned}
+                  </div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Files Scanned</Text>
+                </div>
+              </Col>
+              <Col xs={12} sm={6}>
+                <div style={{
+                  textAlign: 'center',
+                  padding: 12,
+                  borderRadius: 8,
+                  background: isDark ? '#0f172a' : '#f8fafc',
+                }}>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>
+                    {latestScan.duration_seconds != null ? `${latestScan.duration_seconds}s` : 'N/A'}
+                  </div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Duration</Text>
+                </div>
+              </Col>
+            </Row>
+
+            {/* Last scan time */}
+            <div style={{ marginBottom: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Last scanned: {latestScan.completed_at ? new Date(latestScan.completed_at).toLocaleString() : 'N/A'}
+                {' · '}
+                Type: <Tag style={{ fontSize: 11 }}>{latestScan.scan_type}</Tag>
+              </Text>
+            </div>
+
+            {/* Scan findings details */}
+            {latestScan.results?.findings && Object.keys(latestScan.results.findings).length > 0 && (
+              <Collapse
+                size="small"
+                style={{ marginBottom: 12 }}
+                items={Object.entries(latestScan.results.findings).map(([module, data]: [string, any]) => ({
+                  key: module,
+                  label: (
+                    <Space>
+                      {getModuleIcon(module)}
+                      <span>{module.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                      {data.issues?.length > 0 ? (
+                        <Badge count={data.issues.length} style={{ backgroundColor: data.issues.some((i: any) => i.severity === 'critical') ? '#ef4444' : '#f59e0b' }} />
+                      ) : (
+                        <Tag color="green" style={{ fontSize: 11 }}>Clean</Tag>
+                      )}
+                    </Space>
+                  ),
+                  children: (
+                    <List
+                      size="small"
+                      dataSource={data.issues || []}
+                      locale={{ emptyText: 'No issues found' }}
+                      renderItem={(issue: any) => (
+                        <List.Item>
+                          <List.Item.Meta
+                            title={
+                              <Space>
+                                <Tag color={issue.severity === 'critical' ? 'red' : issue.severity === 'high' ? 'orange' : 'gold'}>
+                                  {issue.severity}
+                                </Tag>
+                                <Text style={{ fontSize: 13 }}>{issue.description || issue.message}</Text>
+                              </Space>
+                            }
+                            description={
+                              issue.file && (
+                                <Text code style={{ fontSize: 11, wordBreak: 'break-all' }}>{issue.file}</Text>
+                              )
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  ),
+                }))}
+              />
+            )}
+
+            {/* Scan History */}
+            {scanHistory && scanHistory.length > 1 && (
+              <div style={{ marginTop: 12 }}>
+                <Divider style={{ margin: '12px 0' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <HistoryOutlined style={{ color: '#94a3b8' }} />
+                  <Text strong style={{ fontSize: 13 }}>Scan History</Text>
+                </div>
+                <Table
+                  size="small"
+                  dataSource={scanHistory}
+                  rowKey="id"
+                  pagination={false}
+                  columns={[
+                    {
+                      title: 'Date',
+                      dataIndex: 'completed_at',
+                      render: (v: string) => v ? new Date(v).toLocaleDateString() : '—',
+                      width: 100,
+                    },
+                    {
+                      title: 'Type',
+                      dataIndex: 'scan_type',
+                      render: (v: string) => <Tag>{v}</Tag>,
+                      width: 80,
+                    },
+                    {
+                      title: 'Risk',
+                      dataIndex: 'risk_level',
+                      render: (v: string) => getRiskTag(v),
+                      width: 120,
+                    },
+                    {
+                      title: 'Threats',
+                      dataIndex: 'threats_found',
+                      width: 70,
+                      render: (v: number) => <Text style={{ color: v > 0 ? '#ef4444' : undefined }}>{v}</Text>,
+                    },
+                    {
+                      title: 'Warnings',
+                      dataIndex: 'warnings_found',
+                      width: 80,
+                      render: (v: number) => <Text style={{ color: v > 0 ? '#f59e0b' : undefined }}>{v}</Text>,
+                    },
+                    {
+                      title: 'Files',
+                      dataIndex: 'files_scanned',
+                      width: 60,
+                    },
+                    {
+                      title: 'By',
+                      dataIndex: 'triggered_by',
+                      render: (v: string) => <Tag style={{ fontSize: 11 }}>{v}</Tag>,
+                      width: 90,
+                    },
+                  ]}
+                />
+              </div>
+            )}
+          </div>
+        ) : (
+          <Empty
+            image={<SecurityScanOutlined style={{ fontSize: 40, color: '#94a3b8' }} />}
+            description={
+              <Space direction="vertical" size={4}>
+                <Text type="secondary">No scans yet</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>Run your first scan to check for malware and vulnerabilities</Text>
+              </Space>
+            }
+          />
+        )}
+      </Card>
 
       {/* Score Card */}
       <Card
@@ -530,8 +857,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
                 </div>
               </div>
               <Switch
-                checked={!security?.file_editing || securitySettings?.file_editing_disabled}
-                disabled={!security?.file_editing}
+                checked={securitySettings?.file_editing_disabled ?? false}
                 loading={updatingSetting === 'file_editing_disabled'}
                 onChange={(checked) => handleToggleSetting('file_editing_disabled', checked)}
               />

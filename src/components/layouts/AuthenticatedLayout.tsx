@@ -148,13 +148,12 @@ function useMenuItems(isCollapsed: boolean = false): ItemType[] {
     });
   }
 
-  if (canManageProjects) {
-    timeItems.push({
-      key: '/time/invoices',
-      icon: <DollarOutlined />,
-      label: <Link to="/time/invoices">{t('nav.invoices')}</Link>,
-    });
-  }
+  // Invoices - visible to all roles (developers see only their own)
+  timeItems.push({
+    key: '/time/invoices',
+    icon: <DollarOutlined />,
+    label: <Link to="/time/invoices">{t('nav.invoices')}</Link>,
+  });
 
   items.push({
     key: 'time-label',

@@ -22,6 +22,7 @@ import {
   WarningOutlined,
   ClockCircleOutlined,
   EditOutlined,
+  FilePdfOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '@/stores/theme';
@@ -104,9 +105,14 @@ export default function ReportsSection({ project }: ReportsSectionProps) {
       key: 'report',
       render: (_, record) => (
         <div>
-          <Text strong style={{ cursor: 'pointer' }} onClick={() => setViewingReport(record)}>
-            {formatDate(record.report_date)} - {record.type}
-          </Text>
+          <Space>
+            <Text strong style={{ cursor: 'pointer' }} onClick={() => setViewingReport(record)}>
+              {formatDate(record.report_date)} - {record.type}
+            </Text>
+            {(record as any).has_uploaded_pdf && (
+              <Tag icon={<FilePdfOutlined />} color="red" style={{ marginLeft: 4 }}>PDF</Tag>
+            )}
+          </Space>
           {record.summary && (
             <div>
               <Text type="secondary" style={{ fontSize: 12 }}>
@@ -320,12 +326,40 @@ export default function ReportsSection({ project }: ReportsSectionProps) {
                   {viewingReport.time_spent_minutes} minutes
                 </Tag>
               )}
+              {(viewingReport as any).has_uploaded_pdf && (
+                <Tag icon={<FilePdfOutlined />} color="red">Uploaded PDF</Tag>
+              )}
             </Space>
 
-            <Divider>Summary</Divider>
-            <Paragraph style={{ whiteSpace: 'pre-wrap' }}>
-              {viewingReport.summary || 'No summary provided.'}
-            </Paragraph>
+            {(viewingReport as any).has_uploaded_pdf && (
+              <>
+                <Divider>Uploaded Report</Divider>
+                <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                  <FilePdfOutlined style={{ fontSize: 48, color: '#ff4d4f', marginBottom: 12 }} />
+                  <div>
+                    <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                      This report was uploaded as a PDF file.
+                    </Text>
+                    <Button 
+                      type="primary" 
+                      icon={<DownloadOutlined />} 
+                      onClick={() => handleDownloadPdf(viewingReport.id)}
+                    >
+                      Download PDF Report
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {viewingReport.summary && (
+              <>
+                <Divider>Summary</Divider>
+                <Paragraph style={{ whiteSpace: 'pre-wrap' }}>
+                  {viewingReport.summary}
+                </Paragraph>
+              </>
+            )}
 
             {viewingReport.tasks_completed && viewingReport.tasks_completed.length > 0 && (
               <>

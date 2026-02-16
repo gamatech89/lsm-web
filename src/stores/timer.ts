@@ -11,6 +11,8 @@ export interface RunningTimer {
   id: number;
   project_id: number;
   project_name: string;
+  todo_id: number | null;
+  todo_name: string | null;
   description: string | null;
   started_at: string;
   is_billable: boolean;

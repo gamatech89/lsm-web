@@ -65,6 +65,7 @@ interface TimeEntry {
   is_billable: boolean;
   status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'paid';
   project?: { id: number; name: string };
+  todo?: { id: number; title: string; status: string } | null;
 }
 
 interface Project {
@@ -258,7 +259,14 @@ export function MyTimePage() {
       title: t('time.table.description'),
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string) => desc || <Text type="secondary">{t('time.table.noDescription')}</Text>,
+      render: (desc: string, record: TimeEntry) => (
+        <Space direction="vertical" size={0}>
+          {record.todo && (
+            <Tag color="blue" style={{ marginBottom: 2 }}>{record.todo.title}</Tag>
+          )}
+          {desc ? <Text>{desc}</Text> : <Text type="secondary">{t('time.table.noDescription')}</Text>}
+        </Space>
+      ),
     },
     {
       title: t('time.table.time'),

@@ -47,6 +47,7 @@ interface TimerResponse {
     started_at: string;
     is_billable: boolean;
     project?: { id: number; name: string; url: string };
+    todo?: { id: number; title: string; status: string } | null;
   } | null;
   message?: string;
 }
@@ -85,6 +86,7 @@ export function FloatingTimerWidget() {
   const [isMinimized, setIsMinimized] = useState(false);
 
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
+  const [selectedTodo, setSelectedTodo] = useState<number | null>(null);
   const [description, setDescription] = useState('');
 
   // Fetch current timer on mount
@@ -100,9 +102,16 @@ export function FloatingTimerWidget() {
     queryFn: () => api.timer.getProjects().then((r: { data: { success: boolean; data: ProjectItem[] } }) => r.data.data),
   });
 
+  // Fetch todos for selected project
+  const { data: todos } = useQuery({
+    queryKey: ['timer', 'todos', selectedProject],
+    queryFn: () => api.todos.listByProject(selectedProject!).then((r) => (r.data.data || []) as { id: number; title: string; status: string }[]),
+    enabled: !!selectedProject,
+  });
+
   // Start timer mutation
   const startMutation = useMutation({
-    mutationFn: (data: { project_id: number; description?: string }) =>
+    mutationFn: (data: { project_id: number; todo_id?: number; description?: string }) =>
       api.timer.start(data).then((r: { data: TimerResponse }) => r.data),
     onSuccess: (response: TimerResponse) => {
       if (response.data) {
@@ -111,6 +120,8 @@ export function FloatingTimerWidget() {
           id: entry.id,
           project_id: entry.project_id,
           project_name: entry.project?.name || 'Unknown',
+          todo_id: entry.todo?.id || null,
+          todo_name: entry.todo?.title || null,
           description: entry.description,
           started_at: entry.started_at,
           is_billable: entry.is_billable,
@@ -119,6 +130,7 @@ export function FloatingTimerWidget() {
         message.success('Timer started!');
       }
       setSelectedProject(null);
+      setSelectedTodo(null);
       setDescription('');
       setIsPopupOpen(false);
       queryClient.invalidateQueries({ queryKey: ['timer'] });
@@ -161,6 +173,8 @@ export function FloatingTimerWidget() {
         id: entry.id,
         project_id: entry.project_id,
         project_name: entry.project?.name || 'Unknown',
+        todo_id: entry.todo?.id || null,
+        todo_name: entry.todo?.title || null,
         description: entry.description,
         started_at: entry.started_at,
         is_billable: entry.is_billable,
@@ -213,8 +227,15 @@ export function FloatingTimerWidget() {
     }
     startMutation.mutate({
       project_id: selectedProject,
+      todo_id: selectedTodo || undefined,
       description: description || undefined,
     });
+  };
+
+  // Reset todo when project changes
+  const handleProjectChange = (projectId: number) => {
+    setSelectedProject(projectId);
+    setSelectedTodo(null);
   };
 
   // If timer is running, show running state
@@ -261,11 +282,16 @@ export function FloatingTimerWidget() {
             </Tooltip>
           </div>
 
-          {/* Project info */}
+          {/* Project & todo info */}
           <div style={styles.runningInfo}>
             <Tag color={BRAND.vibrantPurple} style={{ margin: 0 }}>
               {runningTimer.project_name}
             </Tag>
+            {runningTimer.todo_name && (
+              <Tag color="blue" style={{ margin: 0 }}>
+                {runningTimer.todo_name}
+              </Tag>
+            )}
             {runningTimer.description && (
               <Text style={styles.runningDesc} ellipsis>
                 {runningTimer.description}
@@ -337,7 +363,7 @@ export function FloatingTimerWidget() {
                 style={{ width: '100%', marginTop: 4 }}
                 size="large"
                 value={selectedProject}
-                onChange={setSelectedProject}
+                onChange={handleProjectChange}
                 options={projects?.map((p: ProjectItem) => ({ label: p.name, value: p.id })) || []}
                 loading={!projects}
                 showSearch
@@ -347,6 +373,27 @@ export function FloatingTimerWidget() {
                 }
               />
             </div>
+
+            {/* Todo selection (optional) */}
+            {selectedProject && (
+              <div>
+                <Text strong style={styles.label}>Task (optional)</Text>
+                <Select
+                  placeholder="Link to a task..."
+                  style={{ width: '100%', marginTop: 4 }}
+                  value={selectedTodo}
+                  onChange={setSelectedTodo}
+                  options={todos?.filter((t: { status: string }) => t.status !== 'done').map((t: { id: number; title: string }) => ({ label: t.title, value: t.id })) || []}
+                  loading={!todos && !!selectedProject}
+                  showSearch
+                  optionFilterProp="label"
+                  allowClear
+                  filterOption={(input, option) =>
+                    (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                  }
+                />
+              </div>
+            )}
 
             {/* Description */}
             <div>

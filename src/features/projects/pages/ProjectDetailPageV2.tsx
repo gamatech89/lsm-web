@@ -42,7 +42,7 @@ import {
   MoreOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api, apiClient } from '@/lib/api';
 import { getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
 import { useAuthStore, useIsAdmin, useCurrentUser } from '@/stores/auth';
@@ -162,6 +162,18 @@ export function ProjectDetailPageV2() {
       refetchRecoveryStatus();
     },
     onError: () => message.error('Failed to disable maintenance mode'),
+  });
+
+  // Re-sync (health check)
+  const resyncMutation = useMutation({
+    mutationFn: () => apiClient.post(`/projects/${projectId}/check-health`),
+    onSuccess: () => {
+      message.success('Project synced successfully');
+      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['lsm-status', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['lsm-health', projectId] });
+    },
+    onError: () => message.error('Failed to sync project'),
   });
 
   // Delete project
@@ -313,7 +325,14 @@ export function ProjectDetailPageV2() {
           {project.url && (
             <Button icon={<GlobalOutlined />} href={project.url} target="_blank" size="small" />
           )}
-          <Button icon={<SyncOutlined />} size="small">Re-sync</Button>
+          <Button
+            icon={<SyncOutlined spin={resyncMutation.isPending} />}
+            size="small"
+            onClick={() => resyncMutation.mutate()}
+            loading={resyncMutation.isPending}
+          >
+            Re-sync
+          </Button>
           {lsmStatus?.connected && (
             <Button type="primary" icon={<LoginOutlined />} onClick={handleSsoLogin} loading={ssoLoading} size="small">
               Admin

@@ -434,6 +434,45 @@ export function createLsmApi(client: AxiosInstance) {
           php: string;
         };
       }>(`${basePath(projectId)}/security-headers/snippets`),
+
+    // =========================================================================
+    // SECURITY SCANNING
+    // =========================================================================
+
+    /**
+     * Trigger a security scan on the WordPress site
+     */
+    triggerSecurityScan: (projectId: number, scanType: 'full' | 'quick' = 'full', modules?: string) =>
+      client.post<{ success: boolean; data: any }>(
+        `${basePath(projectId)}/security-scan`,
+        { scan_type: scanType, modules },
+        { timeout: 150000 } // 2.5 min timeout for scans
+      ),
+
+    /**
+     * Get security scan history for a project
+     */
+    getSecurityScans: (projectId: number, limit = 20) =>
+      client.get<{ success: boolean; data: any[] }>(
+        `${basePath(projectId)}/security-scans`,
+        { params: { limit } }
+      ),
+
+    /**
+     * Get the latest completed scan for a project
+     */
+    getLatestScan: (projectId: number) =>
+      client.get<{ success: boolean; data: any }>(
+        `${basePath(projectId)}/security-scans/latest`
+      ),
+
+    /**
+     * Get scan statistics for a project
+     */
+    getScanStats: (projectId: number) =>
+      client.get<{ success: boolean; data: any }>(
+        `${basePath(projectId)}/security-scans/stats`
+      ),
   };
 }
 

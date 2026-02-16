@@ -38,6 +38,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -65,6 +66,8 @@ export function InvoicesPage() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+  const user = useAuthStore((s) => s.user);
+  const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'manager';
 
   // State
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -221,7 +224,8 @@ export function InvoicesPage() {
         </Space>
       ),
     },
-    {
+    // Only show developer column for managers/admins
+    ...(isManagerOrAdmin ? [{
       title: t('invoices.table.developer'),
       key: 'user',
       render: (_: unknown, record: Invoice) => (
@@ -232,7 +236,7 @@ export function InvoicesPage() {
           <Text>{record?.user?.name || 'Unknown'}</Text>
         </Space>
       ),
-    },
+    }] : []),
     {
       title: t('invoices.table.period'),
       key: 'period',
@@ -286,7 +290,7 @@ export function InvoicesPage() {
           >
             {t('invoices.table.view')}
           </Button>
-          {record?.status === 'approved' && (
+          {isManagerOrAdmin && record?.status === 'approved' && (
             <Button
               type="primary"
               size="small"
@@ -349,14 +353,16 @@ export function InvoicesPage() {
               { label: t('invoices.filters.thisYear'), value: [dayjs().startOf('year'), dayjs().endOf('year')] },
             ]}
           />
-          <Select
-            placeholder={t('invoices.filters.allDevelopers')}
-            allowClear
-            style={{ width: 160 }}
-            value={developerFilter}
-            onChange={setDeveloperFilter}
-            options={developers.map((dev: { id: number; name: string }) => ({ label: dev.name, value: dev.id }))}
-          />
+          {isManagerOrAdmin && (
+            <Select
+              placeholder={t('invoices.filters.allDevelopers')}
+              allowClear
+              style={{ width: 160 }}
+              value={developerFilter}
+              onChange={setDeveloperFilter}
+              options={developers.map((dev: { id: number; name: string }) => ({ label: dev.name, value: dev.id }))}
+            />
+          )}
           <Select
             placeholder={t('invoices.filters.allStatus')}
             allowClear
@@ -464,7 +470,7 @@ export function InvoicesPage() {
               </Text>
               <Space>
                 <Button onClick={() => setDetailsOpen(false)}>{t('invoices.details.close')}</Button>
-                {invoiceDetails.status === 'pending' && (
+                {isManagerOrAdmin && invoiceDetails.status === 'pending' && (
                   <>
                     <Button
                       danger
@@ -484,7 +490,7 @@ export function InvoicesPage() {
                     </Button>
                   </>
                 )}
-                {invoiceDetails.status === 'approved' && (
+                {isManagerOrAdmin && invoiceDetails.status === 'approved' && (
                   <Button
                     type="primary"
                     icon={<DollarOutlined />}
