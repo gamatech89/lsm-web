@@ -25,11 +25,14 @@ import {
   Alert,
   Spin,
   DatePicker,
+  Input,
+  Form,
 } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   DollarOutlined,
+  DownloadOutlined,
   EyeOutlined,
   FileTextOutlined,
   UserOutlined,
@@ -37,8 +40,9 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
-import { api } from '@/lib/api';
+import { api, apiClient } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
+import { saveAs } from 'file-saver';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -75,6 +79,10 @@ export function InvoicesPage() {
   const [developerFilter, setDeveloperFilter] = useState<number | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pdfInvoice, setPdfInvoice] = useState<Invoice | null>(null);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
+  const [pdfForm] = Form.useForm();
 
   // Check if invoices API is available - but DON'T use early return (violates hooks rules)
   const invoicesApi = api?.invoices;
@@ -103,6 +111,41 @@ export function InvoicesPage() {
   const developers = invoicesData
     ? Array.from(new Map((invoicesData as Invoice[]).filter((inv: Invoice) => inv?.user).map((inv: Invoice) => [inv.user.id, inv.user])).values())
     : [];
+
+  // Open PDF download modal
+  const openPdfModal = (invoice: Invoice) => {
+    setPdfInvoice(invoice);
+    pdfForm.setFieldsValue({
+      invoiceNumber: invoice.invoice_number || '',
+      fromName: user?.billing_company_name || user?.name || '',
+    });
+    setPdfModalOpen(true);
+  };
+
+  // Download invoice PDF with custom parameters
+  const handleDownloadPdf = async (values: { invoiceNumber: string; fromName: string }) => {
+    if (!pdfInvoice) return;
+    setPdfDownloading(true);
+    try {
+      message.loading('Generating PDF...');
+      const response = await apiClient.get(`/invoices/${pdfInvoice.id}/download-pdf`, {
+        responseType: 'blob',
+        params: {
+          custom_invoice_number: values.invoiceNumber,
+          from_name: values.fromName,
+        },
+      });
+      saveAs(new Blob([response.data], { type: 'application/pdf' }), `${values.invoiceNumber}.pdf`);
+      message.destroy();
+      message.success('Invoice PDF downloaded');
+      setPdfModalOpen(false);
+    } catch {
+      message.destroy();
+      message.error('Failed to download invoice PDF');
+    } finally {
+      setPdfDownloading(false);
+    }
+  };
 
   // Export to CSV function
   const handleExportCSV = () => {
@@ -290,6 +333,13 @@ export function InvoicesPage() {
           >
             {t('invoices.table.view')}
           </Button>
+          <Button
+            size="small"
+            icon={<DownloadOutlined />}
+            onClick={() => openPdfModal(record)}
+          >
+            PDF
+          </Button>
           {isManagerOrAdmin && record?.status === 'approved' && (
             <Button
               type="primary"
@@ -470,6 +520,12 @@ export function InvoicesPage() {
               </Text>
               <Space>
                 <Button onClick={() => setDetailsOpen(false)}>{t('invoices.details.close')}</Button>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={() => openPdfModal(invoiceDetails)}
+                >
+                  Download PDF
+                </Button>
                 {isManagerOrAdmin && invoiceDetails.status === 'pending' && (
                   <>
                     <Button
@@ -575,6 +631,50 @@ export function InvoicesPage() {
             </Card>
           </>
         ) : null}
+      </Modal>
+
+      {/* PDF Download Modal */}
+      <Modal
+        title="Download Invoice PDF"
+        open={pdfModalOpen}
+        onCancel={() => setPdfModalOpen(false)}
+        footer={null}
+        width={480}
+      >
+        <Form
+          form={pdfForm}
+          layout="vertical"
+          onFinish={handleDownloadPdf}
+          style={{ marginTop: 16 }}
+        >
+          <Form.Item
+            name="invoiceNumber"
+            label="Invoice Number"
+            rules={[{ required: true, message: 'Please enter an invoice number' }]}
+          >
+            <Input placeholder="e.g. INV-2026-001" />
+          </Form.Item>
+          <Form.Item
+            name="fromName"
+            label="From (Company or Personal Name)"
+            rules={[{ required: true, message: 'Please enter a name' }]}
+          >
+            <Input placeholder="e.g. Bojan Markovic Consulting" />
+          </Form.Item>
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => setPdfModalOpen(false)}>Cancel</Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<DownloadOutlined />}
+                loading={pdfDownloading}
+              >
+                Download PDF
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );

@@ -28,6 +28,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '@/stores/theme';
 import { apiClient } from '@/lib/api';
 import { formatDate } from '@lsm/utils';
+import { saveAs } from 'file-saver';
 import type { ColumnsType } from 'antd/es/table';
 import { MaintenanceReportFormModal } from '../MaintenanceReportFormModal';
 import type { MaintenanceReport } from '@lsm/types';
@@ -73,13 +74,7 @@ export default function ReportsSection({ project }: ReportsSectionProps) {
       const response = await apiClient.get(`/maintenance-reports/${reportId}/pdf`, {
         responseType: 'blob',
       });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `maintenance-report-${project.name}-${reportId}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      saveAs(new Blob([response.data], { type: 'application/pdf' }), `maintenance-report-${project.name}-${reportId}.pdf`);
       message.destroy();
       message.success('PDF downloaded');
     } catch {

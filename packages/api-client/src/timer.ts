@@ -216,6 +216,9 @@ export function createInvoicesApi(client: AxiosInstance) {
     
     markAsPaid: (id: number) =>
       client.post<{ success: boolean; data: Invoice; message: string }>(`/invoices/${id}/mark-paid`),
+
+    downloadPdf: (id: number, params?: { custom_invoice_number?: string; from_name?: string }) =>
+      client.get<Blob>(`/invoices/${id}/download-pdf`, { responseType: 'blob', params }),
   };
 }
 

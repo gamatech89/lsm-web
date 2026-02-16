@@ -41,6 +41,11 @@ export interface User {
   email: string;
   role: UserRole;
   is_admin: boolean;
+  hourly_rate?: number;
+  billing_company_name?: string | null;
+  billing_address?: string | null;
+  billing_tax_id?: string | null;
+  invoice_prefix?: string | null;
   email_verified_at: string | null;
   created_at: string;
   updated_at: string;
@@ -432,4 +437,11 @@ export interface CreateUserRequest {
   password: string;
   role: UserRole;
   is_admin?: boolean;
+}
+
+export interface UpdateBillingRequest {
+  billing_company_name?: string | null;
+  billing_address?: string | null;
+  billing_tax_id?: string | null;
+  invoice_prefix?: string | null;
 }

@@ -22,26 +22,27 @@ import {
   MailOutlined,
   LockOutlined,
   SaveOutlined,
+  BankOutlined,
 } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/lib/api';
 
 const { Title, Text } = Typography;
+const { TextArea } = Input;
 
 export function ProfilePage() {
   const { message } = App.useApp();
   const { user, setUser } = useAuthStore();
   const [profileForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
+  const [billingForm] = Form.useForm();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: async (_data: { name: string; email: string }) => {
-      // This would call an update profile endpoint
-      // For now, we'll just fetch the current user
-      return api.auth.getUser();
+    mutationFn: async (data: { name: string; email: string }) => {
+      return api.auth.updateProfile(data);
     },
     onSuccess: (response) => {
       if (response.data.data) {
@@ -61,7 +62,6 @@ export function ProfilePage() {
       new_password: string;
       new_password_confirmation: string;
     }) => {
-      // This would call a change password endpoint
       return Promise.resolve({ success: true });
     },
     onSuccess: () => {
@@ -71,6 +71,27 @@ export function ProfilePage() {
     },
     onError: () => {
       message.error('Failed to change password');
+    },
+  });
+
+  // Update billing mutation
+  const updateBillingMutation = useMutation({
+    mutationFn: async (data: {
+      billing_company_name?: string;
+      billing_address?: string;
+      billing_tax_id?: string;
+      invoice_prefix?: string;
+    }) => {
+      return api.auth.updateBilling(data);
+    },
+    onSuccess: (response) => {
+      if (response.data.data) {
+        setUser(response.data.data);
+      }
+      message.success('Billing information updated successfully');
+    },
+    onError: () => {
+      message.error('Failed to update billing information');
     },
   });
 
@@ -86,9 +107,20 @@ export function ProfilePage() {
     changePasswordMutation.mutate(values);
   };
 
+  const handleBillingSubmit = (values: {
+    billing_company_name?: string;
+    billing_address?: string;
+    billing_tax_id?: string;
+    invoice_prefix?: string;
+  }) => {
+    updateBillingMutation.mutate(values);
+  };
+
   if (!user) {
     return null;
   }
+
+  const isDeveloper = user.role === 'developer';
 
   return (
     <div className="page-container">
@@ -150,7 +182,7 @@ export function ProfilePage() {
           </Card>
 
           {/* Password Change */}
-          <Card title="Change Password" style={{ borderRadius: 12 }}>
+          <Card title="Change Password" style={{ borderRadius: 12, marginBottom: 24 }}>
             {!showPasswordForm ? (
               <Button onClick={() => setShowPasswordForm(true)} icon={<LockOutlined />}>
                 Change Password
@@ -221,6 +253,87 @@ export function ProfilePage() {
               </Form>
             )}
           </Card>
+
+          {/* Billing Information - Developer only */}
+          {isDeveloper && (
+            <Card
+              title={
+                <Space>
+                  <BankOutlined />
+                  <span>Billing Information</span>
+                </Space>
+              }
+              style={{ borderRadius: 12 }}
+              extra={
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Used for generating invoice PDFs
+                </Text>
+              }
+            >
+              <Form
+                form={billingForm}
+                layout="vertical"
+                onFinish={handleBillingSubmit}
+                initialValues={{
+                  billing_company_name: user.billing_company_name || '',
+                  billing_address: user.billing_address || '',
+                  billing_tax_id: user.billing_tax_id || '',
+                  invoice_prefix: user.invoice_prefix || '',
+                }}
+              >
+                <Row gutter={16}>
+                  <Col span={16}>
+                    <Form.Item
+                      name="billing_company_name"
+                      label="Company / Business Name"
+                      tooltip="Appears as 'From' on your invoices"
+                    >
+                      <Input placeholder="e.g. John Doe Consulting" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item
+                      name="invoice_prefix"
+                      label="Invoice Prefix"
+                      tooltip="Custom prefix for your invoice numbers (e.g. GS → GS001/2026)"
+                    >
+                      <Input placeholder="e.g. GS" maxLength={10} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Form.Item
+                  name="billing_address"
+                  label="Billing Address"
+                  tooltip="Full address that appears on your invoices"
+                >
+                  <TextArea
+                    rows={3}
+                    placeholder={"Street Name 123\n12345 City, Country"}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="billing_tax_id"
+                  label="Tax ID / VAT Number"
+                  tooltip="Optional tax identification number"
+                >
+                  <Input placeholder="e.g. DE123456789" />
+                </Form.Item>
+
+                <Form.Item style={{ marginBottom: 0 }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    icon={<SaveOutlined />}
+                    loading={updateBillingMutation.isPending}
+                  >
+                    Save Billing Info
+                  </Button>
+                </Form.Item>
+              </Form>
+            </Card>
+          )}
         </Col>
 
         {/* Sidebar */}
@@ -244,6 +357,14 @@ export function ProfilePage() {
                   </Text>
                 </div>
               </div>
+              {user.hourly_rate && (
+                <div style={{ marginBottom: 8 }}>
+                  <Text type="secondary">Hourly Rate</Text>
+                  <div>
+                    <Text strong>${user.hourly_rate}/h</Text>
+                  </div>
+                </div>
+              )}
               <div>
                 <Text type="secondary">Member Since</Text>
                 <div>

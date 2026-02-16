@@ -47,6 +47,12 @@ export function createAuthApi(client: AxiosInstance) {
      */
     resetPassword: (data: { token: string; email: string; password: string; password_confirmation: string }) =>
       client.post<ApiResponse<null>>('/reset-password', data),
+
+    updateProfile: (data: { name?: string; email?: string }) =>
+      client.put<ApiResponse<User>>('/user/profile', data),
+
+    updateBilling: (data: { billing_company_name?: string | null; billing_address?: string | null; billing_tax_id?: string | null; invoice_prefix?: string | null }) =>
+      client.put<ApiResponse<User>>('/user/billing', data),
   };
 }
 

@@ -257,7 +257,7 @@ export function TeamPage() {
       email: user.email,
       role: user.role,
       is_admin: user.is_admin,
-      hourly_rate: (user as any).hourly_rate ?? 22,
+      hourly_rate: (user as any).hourly_rate ?? 22.5,
       tag_ids: (user as any).tags?.map((tag: any) => tag.id) || [],
     });
     setShowModal(true);
@@ -588,7 +588,7 @@ export function TeamPage() {
           <Form.Item
             name="hourly_rate"
             label={t('team.form.hourlyRate')}
-            initialValue={22}
+            initialValue={22.5}
             rules={[{ required: true, message: t('team.form.hourlyRatePlaceholder') }]}
           >
             <InputNumber 
