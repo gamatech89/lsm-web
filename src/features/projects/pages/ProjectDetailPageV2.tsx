@@ -62,6 +62,7 @@ import ReportsSection from '../components/sections/ReportsSection';
 import TodosSection from '../components/sections/TodosSection';
 import ResourcesSection from '../components/sections/ResourcesSection';
 import MaintenanceSection from '../components/sections/MaintenanceSection';
+import CredentialsSection from '../components/sections/CredentialsSection';
 
 // Import existing tab components for reuse
 import { TodoFormModal } from '../components/TodoFormModal';
@@ -188,6 +189,7 @@ export function ProjectDetailPageV2() {
   // Permission checks
   const canEdit = isAdmin || (currentUser?.role === 'manager' && (project.manager_id === currentUser?.id || project.managers?.some(m => m.id === currentUser?.id)));
   const canDelete = isAdmin; // Only admins can delete
+  const canManageCredentials = isAdmin || currentUser?.role === 'manager';
 
   const healthConfig = getHealthStatusConfig(project.health_status);
   const securityConfig = getSecurityStatusConfig(project.security_status);
@@ -239,6 +241,8 @@ export function ProjectDetailPageV2() {
         return <MaintenanceSection {...commonProps} />;
       case 'settings':
         return <SettingsSection {...commonProps} />;
+      case 'credentials':
+        return <CredentialsSection {...commonProps} />;
       default:
         return <OverviewSection {...commonProps} lsmStatus={lsmStatus} recoveryStatus={recoveryStatus} onSsoLogin={handleSsoLogin} ssoLoading={ssoLoading} />;
     }
@@ -361,6 +365,7 @@ export function ProjectDetailPageV2() {
               resources: resourcesCount,
             }}
             hasLsmConnection={!!project.health_check_secret && lsmStatus?.connected}
+            canManageCredentials={canManageCredentials}
           />
         </div>
 

@@ -27,6 +27,7 @@ import {
   DownOutlined,
   ToolOutlined,
   HistoryOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import { useThemeStore } from '@/stores/theme';
 import { ProjectSelector } from './ProjectSelector';
@@ -47,8 +48,10 @@ interface ProjectSubNavProps {
     issues?: number;
     todos?: number;
     resources?: number;
+    credentials?: number;
   };
   hasLsmConnection?: boolean;
+  canManageCredentials?: boolean;
 }
 
 export function ProjectSubNav({
@@ -57,6 +60,7 @@ export function ProjectSubNav({
   onSectionChange,
   counts = {},
   hasLsmConnection = false,
+  canManageCredentials = false,
 }: ProjectSubNavProps) {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
@@ -152,6 +156,11 @@ export function ProjectSubNav({
           icon: <CustomerServiceOutlined />,
           label: 'Support Tickets',
         },
+        ...(canManageCredentials ? [{
+          key: 'credentials',
+          icon: <LockOutlined />,
+          label: withBadge('Credentials', counts.credentials),
+        }] : []),
       ] : [],
     },
     
