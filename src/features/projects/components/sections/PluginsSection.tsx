@@ -103,7 +103,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
     // Create a map of update info by slug as fallback
     const updateMap = new Map<string, any>();
     for (const u of pluginUpdates) {
-      const slug = u.slug || u.plugin?.replace(/^.*\/|\.php$/g, '');
+      const slug = u.slug || u.plugin?.replace(/^.*\/|\.php$/g, '') || u.file?.replace(/^.*\/|\.php$/g, '');
       if (slug) updateMap.set(slug, u);
     }
 
