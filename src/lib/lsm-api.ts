@@ -161,16 +161,16 @@ export function createLsmApi(client: AxiosInstance) {
       client.get<any>(`${basePath(projectId)}/plugins`),
 
     /**
-     * Update a specific plugin
+     * Update a specific plugin (longer timeout for download + install)
      */
     updatePlugin: (projectId: number, slug: string) =>
-      client.post<any>(`${basePath(projectId)}/update-plugin`, { slug }),
+      client.post<any>(`${basePath(projectId)}/update-plugin`, { slug }, { timeout: 120000 }),
 
     /**
-     * Update all plugins
+     * Update all plugins (longer timeout for download + install)
      */
     updateAllPlugins: (projectId: number) =>
-      client.post<any>(`${basePath(projectId)}/update-all-plugins`),
+      client.post<any>(`${basePath(projectId)}/update-all-plugins`, {}, { timeout: 120000 }),
 
     /**
      * Activate a plugin
