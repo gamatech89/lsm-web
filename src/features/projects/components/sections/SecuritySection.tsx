@@ -141,7 +141,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
 
   // Trigger scan mutation
   const scanMutation = useMutation({
-    mutationFn: ({ scanType }: { scanType: 'full' | 'quick' }) =>
+    mutationFn: ({ scanType }: { scanType: 'full' | 'standard' | 'quick' }) =>
       api.lsm.triggerSecurityScan(project.id, scanType),
     onSuccess: () => {
       message.success('Security scan completed!');
@@ -383,6 +383,16 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
               Quick Scan
             </Button>
             <Button
+              icon={<SecurityScanOutlined />}
+              size="small"
+              onClick={() => scanMutation.mutate({ scanType: 'standard' })}
+              loading={scanMutation.isPending && scanMutation.variables?.scanType === 'standard'}
+              disabled={scanMutation.isPending}
+              style={{ background: '#3b82f6', borderColor: '#3b82f6', color: '#fff' }}
+            >
+              Standard Scan
+            </Button>
+            <Button
               type="primary"
               icon={<SecurityScanOutlined />}
               size="small"
@@ -408,7 +418,13 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
               <Text type="secondary">Scanning files for malware and vulnerabilities...</Text>
             </div>
             <div style={{ marginTop: 8 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>This may take 1-2 minutes</Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {scanMutation.variables?.scanType === 'quick'
+                  ? 'This should take about 30 seconds'
+                  : scanMutation.variables?.scanType === 'standard'
+                    ? 'This may take 1-2 minutes'
+                    : 'This may take up to 5 minutes'}
+              </Text>
             </div>
           </div>
         ) : isLoadingScan ? (
@@ -481,52 +497,75 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
             </div>
 
             {/* Scan findings details */}
-            {latestScan.results?.findings && Object.keys(latestScan.results.findings).length > 0 && (
-              <Collapse
-                size="small"
-                style={{ marginBottom: 12 }}
-                items={Object.entries(latestScan.results.findings).map(([module, data]: [string, any]) => ({
-                  key: module,
-                  label: (
-                    <Space>
-                      {getModuleIcon(module)}
-                      <span>{module.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                      {data.issues?.length > 0 ? (
-                        <Badge count={data.issues.length} style={{ backgroundColor: data.issues.some((i: any) => i.severity === 'critical') ? '#ef4444' : '#f59e0b' }} />
-                      ) : (
-                        <Tag color="green" style={{ fontSize: 11 }}>Clean</Tag>
-                      )}
-                    </Space>
-                  ),
-                  children: (
-                    <List
-                      size="small"
-                      dataSource={data.issues || []}
-                      locale={{ emptyText: 'No issues found' }}
-                      renderItem={(issue: any) => (
-                        <List.Item>
-                          <List.Item.Meta
-                            title={
-                              <Space>
-                                <Tag color={issue.severity === 'critical' ? 'red' : issue.severity === 'high' ? 'orange' : 'gold'}>
-                                  {issue.severity}
-                                </Tag>
-                                <Text style={{ fontSize: 13 }}>{issue.description || issue.message}</Text>
-                              </Space>
-                            }
-                            description={
-                              issue.file && (
-                                <Text code style={{ fontSize: 11, wordBreak: 'break-all' }}>{issue.file}</Text>
-                              )
-                            }
-                          />
-                        </List.Item>
-                      )}
-                    />
-                  ),
-                }))}
-              />
-            )}
+            {(() => {
+              const moduleData = latestScan.results?.results || latestScan.results?.findings;
+              if (!moduleData || typeof moduleData !== 'object' || Object.keys(moduleData).length === 0) return null;
+              return (
+                <Collapse
+                  size="small"
+                  style={{ marginBottom: 12 }}
+                  items={Object.entries(moduleData).map(([module, data]: [string, any]) => {
+                    // Extract items based on module type
+                    let items: any[] = [];
+                    if (module === 'core_integrity') {
+                      const unknown = (data.unknown_files || []).map((f: any) => ({ ...f, reason: 'Unknown file in WordPress core' }));
+                      const modified = (data.modified_files || []).map((f: any) => ({ ...f, reason: 'Modified core file' }));
+                      const missing = (data.missing_files || []).map((f: any) => ({ ...f, reason: 'Missing core file', severity: 'medium' }));
+                      items = [...unknown, ...modified, ...missing];
+                    } else {
+                      items = data.findings || data.issues || [];
+                    }
+                    return {
+                      key: module,
+                      label: (
+                        <Space>
+                          {getModuleIcon(module)}
+                          <span>{module.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                          {items.length > 0 ? (
+                            <Badge count={items.length} style={{ backgroundColor: items.some((i: any) => i.severity === 'critical' || i.severity === 'high') ? '#ef4444' : '#f59e0b' }} />
+                          ) : (
+                            <Tag color="green" style={{ fontSize: 11 }}>{data.status === 'clean' ? '✓ Clean' : 'No issues'}</Tag>
+                          )}
+                        </Space>
+                      ),
+                      children: (
+                        <List
+                          size="small"
+                          dataSource={items}
+                          locale={{ emptyText: 'No issues found' }}
+                          renderItem={(issue: any) => (
+                            <List.Item>
+                              <List.Item.Meta
+                                title={
+                                  <Space>
+                                    <Tag color={issue.severity === 'critical' ? 'red' : issue.severity === 'high' ? 'orange' : 'gold'}>
+                                      {issue.severity}
+                                    </Tag>
+                                    <Text style={{ fontSize: 13 }}>{issue.reason || issue.description || issue.message}</Text>
+                                  </Space>
+                                }
+                                description={
+                                  <Space direction="vertical" size={0}>
+                                    {issue.file && (
+                                      <Text code style={{ fontSize: 11, wordBreak: 'break-all' }}>{issue.file}</Text>
+                                    )}
+                                    {issue.current_permissions && (
+                                      <Text type="secondary" style={{ fontSize: 11 }}>
+                                        Permissions: {issue.current_permissions} → recommended: {issue.recommended}
+                                      </Text>
+                                    )}
+                                  </Space>
+                                }
+                              />
+                            </List.Item>
+                          )}
+                        />
+                      ),
+                    };
+                  })}
+                />
+              );
+            })()}
 
             {/* Scan History */}
             {scanHistory && scanHistory.length > 0 && (
@@ -543,50 +582,71 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
                   pagination={false}
                   expandable={{
                     expandedRowRender: (record: any) => {
-                      const findings = record.results?.findings;
-                      const modules = record.results?.modules;
-                      const details = findings || modules;
-                      if (!details || Object.keys(details).length === 0) {
+                      // Scan data is nested: results.results.{module}
+                      const moduleData = record.results?.results || record.results?.findings || record.results?.modules;
+                      if (!moduleData || typeof moduleData !== 'object' || Object.keys(moduleData).length === 0) {
                         return <Text type="secondary" style={{ fontSize: 12 }}>No detailed findings available for this scan.</Text>;
                       }
+
+                      // Extract all issues from each module into a flat list grouped by module
+                      const moduleEntries = Object.entries(moduleData).map(([moduleName, data]: [string, any]) => {
+                        // Different modules store findings differently
+                        let items: any[] = [];
+                        if (moduleName === 'core_integrity') {
+                          // core_integrity has: unknown_files, modified_files, missing_files
+                          const unknown = (data.unknown_files || []).map((f: any) => ({ ...f, reason: 'Unknown file in WordPress core', category: 'Unknown' }));
+                          const modified = (data.modified_files || []).map((f: any) => ({ ...f, reason: 'Modified core file', category: 'Modified' }));
+                          const missing = (data.missing_files || []).map((f: any) => ({ ...f, reason: 'Missing core file', severity: 'medium', category: 'Missing' }));
+                          items = [...unknown, ...modified, ...missing];
+                        } else {
+                          // suspicious_files & permissions use 'findings'
+                          items = data.findings || data.issues || [];
+                        }
+                        return { moduleName, data, items, status: data.status };
+                      });
+
                       return (
                         <div style={{ padding: '4px 0' }}>
-                          {Object.entries(details).map(([module, data]: [string, any]) => {
-                            const issues = data.issues || [];
-                            const moduleName = module.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+                          {moduleEntries.map(({ moduleName, items, status }) => {
+                            const label = moduleName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
                             return (
-                              <div key={module} style={{ marginBottom: 8 }}>
+                              <div key={moduleName} style={{ marginBottom: 12 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                                  {getModuleIcon(module)}
-                                  <Text strong style={{ fontSize: 12 }}>{moduleName}</Text>
-                                  {issues.length > 0 ? (
-                                    <Badge count={issues.length} style={{ backgroundColor: issues.some((i: any) => i.severity === 'critical') ? '#ef4444' : '#f59e0b' }} />
+                                  {getModuleIcon(moduleName)}
+                                  <Text strong style={{ fontSize: 12 }}>{label}</Text>
+                                  {items.length > 0 ? (
+                                    <Badge
+                                      count={items.length}
+                                      style={{ backgroundColor: items.some((i: any) => i.severity === 'critical' || i.severity === 'high') ? '#ef4444' : '#f59e0b' }}
+                                    />
                                   ) : (
-                                    <Tag color="green" style={{ fontSize: 10 }}>Clean</Tag>
+                                    <Tag color="green" style={{ fontSize: 10 }}>{status === 'clean' ? '✓ Clean' : 'No issues'}</Tag>
                                   )}
                                 </div>
-                                {issues.length > 0 && (
-                                  <List
-                                    size="small"
-                                    style={{ marginLeft: 24 }}
-                                    dataSource={issues}
-                                    renderItem={(issue: any) => (
-                                      <List.Item style={{ padding: '4px 0', borderBottom: 'none' }}>
-                                        <Space size={6}>
-                                          <Tag
-                                            color={issue.severity === 'critical' ? 'red' : issue.severity === 'high' ? 'orange' : 'gold'}
-                                            style={{ fontSize: 10 }}
-                                          >
-                                            {issue.severity}
-                                          </Tag>
-                                          <Text style={{ fontSize: 12 }}>{issue.description || issue.message}</Text>
-                                          {issue.file && (
-                                            <Text code style={{ fontSize: 10, wordBreak: 'break-all' }}>{issue.file}</Text>
-                                          )}
-                                        </Space>
-                                      </List.Item>
-                                    )}
-                                  />
+                                {items.length > 0 && (
+                                  <div style={{ marginLeft: 24 }}>
+                                    {items.map((item: any, idx: number) => (
+                                      <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, padding: '3px 0', flexWrap: 'wrap' }}>
+                                        <Tag
+                                          color={item.severity === 'critical' ? 'red' : item.severity === 'high' ? 'orange' : 'gold'}
+                                          style={{ fontSize: 10, flexShrink: 0 }}
+                                        >
+                                          {item.severity}
+                                        </Tag>
+                                        {item.file && (
+                                          <Text code style={{ fontSize: 11, wordBreak: 'break-all' }}>{item.file}</Text>
+                                        )}
+                                        {item.reason && (
+                                          <Text type="secondary" style={{ fontSize: 11 }}>{item.reason}</Text>
+                                        )}
+                                        {item.current_permissions && (
+                                          <Text type="secondary" style={{ fontSize: 11 }}>
+                                            (current: {item.current_permissions}, recommended: {item.recommended})
+                                          </Text>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
                                 )}
                               </div>
                             );
@@ -595,9 +655,8 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
                       );
                     },
                     rowExpandable: (record: any) => (
-                      (record.threats_found > 0 || record.warnings_found > 0) ||
-                      (record.results?.findings && Object.keys(record.results.findings).length > 0) ||
-                      (record.results?.modules && Object.keys(record.results.modules).length > 0)
+                      record.threats_found > 0 || record.warnings_found > 0 ||
+                      !!record.results?.results || !!record.results?.findings
                     ),
                   }}
                   columns={[

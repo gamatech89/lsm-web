@@ -442,11 +442,11 @@ export function createLsmApi(client: AxiosInstance) {
     /**
      * Trigger a security scan on the WordPress site
      */
-    triggerSecurityScan: (projectId: number, scanType: 'full' | 'quick' = 'full', modules?: string) =>
+    triggerSecurityScan: (projectId: number, scanType: 'full' | 'standard' | 'quick' = 'full', modules?: string) =>
       client.post<{ success: boolean; data: any }>(
         `${basePath(projectId)}/security-scan`,
         { scan_type: scanType, modules },
-        { timeout: 150000 } // 2.5 min timeout for scans
+        { timeout: scanType === 'full' ? 660000 : scanType === 'standard' ? 210000 : 90000 }
       ),
 
     /**
