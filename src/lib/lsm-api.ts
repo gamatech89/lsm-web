@@ -481,6 +481,14 @@ export function createLsmApi(client: AxiosInstance) {
       client.delete<{ success: boolean; message: string }>(
         `${basePath(projectId)}/security-scans/${scanId}`
       ),
+
+    /**
+     * Get real-time scan progress (polls WP transient)
+     */
+    getScanProgress: (projectId: number) =>
+      client.get<{ success: boolean; scanning: boolean; data: any }>(
+        `${basePath(projectId)}/security-scans/progress`
+      ),
   };
 }
 

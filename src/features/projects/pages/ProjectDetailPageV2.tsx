@@ -54,6 +54,7 @@ import ThemesSection from '../components/sections/ThemesSection';
 import CoreSection from '../components/sections/CoreSection';
 import BackupsSection from '../components/sections/BackupsSection';
 import SecuritySection from '../components/sections/SecuritySection';
+import MalwareSection from '../components/sections/MalwareSection';
 import IssuesSection from '../components/sections/IssuesSection';
 import ActivitySection from '../components/sections/ActivitySection';
 import SettingsSection from '../components/sections/SettingsSection';
@@ -237,6 +238,8 @@ export function ProjectDetailPageV2() {
         return <BackupsSection {...commonProps} />;
       case 'security':
         return <SecuritySection {...commonProps} />;
+      case 'malware':
+        return <MalwareSection {...commonProps} />;
       case 'issues':
         return <IssuesSection {...commonProps} />;
       case 'activity':

@@ -16,6 +16,7 @@ import {
   ThunderboltOutlined,
   CloudOutlined,
   SafetyOutlined,
+  SecurityScanOutlined,
   BugOutlined,
   FileTextOutlined,
   FolderOutlined,
@@ -194,6 +195,12 @@ export function ProjectSubNav({
           key: 'security',
           icon: <SafetyOutlined />,
           label: withBadge('Security', counts.vulnerabilities, '#ef4444'),
+          disabled: !hasLsmConnection,
+        },
+        {
+          key: 'malware',
+          icon: <SecurityScanOutlined />,
+          label: 'Malware Scanner',
           disabled: !hasLsmConnection,
         },
         {
