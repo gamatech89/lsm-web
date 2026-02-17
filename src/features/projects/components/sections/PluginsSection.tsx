@@ -115,7 +115,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
       return pluginUpdates.map((p: any) => ({
         slug: p.slug || p.plugin?.replace(/^.*\/|\.php$/g, '') || 'unknown',
         name: p.name || p.plugin?.split('/')[0]?.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || p.slug || 'Unknown Plugin',
-        version: p.current_version || '?',
+        version: p.current || p.current_version || p.version || '?',
         new_version: p.new_version,
         update_available: !!p.new_version,
         is_active: true,
@@ -138,7 +138,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
       return {
         slug,
         name: p.name || p.Name || p.plugin?.split('/')[0]?.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || slug || 'Unknown Plugin',
-        version: p.version || p.Version || '?',
+        version: p.version ?? p.Version ?? '?',
         new_version: newVersion,
         update_available: hasUpdate,
         is_active: p.active ?? p.is_active ?? true,
