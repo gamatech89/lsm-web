@@ -201,7 +201,7 @@ export function ProjectSubNav({
           key: 'malware',
           icon: <SecurityScanOutlined />,
           label: 'Malware Scanner',
-          disabled: !hasLsmConnection,
+          disabled: true,
         },
         {
           key: 'maintenance',
