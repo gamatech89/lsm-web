@@ -1,7 +1,7 @@
 /**
  * Todo Form Modal
  * Used for creating and editing todos within a project
- * Features: File attachments, consistent styling
+ * Features: File attachments, library resource linking, consistent styling
  */
 
 import { useEffect, useState } from 'react';
@@ -17,14 +17,17 @@ import {
   Upload,
   Button,
   Typography,
+  Tag,
+  Space,
 } from 'antd';
-import { UploadOutlined, PaperClipOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { UploadOutlined, PaperClipOutlined, ClockCircleOutlined, LinkOutlined, FileTextOutlined } from '@ant-design/icons';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
 import { priorityOptions, statusOptions, CONTROL_HEIGHT } from '../constants';
 import type { Todo } from '@lsm/types';
 import type { UploadFile } from 'antd';
+import type { LibraryResource } from '@/lib/library-resources-api';
 
 const { Text } = Typography;
 
@@ -51,8 +54,14 @@ export function TodoFormModal({
   const [form] = Form.useForm();
   const isEditMode = !!todo;
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([]);
 
-  // Fetch users removed - received via props
+  // Fetch library resources for linking
+  const { data: libraryResources = [] } = useQuery({
+    queryKey: ['library-resources'],
+    queryFn: () => api.libraryResources.getAll().then(r => r.data.data || r.data || []),
+    enabled: open,
+  });
 
   // Create mutation
   const createMutation = useMutation({
@@ -83,6 +92,7 @@ export function TodoFormModal({
   const handleClose = () => {
     form.resetFields();
     setFileList([]);
+    setSelectedResourceIds([]);
     onClose();
   };
 
@@ -98,11 +108,15 @@ export function TodoFormModal({
         assigned_to: todo.assignee?.id,
         estimated_minutes: todo.estimated_minutes,
       });
-      // Load existing attachments if any
+      // Load existing library resources if any
+      setSelectedResourceIds(
+        (todo as any).library_resources?.map((r: any) => r.id) || []
+      );
       setFileList([]);
     } else if (!todo && open) {
       form.resetFields();
       setFileList([]);
+      setSelectedResourceIds([]);
     }
   }, [todo, open, form]);
 
@@ -130,15 +144,20 @@ export function TodoFormModal({
       if (fileList[0].originFileObj) {
         formData.append('file', fileList[0].originFileObj);
       }
+      
+      // Append library resource IDs
+      selectedResourceIds.forEach(id => {
+        formData.append('library_resource_ids[]', id.toString());
+      });
+      
       data = formData;
     } else {
       data = {
         ...values,
         due_date: values.due_date?.format('YYYY-MM-DD'),
-        // Map assigned_to to assignee_id for API consistency
         assignee_id: values.assigned_to,
+        library_resource_ids: selectedResourceIds,
       };
-      // cleanup assigned_to from spread
       delete data.assigned_to;
     }
 
@@ -154,6 +173,18 @@ export function TodoFormModal({
   };
 
   const userOptions = teamMembers.map(u => ({ label: u.name, value: u.id }));
+
+  const libraryResourceOptions = (libraryResources as LibraryResource[]).map(r => ({
+    label: (
+      <Space size={4}>
+        {r.type === 'link' ? <LinkOutlined style={{ color: '#3b82f6' }} /> : <FileTextOutlined style={{ color: '#a855f7' }} />}
+        {r.title}
+        {r.type === 'link' && <Tag color="blue" style={{ fontSize: 10, marginLeft: 4 }}>LINK</Tag>}
+      </Space>
+    ),
+    value: r.id,
+    searchLabel: r.title,
+  }));
 
   return (
     <Modal
@@ -249,7 +280,26 @@ export function TodoFormModal({
             Attach screenshots, documents, or feedback files
           </Text>
         </Form.Item>
+
+        {/* Library Resources */}
+        <Form.Item label={<><LinkOutlined /> Library Resources</>}>
+          <Select
+            mode="multiple"
+            placeholder="Link resources from library..."
+            value={selectedResourceIds}
+            onChange={setSelectedResourceIds}
+            options={libraryResourceOptions}
+            optionFilterProp="searchLabel"
+            allowClear
+            showSearch
+            style={{ width: '100%' }}
+          />
+          <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+            Link guides, videos, or reference materials from the Library
+          </Text>
+        </Form.Item>
       </Form>
     </Modal>
   );
 }
+

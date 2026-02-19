@@ -25,6 +25,9 @@ import {
   DownloadOutlined,
   SaveOutlined,
   CloseOutlined,
+  LinkOutlined,
+  GlobalOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -498,6 +501,75 @@ export function TodoDetailModal({
                 Download
               </Button>
             </div>
+          </div>
+        </>
+      )}
+
+      {/* Linked Library Resources */}
+      {(todo as any).library_resources && (todo as any).library_resources.length > 0 && (
+        <>
+          <Divider style={{ margin: '16px 0' }} />
+          <div>
+            <Space style={{ marginBottom: 8 }}>
+              <LinkOutlined />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Library Resources ({(todo as any).library_resources.length})
+              </Text>
+            </Space>
+            {(todo as any).library_resources.map((resource: any) => (
+              <div 
+                key={resource.id}
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  ...boxStyle,
+                  borderRadius: 6,
+                  marginBottom: 6,
+                }}
+              >
+                <Space>
+                  {resource.type === 'link' 
+                    ? <GlobalOutlined style={{ color: '#3b82f6' }} />
+                    : <FileTextOutlined style={{ color: '#a855f7' }} />
+                  }
+                  <Text>{resource.title}</Text>
+                </Space>
+                {resource.type === 'link' ? (
+                  <Button 
+                    type="link" 
+                    size="small" 
+                    icon={<GlobalOutlined />} 
+                    onClick={() => window.open(resource.url, '_blank')}
+                  >
+                    Open
+                  </Button>
+                ) : (
+                  <Button 
+                    type="link" 
+                    size="small" 
+                    icon={<DownloadOutlined />} 
+                    onClick={async () => {
+                      try {
+                        const response = await api.libraryResources.download(resource.id);
+                        const blob = new Blob([response.data]);
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = resource.file_name || 'download';
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                      } catch {
+                        message.error('Failed to download');
+                      }
+                    }}
+                  >
+                    Download
+                  </Button>
+                )}
+              </div>
+            ))}
           </div>
         </>
       )}

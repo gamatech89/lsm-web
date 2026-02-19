@@ -9,11 +9,13 @@ import type { AxiosInstance } from 'axios';
 export interface LibraryResource {
   id: number;
   title: string;
+  type: 'file' | 'link';
   category: string | null;
-  file_path: string;
-  file_name: string;
-  file_size: number;
-  formatted_file_size: string;
+  url: string | null;
+  file_path: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  formatted_file_size: string | null;
   notes: string | null;
   created_by: number | null;
   creator?: { id: number; name: string };

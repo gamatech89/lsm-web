@@ -24,6 +24,7 @@ import {
   Empty,
   Tooltip,
   Badge,
+  Segmented,
 } from 'antd';
 import type { MenuProps, TableProps, UploadFile } from 'antd';
 import {
@@ -36,6 +37,7 @@ import {
   UploadOutlined,
   FileTextOutlined,
   LinkOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -68,6 +70,7 @@ export default function LibraryResourcesPage() {
   const [editingResource, setEditingResource] = useState<LibraryResource | null>(null);
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [resourceType, setResourceType] = useState<'file' | 'link'>('file');
 
   // Fetch library resources
   const { data: resources = [], isLoading } = useQuery({
@@ -127,23 +130,35 @@ export default function LibraryResourcesPage() {
     },
   });
 
-  const handleSubmit = (values: { title: string; category?: string; notes?: string }) => {
+  const handleSubmit = (values: { title: string; category?: string; notes?: string; url?: string }) => {
     const formData = new FormData();
     formData.append('title', values.title);
+    formData.append('type', resourceType);
     if (values.category) formData.append('category', values.category);
     if (values.notes) formData.append('notes', values.notes);
 
     if (editingResource) {
-      if (fileList.length > 0 && fileList[0].originFileObj) {
+      if (resourceType === 'link') {
+        if (values.url) formData.append('url', values.url);
+      } else if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append('file', fileList[0].originFileObj);
       }
       updateMutation.mutate({ id: editingResource.id, data: formData });
     } else {
-      if (fileList.length > 0 && fileList[0].originFileObj) {
-        formData.append('file', fileList[0].originFileObj);
-        createMutation.mutate(formData);
+      if (resourceType === 'link') {
+        if (values.url) {
+          formData.append('url', values.url);
+          createMutation.mutate(formData);
+        } else {
+          message.error('Please enter a URL');
+        }
       } else {
-        message.error(t('library.selectFileError'));
+        if (fileList.length > 0 && fileList[0].originFileObj) {
+          formData.append('file', fileList[0].originFileObj);
+          createMutation.mutate(formData);
+        } else {
+          message.error(t('library.selectFileError'));
+        }
       }
     }
   };
@@ -165,10 +180,12 @@ export default function LibraryResourcesPage() {
 
   const openEditModal = (resource: LibraryResource) => {
     setEditingResource(resource);
+    setResourceType(resource.type || 'file');
     form.setFieldsValue({
       title: resource.title,
       category: resource.category,
       notes: resource.notes,
+      url: resource.url,
     });
     setFileList([]);
   };
@@ -178,10 +195,16 @@ export default function LibraryResourcesPage() {
       title: t('library.table.title'),
       dataIndex: 'title',
       key: 'title',
-      render: (title: string) => (
+      render: (title: string, record: LibraryResource) => (
         <Space>
-          <FileTextOutlined style={{ color: '#a855f7' }} />
+          {record.type === 'link' 
+            ? <LinkOutlined style={{ color: '#3b82f6' }} />
+            : <FileTextOutlined style={{ color: '#a855f7' }} />
+          }
           <Text strong>{title}</Text>
+          {record.type === 'link' && (
+            <Tag color="blue" style={{ fontSize: 10 }}>LINK</Tag>
+          )}
         </Space>
       ),
     },
@@ -201,19 +224,36 @@ export default function LibraryResourcesPage() {
       title: t('library.table.file'),
       dataIndex: 'file_name',
       key: 'file_name',
-      render: (fileName: string, record: LibraryResource) => (
-        <Tooltip title={t('library.clickToDownload')}>
-          <Button 
-            type="link" 
-            size="small" 
-            icon={<DownloadOutlined />}
-            onClick={() => handleDownload(record)}
-            style={{ padding: 0 }}
-          >
-            {fileName} ({record.formatted_file_size})
-          </Button>
-        </Tooltip>
-      ),
+      render: (_: any, record: LibraryResource) => {
+        if (record.type === 'link') {
+          return (
+            <Tooltip title={record.url || ''}>
+              <Button
+                type="link"
+                size="small"
+                icon={<GlobalOutlined />}
+                onClick={() => window.open(record.url || '', '_blank')}
+                style={{ padding: 0 }}
+              >
+                {record.url ? new URL(record.url).hostname : 'Open link'}
+              </Button>
+            </Tooltip>
+          );
+        }
+        return (
+          <Tooltip title={t('library.clickToDownload')}>
+            <Button 
+              type="link" 
+              size="small" 
+              icon={<DownloadOutlined />}
+              onClick={() => handleDownload(record)}
+              style={{ padding: 0 }}
+            >
+              {record.file_name} ({record.formatted_file_size})
+            </Button>
+          </Tooltip>
+        );
+      },
     },
     {
       title: t('library.table.usedIn'),
@@ -301,19 +341,36 @@ export default function LibraryResourcesPage() {
             {t('library.subtitle')}
           </Text>
         </div>
-        <Button 
-          type="primary" 
-          icon={<UploadOutlined />} 
-          onClick={() => {
-            setEditingResource(null);
-            form.resetFields();
-            setFileList([]);
-            setShowUploadModal(true);
-          }}
-          style={isMobile ? { width: '100%' } : undefined}
-        >
-          {t('library.uploadFile')}
-        </Button>
+        <div style={{ display: 'flex', gap: isMobile ? 8 : 12 }}>
+          <Button 
+            type="primary" 
+            icon={<LinkOutlined />}
+            onClick={() => {
+              setEditingResource(null);
+              setResourceType('link');
+              form.resetFields();
+              setFileList([]);
+              setShowUploadModal(true);
+            }}
+            style={isMobile ? { flex: 1 } : undefined}
+          >
+            {t('library.addLink', 'Add Link')}
+          </Button>
+          <Button 
+            type="primary" 
+            icon={<UploadOutlined />} 
+            onClick={() => {
+              setEditingResource(null);
+              setResourceType('file');
+              form.resetFields();
+              setFileList([]);
+              setShowUploadModal(true);
+            }}
+            style={isMobile ? { flex: 1 } : undefined}
+          >
+            {t('library.uploadFile')}
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -321,7 +378,15 @@ export default function LibraryResourcesPage() {
         <Card size="small" style={{ flex: 1, background: isDark ? '#1e293b' : '#f8fafc' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: '#a855f7' }}>{resources.length}</div>
-            <Text type="secondary">{t('library.stats.totalFiles')}</Text>
+            <Text type="secondary">{t('library.stats.totalFiles', 'Total Resources')}</Text>
+          </div>
+        </Card>
+        <Card size="small" style={{ flex: 1, background: isDark ? '#1e293b' : '#f8fafc' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#3b82f6' }}>
+              {resources.filter((r: LibraryResource) => r.type === 'link').length}
+            </div>
+            <Text type="secondary">{t('library.stats.links', 'Links')}</Text>
           </div>
         </Card>
         <Card size="small" style={{ flex: 1, background: isDark ? '#1e293b' : '#f8fafc' }}>
@@ -330,14 +395,6 @@ export default function LibraryResourcesPage() {
               {resources.filter((r: LibraryResource) => (r.projects_count || 0) > 0).length}
             </div>
             <Text type="secondary">{t('library.stats.inUse')}</Text>
-          </div>
-        </Card>
-        <Card size="small" style={{ flex: 1, background: isDark ? '#1e293b' : '#f8fafc' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#3b82f6' }}>
-              {[...new Set(resources.map((r: LibraryResource) => r.category).filter(Boolean))].length}
-            </div>
-            <Text type="secondary">{t('library.stats.categories')}</Text>
           </div>
         </Card>
       </div>
@@ -398,16 +455,17 @@ export default function LibraryResourcesPage() {
 
       {/* Upload/Edit Modal */}
       <Modal
-        title={editingResource ? t('library.editResource') : t('library.uploadToLibrary')}
+        title={editingResource ? t('library.editResource') : (resourceType === 'link' ? t('library.addLink', 'Add Link') : t('library.uploadToLibrary'))}
         open={showUploadModal || !!editingResource}
         onCancel={() => {
           setShowUploadModal(false);
           setEditingResource(null);
           form.resetFields();
           setFileList([]);
+          setResourceType('file');
         }}
         onOk={() => form.submit()}
-        okText={editingResource ? t('common.update') : t('common.upload')}
+        okText={editingResource ? t('common.update') : (resourceType === 'link' ? t('common.save', 'Save') : t('common.upload'))}
         cancelText={t('common.cancel')}
         confirmLoading={createMutation.isPending || updateMutation.isPending}
         width={500}
@@ -426,6 +484,19 @@ export default function LibraryResourcesPage() {
             <Input placeholder={t('library.form.titlePlaceholder')} />
           </Form.Item>
 
+          {/* Resource Type Toggle */}
+          <Form.Item label={t('library.form.type', 'Type')}>
+            <Segmented
+              options={[
+                { label: '📎 File Upload', value: 'file' },
+                { label: '🔗 External Link', value: 'link' },
+              ]}
+              value={resourceType}
+              onChange={(val) => setResourceType(val as 'file' | 'link')}
+              block
+            />
+          </Form.Item>
+
           <Form.Item
             name="category"
             label={t('library.form.category')}
@@ -438,26 +509,36 @@ export default function LibraryResourcesPage() {
             />
           </Form.Item>
 
-          <Form.Item
-            label={editingResource ? t('library.replaceFile') : t('library.file')}
-            required={!editingResource}
-          >
-            <Upload
-              fileList={fileList}
-              onChange={({ fileList }) => setFileList(fileList)}
-              beforeUpload={() => false}
-              maxCount={1}
+          {resourceType === 'link' ? (
+            <Form.Item
+              name="url"
+              label="URL"
+              rules={[{ required: !editingResource, message: 'Please enter a URL' }, { type: 'url', message: 'Please enter a valid URL' }]}
             >
-              <Button icon={<UploadOutlined />}>
-                {editingResource ? t('library.selectNewFile') : t('library.selectFile')}
-              </Button>
-            </Upload>
-            {editingResource && (
-              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                {t('library.current')}: {editingResource.file_name}
-              </Text>
-            )}
-          </Form.Item>
+              <Input placeholder="https://www.loom.com/share/..." />
+            </Form.Item>
+          ) : (
+            <Form.Item
+              label={editingResource ? t('library.replaceFile') : t('library.file')}
+              required={!editingResource}
+            >
+              <Upload
+                fileList={fileList}
+                onChange={({ fileList }) => setFileList(fileList)}
+                beforeUpload={() => false}
+                maxCount={1}
+              >
+                <Button icon={<UploadOutlined />}>
+                  {editingResource ? t('library.selectNewFile') : t('library.selectFile')}
+                </Button>
+              </Upload>
+              {editingResource && editingResource.type === 'file' && (
+                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                  {t('library.current')}: {editingResource.file_name}
+                </Text>
+              )}
+            </Form.Item>
+          )}
 
           <Form.Item
             name="notes"

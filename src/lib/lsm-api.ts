@@ -489,6 +489,18 @@ export function createLsmApi(client: AxiosInstance) {
       client.get<{ success: boolean; scanning: boolean; data: any }>(
         `${basePath(projectId)}/security-scans/progress`
       ),
+
+    // =========================================================================
+    // WP ACCOUNT SYNC
+    // =========================================================================
+
+    /**
+     * Trigger full sync of WordPress user accounts for team members
+     */
+    syncWpAccounts: (projectId: number) =>
+      client.post<{ success: boolean; message: string }>(
+        `${basePath(projectId)}/sync-wp-accounts`
+      ),
   };
 }
 

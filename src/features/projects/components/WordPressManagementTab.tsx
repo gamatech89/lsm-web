@@ -42,6 +42,7 @@ import {
   RocketOutlined,
   SettingOutlined,
   SaveOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -193,6 +194,12 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
     mutationFn: () => api.lsm.emergencyRecovery(project.id),
     onSuccess: () => message.warning('Emergency recovery executed!'),
     onError: () => message.error('Failed to execute emergency recovery'),
+  });
+
+  const syncWpAccountsMutation = useMutation({
+    mutationFn: () => api.lsm.syncWpAccounts(project.id),
+    onSuccess: () => message.success('WP account sync queued. Accounts will be synced shortly.'),
+    onError: () => message.error('Failed to sync WP accounts'),
   });
 
   // Calculate update counts
@@ -545,6 +552,16 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
               >
                 Flush URLs
               </Button>
+              <Divider type="vertical" style={{ height: 32 }} />
+              <Tooltip title="Sync WordPress user accounts for all assigned team members">
+                <Button
+                  icon={<TeamOutlined />}
+                  onClick={() => syncWpAccountsMutation.mutate()}
+                  loading={syncWpAccountsMutation.isPending}
+                >
+                  Sync WP Accounts
+                </Button>
+              </Tooltip>
             </Space>
           </Card>
         </Col>
