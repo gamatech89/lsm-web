@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Form, Input, Select, Typography, Row, Col, Space, message, App } from 'antd';
-import { 
+import { Modal, Form, Input, Select, Typography, Row, Col, Space, Switch, message, App } from 'antd';
+import {
   LockOutlined,
   GlobalOutlined,
   DatabaseOutlined,
@@ -52,7 +52,8 @@ export function EditCredentialModal({ open, onClose, credential }: EditCredentia
       form.setFieldsValue({
         ...credential,
         project_id: credential.project_id,
-        ...metadata
+        ...metadata,
+        key_auth: metadata.key_auth || false,
       });
     }
   }, [open, credential, form]);
@@ -60,11 +61,12 @@ export function EditCredentialModal({ open, onClose, credential }: EditCredentia
   // Update Mutation
   const updateMutation = useMutation({
     mutationFn: (values: any) => {
-      const { hostname, port, database_name, ...rest } = values;
+      const { hostname, port, database_name, key_auth, ...rest } = values;
       const metadata: any = {};
       if (hostname) metadata.hostname = hostname;
       if (port) metadata.port = port;
       if (database_name) metadata.database_name = database_name;
+      if (key_auth) metadata.key_auth = true;
 
       return apiClient.put(`/credentials/${credential?.id}`, {
         ...rest,
@@ -105,13 +107,13 @@ export function EditCredentialModal({ open, onClose, credential }: EditCredentia
       >
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item 
-              name="project_id" 
-              label={t('vault.form.project')} 
+            <Form.Item
+              name="project_id"
+              label={t('vault.form.project')}
               rules={[{ required: true, message: t('vault.form.selectRequired') }]}
             >
-              <Select 
-                placeholder={t('vault.form.selectProject')} 
+              <Select
+                placeholder={t('vault.form.selectProject')}
                 showSearch
                 optionFilterProp="label"
                 options={projectsData?.map((p: any) => ({ label: p.name, value: p.id }))}
@@ -119,98 +121,112 @@ export function EditCredentialModal({ open, onClose, credential }: EditCredentia
             </Form.Item>
           </Col>
           <Col span={12}>
-             <Form.Item 
-              name="type" 
-              label={t('vault.table.type')} 
+            <Form.Item
+              name="type"
+              label={t('vault.table.type')}
               rules={[{ required: true, message: t('vault.form.typeRequired') }]}
-             >
-                <Select placeholder={t('vault.form.selectType')}>
-                   {typeOptions.map(opt => (
-                      <Select.Option key={opt.value} value={opt.value}>
-                         <Space>{opt.icon} {opt.label}</Space>
-                      </Select.Option>
-                   ))}
-                </Select>
-             </Form.Item>
+            >
+              <Select placeholder={t('vault.form.selectType')}>
+                {typeOptions.map(opt => (
+                  <Select.Option key={opt.value} value={opt.value}>
+                    <Space>{opt.icon} {opt.label}</Space>
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
           </Col>
         </Row>
 
-        <Form.Item 
-           name="title" 
-           label={t('vault.form.title')} 
-           rules={[{ required: true }]}
+        <Form.Item
+          name="title"
+          label={t('vault.form.title')}
+          rules={[{ required: true }]}
         >
-           <Input placeholder={t('vault.form.titlePlaceholder')} />
+          <Input placeholder={t('vault.form.titlePlaceholder')} />
         </Form.Item>
 
-        <Form.Item 
-            noStyle 
-            shouldUpdate={(prev, current) => prev.type !== current.type}
+        <Form.Item
+          noStyle
+          shouldUpdate={(prev, current) => prev.type !== current.type}
         >
-            {({ getFieldValue }) => {
-                const type = getFieldValue('type');
-                return (
-                    <>
-                       {(type === 'ssh' || type === 'database' || type === 'ftp') && (
-                          <Row gutter={16}>
-                             <Col span={18}>
-                                <Form.Item name="hostname" label={t('vault.form.hostnameIp')}>
-                                   <Input placeholder={t('vault.form.hostnamePlaceholder')} />
-                                </Form.Item>
-                             </Col>
-                             <Col span={6}>
-                                <Form.Item name="port" label={t('vault.form.port')}>
-                                   <Input placeholder="22" />
-                                </Form.Item>
-                             </Col>
-                          </Row>
-                       )}
-                       {type === 'database' && (
-                          <Form.Item name="database_name" label={t('vault.form.databaseName')}>
-                             <Input placeholder="my_app_db" />
-                          </Form.Item>
-                       )}
-                    </>
-                );
-            }}
+          {({ getFieldValue }) => {
+            const type = getFieldValue('type');
+            return (
+              <>
+                {(type === 'ssh' || type === 'database' || type === 'ftp') && (
+                  <Row gutter={16}>
+                    <Col span={18}>
+                      <Form.Item name="hostname" label={t('vault.form.hostnameIp')}>
+                        <Input placeholder={t('vault.form.hostnamePlaceholder')} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={6}>
+                      <Form.Item name="port" label={t('vault.form.port')}>
+                        <Input placeholder="22" />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                )}
+                {type === 'database' && (
+                  <Form.Item name="database_name" label={t('vault.form.databaseName')}>
+                    <Input placeholder="my_app_db" />
+                  </Form.Item>
+                )}
+              </>
+            );
+          }}
         </Form.Item>
 
         <Row gutter={16}>
-           <Col span={12}>
-              <Form.Item name="username" label={t('vault.form.username')}>
-                 <Input autoComplete="off" />
-              </Form.Item>
-           </Col>
-           <Col span={12}>
-              <Form.Item 
-                noStyle 
-                shouldUpdate={(prev, current) => prev.type !== current.type}
-              >
-                {({ getFieldValue }) => {
-                  const type = getFieldValue('type');
-                  const isApiKey = type === 'api';
-                  return (
-                    <Form.Item 
-                      name="password" 
-                      label={isApiKey ? t('vault.types.apiKey') : t('vault.form.passwordApiKey')} 
-                      extra={<Text type="secondary" style={{ fontSize: 12 }}>{t('vault.form.leaveBlankToKeep')}</Text>}
-                    >
-                       <Input.Password 
-                          placeholder={isApiKey ? t('vault.form.apiKeyPlaceholder') : t('vault.form.enterNewPassword')} 
-                       />
-                    </Form.Item>
-                  );
-                }}
-              </Form.Item>
-           </Col>
+          <Col span={12}>
+            <Form.Item name="username" label={t('vault.form.username')}>
+              <Input autoComplete="off" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              noStyle
+              shouldUpdate={(prev, current) => prev.type !== current.type || prev.key_auth !== current.key_auth}
+            >
+              {({ getFieldValue }) => {
+                const type = getFieldValue('type');
+                const isApiKey = type === 'api';
+                const isSSH = type === 'ssh';
+                const keyAuth = getFieldValue('key_auth');
+                return (
+                  <>
+                    {isSSH && (
+                      <Form.Item name="key_auth" valuePropName="checked" style={{ marginBottom: 8 }}>
+                        <Space>
+                          <Switch size="small" />
+                          <Text type="secondary" style={{ fontSize: 12 }}>Key-based auth (no password)</Text>
+                        </Space>
+                      </Form.Item>
+                    )}
+                    {!(isSSH && keyAuth) && (
+                      <Form.Item
+                        name="password"
+                        label={isApiKey ? t('vault.types.apiKey') : t('vault.form.passwordApiKey')}
+                        extra={<Text type="secondary" style={{ fontSize: 12 }}>{t('vault.form.leaveBlankToKeep')}</Text>}
+                      >
+                        <Input.Password
+                          placeholder={isApiKey ? t('vault.form.apiKeyPlaceholder') : t('vault.form.enterNewPassword')}
+                        />
+                      </Form.Item>
+                    )}
+                  </>
+                );
+              }}
+            </Form.Item>
+          </Col>
         </Row>
 
         <Form.Item name="url" label={t('vault.form.loginUrl')}>
-           <Input placeholder={t('vault.form.urlPlaceholder')} />
+          <Input placeholder={t('vault.form.urlPlaceholder')} />
         </Form.Item>
 
         <Form.Item name="note" label={t('vault.form.notes')}>
-           <TextArea rows={3} placeholder={t('vault.form.notesPlaceholder')} />
+          <TextArea rows={3} placeholder={t('vault.form.notesPlaceholder')} />
         </Form.Item>
       </Form>
     </Modal>

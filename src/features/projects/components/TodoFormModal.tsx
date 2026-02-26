@@ -37,6 +37,7 @@ interface TodoFormModalProps {
   projectId: number;
   todo?: Todo | null;
   teamMembers: any[];
+  projectResources?: any[];
 }
 
 // Consistent size for all form controls (matches MaintenanceReportFormModal)
@@ -48,6 +49,7 @@ export function TodoFormModal({
   projectId,
   todo,
   teamMembers,
+  projectResources = [],
 }: TodoFormModalProps) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
@@ -129,6 +131,17 @@ export function TodoFormModal({
     assigned_to?: number;
     estimated_minutes?: number;
   }) => {
+    // Append project resource links to description if selected
+    const projectResourceUrls: string[] = form.getFieldValue('_project_resource_urls') || [];
+    let description = values.description || '';
+    if (projectResourceUrls.length > 0) {
+      const linksSection = '\n\n--- Resource Links ---\n' + projectResourceUrls.join('\n');
+      // Remove any previously appended resource links section before re-adding
+      description = description.replace(/\n\n--- Resource Links ---\n[\s\S]*$/, '');
+      description += linksSection;
+    }
+    values.description = description || undefined;
+
     let data: any;
 
     if (fileList.length > 0) {
@@ -140,16 +153,16 @@ export function TodoFormModal({
       if (values.due_date) formData.append('due_date', values.due_date.format('YYYY-MM-DD'));
       if (values.assigned_to) formData.append('assignee_id', values.assigned_to.toString());
       if (values.estimated_minutes) formData.append('estimated_minutes', values.estimated_minutes.toString());
-      
+
       if (fileList[0].originFileObj) {
         formData.append('file', fileList[0].originFileObj);
       }
-      
+
       // Append library resource IDs
       selectedResourceIds.forEach(id => {
         formData.append('library_resource_ids[]', id.toString());
       });
-      
+
       data = formData;
     } else {
       data = {
@@ -252,10 +265,10 @@ export function TodoFormModal({
           </Col>
           <Col span={10}>
             <Form.Item name="estimated_minutes" label="Est. Time (minutes)">
-              <Input 
-                type="number" 
+              <Input
+                type="number"
                 min={0}
-                placeholder="e.g. 60" 
+                placeholder="e.g. 60"
                 suffix={<ClockCircleOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
                 style={controlStyle}
               />
@@ -298,6 +311,38 @@ export function TodoFormModal({
             Link guides, videos, or reference materials from the Library
           </Text>
         </Form.Item>
+
+        {/* Project Resource Links */}
+        {projectResources.filter((r: any) => r.type === 'link' && r.url).length > 0 && (
+          <Form.Item label={<><LinkOutlined /> Project Resource Links</>}>
+            <Select
+              mode="multiple"
+              placeholder="Link resources from this project..."
+              optionFilterProp="label"
+              allowClear
+              showSearch
+              style={{ width: '100%' }}
+              value={(form.getFieldValue('_project_resource_urls') || [])}
+              onChange={(val: string[]) => form.setFieldsValue({ _project_resource_urls: val })}
+              options={projectResources
+                .filter((r: any) => r.type === 'link' && r.url)
+                .map((r: any) => ({
+                  label: (
+                    <Space size={4}>
+                      <LinkOutlined style={{ color: '#3b82f6' }} />
+                      {r.title}
+                    </Space>
+                  ),
+                  value: r.url,
+                  searchLabel: r.title,
+                }))
+              }
+            />
+            <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+              Include project resource links in the todo description
+            </Text>
+          </Form.Item>
+        )}
       </Form>
     </Modal>
   );

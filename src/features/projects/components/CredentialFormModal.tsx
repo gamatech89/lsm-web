@@ -13,6 +13,8 @@ import {
   Col,
   Space,
   App,
+  Switch,
+  Typography,
 } from 'antd';
 import {
   UserOutlined,
@@ -28,6 +30,7 @@ import { api, apiClient } from '@/lib/api';
 import type { Credential } from '@lsm/types';
 
 const { TextArea } = Input;
+const { Text } = Typography;
 
 interface CredentialFormModalProps {
   open: boolean;
@@ -62,11 +65,12 @@ export function CredentialFormModal({
   const createMutation = useMutation({
     mutationFn: (values: any) => {
       // Extract metadata fields
-      const { hostname, port, database_name, ...rest } = values;
+      const { hostname, port, database_name, key_auth, ...rest } = values;
       const metadata: any = {};
       if (hostname) metadata.hostname = hostname;
       if (port) metadata.port = port;
       if (database_name) metadata.database_name = database_name;
+      if (key_auth) metadata.key_auth = true;
 
       return apiClient.post(`/projects/${projectId}/credentials`, {
         ...rest,
@@ -87,11 +91,12 @@ export function CredentialFormModal({
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: (values: any) => {
-      const { hostname, port, database_name, ...rest } = values;
+      const { hostname, port, database_name, key_auth, ...rest } = values;
       const metadata: any = {};
       if (hostname) metadata.hostname = hostname;
       if (port) metadata.port = port;
       if (database_name) metadata.database_name = database_name;
+      if (key_auth) metadata.key_auth = true;
 
       // Don't send empty password on update
       if (!rest.password) {
@@ -132,6 +137,7 @@ export function CredentialFormModal({
         hostname: metadata.hostname,
         port: metadata.port,
         database_name: metadata.database_name,
+        key_auth: metadata.key_auth || false,
         // Password is not pre-filled for security
       });
     } else if (!credential && open) {
@@ -236,25 +242,39 @@ export function CredentialFormModal({
           <Col span={12}>
             <Form.Item
               noStyle
-              shouldUpdate={(prev, current) => prev.type !== current.type}
+              shouldUpdate={(prev, current) => prev.type !== current.type || prev.key_auth !== current.key_auth}
             >
               {({ getFieldValue }) => {
                 const type = getFieldValue('type');
                 const isApiKey = type === 'api';
+                const isSSH = type === 'ssh';
+                const keyAuth = getFieldValue('key_auth');
                 return (
-                  <Form.Item
-                    name="password"
-                    label={isEditMode 
-                      ? (isApiKey ? 'New API Key (leave blank)' : 'New Password (leave blank)')
-                      : (isApiKey ? 'API Key' : 'Password')}
-                    rules={isEditMode ? [] : [{ required: true, message: 'Required' }]}
-                  >
-                    <Input.Password
-                      prefix={<LockOutlined />}
-                      placeholder={isApiKey ? 'Enter API key' : '••••••••'}
-                      autoComplete="new-password"
-                    />
-                  </Form.Item>
+                  <>
+                    {isSSH && (
+                      <Form.Item name="key_auth" valuePropName="checked" style={{ marginBottom: 8 }}>
+                        <Space>
+                          <Switch size="small" />
+                          <Text type="secondary" style={{ fontSize: 12 }}>Key-based auth (no password)</Text>
+                        </Space>
+                      </Form.Item>
+                    )}
+                    {!(isSSH && keyAuth) && (
+                      <Form.Item
+                        name="password"
+                        label={isEditMode
+                          ? (isApiKey ? 'New API Key (leave blank)' : 'New Password (leave blank)')
+                          : (isApiKey ? 'API Key' : 'Password')}
+                        rules={isEditMode ? [] : (isSSH && keyAuth) ? [] : [{ required: true, message: 'Required' }]}
+                      >
+                        <Input.Password
+                          prefix={<LockOutlined />}
+                          placeholder={isApiKey ? 'Enter API key' : '••••••••'}
+                          autoComplete="new-password"
+                        />
+                      </Form.Item>
+                    )}
+                  </>
                 );
               }}
             </Form.Item>

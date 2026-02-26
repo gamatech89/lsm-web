@@ -63,7 +63,7 @@ export function ProjectsPage() {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
   const { t } = useTranslation();
-  
+
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -156,48 +156,48 @@ export function ProjectsPage() {
       render: (_, record) => {
         const isConnected = !!(record as any).health_check_secret;
         return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Tooltip title={isConnected ? 'Plugin connected' : 'No plugin'}>
-            <div style={{ 
-              position: 'relative',
-              flexShrink: 0,
-              borderRadius: '50%',
-              padding: isConnected ? 2 : 0,
-              background: isConnected ? 'linear-gradient(135deg, #8b5cf6, #a78bfa)' : 'transparent',
-              boxShadow: isConnected ? '0 0 10px rgba(139, 92, 246, 0.35)' : 'none',
-            }}>
-              <Avatar 
-                style={{ 
-                  background: isConnected ? 'linear-gradient(135deg, #7c3aed, #8b5cf6)' : (isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)'),
-                  color: isConnected ? '#fff' : '#8b5cf6',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  border: isConnected ? `2px solid ${isDark ? '#1e293b' : '#fff'}` : 'none',
-                }}
-                size={isConnected ? 32 : 36}
-              >
-                {record.name.charAt(0).toUpperCase()}
-              </Avatar>
-            </div>
-          </Tooltip>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <Text strong style={{ display: 'block', color: isDark ? '#f1f5f9' : '#1e293b', fontSize: 13.5, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {record.name}
-            </Text>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
-              {record.url && (
-                <Text type="secondary" style={{ fontSize: 11.5 }}>
-                  {extractDomain(record.url)}
-                </Text>
-              )}
-              {(record.project_external_id || (record as any).maintenance_id) && (
-                <Text type="secondary" style={{ fontSize: 10.5, opacity: 0.6 }}>
-                  {[record.project_external_id, (record as any).maintenance_id].filter(Boolean).join(' · ')}
-                </Text>
-              )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Tooltip title={isConnected ? 'Plugin connected' : 'No plugin'}>
+              <div style={{
+                position: 'relative',
+                flexShrink: 0,
+                borderRadius: '50%',
+                padding: isConnected ? 2 : 0,
+                background: isConnected ? 'linear-gradient(135deg, #8b5cf6, #a78bfa)' : 'transparent',
+                boxShadow: isConnected ? '0 0 10px rgba(139, 92, 246, 0.35)' : 'none',
+              }}>
+                <Avatar
+                  style={{
+                    background: isConnected ? 'linear-gradient(135deg, #7c3aed, #8b5cf6)' : (isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)'),
+                    color: isConnected ? '#fff' : '#8b5cf6',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    border: isConnected ? `2px solid ${isDark ? '#1e293b' : '#fff'}` : 'none',
+                  }}
+                  size={isConnected ? 32 : 36}
+                >
+                  {record.name.charAt(0).toUpperCase()}
+                </Avatar>
+              </div>
+            </Tooltip>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <Text strong style={{ display: 'block', color: isDark ? '#f1f5f9' : '#1e293b', fontSize: 13.5, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {record.name}
+              </Text>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
+                {record.url && (
+                  <Text type="secondary" style={{ fontSize: 11.5 }}>
+                    {extractDomain(record.url)}
+                  </Text>
+                )}
+                {(record.project_external_id || (record as any).maintenance_id) && (
+                  <Text type="secondary" style={{ fontSize: 10.5, opacity: 0.6 }}>
+                    {[record.project_external_id, (record as any).maintenance_id].filter(Boolean).join(' · ')}
+                  </Text>
+                )}
+              </div>
             </div>
           </div>
-        </div>
         );
       },
     },
@@ -208,7 +208,7 @@ export function ProjectsPage() {
       render: (_, record) => {
         const pms = record.managers || (record.manager ? [record.manager] : []);
         const devs = record.developers || [];
-        
+
         if (pms.length === 0 && devs.length === 0) {
           return <Text type="secondary" style={{ fontSize: 12, opacity: 0.5 }}>—</Text>;
         }
@@ -270,14 +270,14 @@ export function ProjectsPage() {
       align: 'center',
       render: (_, record) => {
         const count = record.pending_todos_count || 0;
-        const bg = count === 0 
+        const bg = count === 0
           ? (isDark ? 'rgba(71, 85, 105, 0.2)' : 'rgba(203, 213, 225, 0.3)')
-          : count < 5 
+          : count < 5
             ? 'rgba(245, 158, 11, 0.12)'
             : 'rgba(239, 68, 68, 0.12)';
         const color = count === 0 ? (isDark ? '#64748b' : '#94a3b8') : count < 5 ? '#d97706' : '#dc2626';
         return (
-          <span style={{ 
+          <span style={{
             display: 'inline-block',
             minWidth: 28,
             padding: '2px 8px',
@@ -322,22 +322,22 @@ export function ProjectsPage() {
       key: 'health',
       width: 130,
       render: (_, record) => (
-          <Select
-            size="small"
-            value={record.health_status}
-            style={{ width: '100%' }}
-            variant="borderless"
-            onChange={(value) => {
-              updateMutation.mutate({ id: record.id, data: { health_status: value } });
-            }}
-            onClick={(e) => e.stopPropagation()}
-            options={healthOptions.map(o => ({
-              label: <span style={{ color: o.color, fontSize: 12.5 }}>{o.label}</span>,
-              value: o.value,
-            }))}
-            dropdownStyle={{ minWidth: 120 }}
-          />
-        ),
+        <Select
+          size="small"
+          value={record.health_status}
+          style={{ width: '100%' }}
+          variant="borderless"
+          onChange={(value) => {
+            updateMutation.mutate({ id: record.id, data: { health_status: value } });
+          }}
+          onClick={(e) => e.stopPropagation()}
+          options={healthOptions.map(o => ({
+            label: <span style={{ color: o.color, fontSize: 12.5 }}>{o.label}</span>,
+            value: o.value,
+          }))}
+          dropdownStyle={{ minWidth: 120 }}
+        />
+      ),
     },
     {
       title: <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><SafetyOutlined style={{ fontSize: 12 }} /> {t('projects.table.security')}</span>,
@@ -419,19 +419,19 @@ export function ProjectsPage() {
   return (
     <div className="page-container">
       {/* Header Row with Title + Stats + Button */}
-      <div style={{ 
-        display: 'flex', 
+      <div style={{
+        display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
-        justifyContent: 'space-between', 
+        justifyContent: 'space-between',
         alignItems: isMobile ? 'stretch' : 'center',
         gap: isMobile ? 12 : 16,
         marginBottom: 20,
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ 
-            display: 'flex', 
+          <div style={{
+            display: 'flex',
             flexDirection: isMobile ? 'column' : 'row',
-            alignItems: isMobile ? 'flex-start' : 'center', 
+            alignItems: isMobile ? 'flex-start' : 'center',
             gap: isMobile ? 10 : 24,
           }}>
             <Title level={4} style={{ margin: 0, whiteSpace: 'nowrap', fontSize: isMobile ? 18 : undefined }}>
@@ -444,87 +444,87 @@ export function ProjectsPage() {
             {/* Stats pills - hide on mobile, wrap on tablet */}
             {!isMobile && (
               <Space size={8} wrap>
-              <Tooltip title={t('projects.stats.downTooltip')}>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 12px',
-                  borderRadius: 20,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  background: downCount > 0 
-                    ? (isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)')
-                    : (isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)'),
-                  color: downCount > 0 ? '#ef4444' : (isDark ? '#64748b' : '#94a3b8'),
-                  border: `1px solid ${downCount > 0 ? 'rgba(239, 68, 68, 0.3)' : 'transparent'}`,
-                }}>
-                  <CloseCircleOutlined style={{ fontSize: 12 }} />
-                  <span>{downCount}</span>
-                  <span style={{ opacity: 0.8 }}>{t('projects.stats.down')}</span>
-                </div>
-              </Tooltip>
-              <Tooltip title={t('projects.stats.hackedTooltip')}>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 12px',
-                  borderRadius: 20,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  background: hackedCount > 0 
-                    ? (isDark ? 'rgba(220, 38, 38, 0.25)' : 'rgba(220, 38, 38, 0.15)')
-                    : (isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)'),
-                  color: hackedCount > 0 ? '#dc2626' : (isDark ? '#64748b' : '#94a3b8'),
-                  border: `1px solid ${hackedCount > 0 ? 'rgba(220, 38, 38, 0.5)' : 'transparent'}`,
-                  boxShadow: hackedCount > 0 ? '0 0 12px rgba(220, 38, 38, 0.3)' : 'none',
-                }}>
-                  <LockOutlined style={{ fontSize: 12 }} />
-                  <span>{hackedCount}</span>
-                  <span style={{ opacity: 0.9 }}>{t('projects.stats.hacked')}</span>
-                </div>
-              </Tooltip>
-              <Tooltip title={t('projects.stats.atRiskTooltip')}>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 12px',
-                  borderRadius: 20,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  background: compromisedCount > 0 
-                    ? (isDark ? 'rgba(249, 115, 22, 0.15)' : 'rgba(249, 115, 22, 0.1)')
-                    : (isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)'),
-                  color: compromisedCount > 0 ? '#f97316' : (isDark ? '#64748b' : '#94a3b8'),
-                  border: `1px solid ${compromisedCount > 0 ? 'rgba(249, 115, 22, 0.3)' : 'transparent'}`,
-                }}>
-                  <ExclamationCircleOutlined style={{ fontSize: 12 }} />
-                  <span>{compromisedCount}</span>
-                  <span style={{ opacity: 0.8 }}>{t('projects.stats.atRisk')}</span>
-                </div>
-              </Tooltip>
-              <Tooltip title={t('projects.stats.monitoringTooltip')}>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 12px',
-                  borderRadius: 20,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  background: monitoringCount > 0 
-                    ? (isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.1)')
-                    : (isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)'),
-                  color: monitoringCount > 0 ? '#eab308' : (isDark ? '#64748b' : '#94a3b8'),
-                  border: `1px solid ${monitoringCount > 0 ? 'rgba(234, 179, 8, 0.3)' : 'transparent'}`,
-                }}>
-                  <WarningOutlined style={{ fontSize: 12 }} />
-                  <span>{monitoringCount}</span>
-                  <span style={{ opacity: 0.8 }}>{t('projects.stats.monitoring')}</span>
-                </div>
-              </Tooltip>
+                <Tooltip title={t('projects.stats.downTooltip')}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    background: downCount > 0
+                      ? (isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)')
+                      : (isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)'),
+                    color: downCount > 0 ? '#ef4444' : (isDark ? '#64748b' : '#94a3b8'),
+                    border: `1px solid ${downCount > 0 ? 'rgba(239, 68, 68, 0.3)' : 'transparent'}`,
+                  }}>
+                    <CloseCircleOutlined style={{ fontSize: 12 }} />
+                    <span>{downCount}</span>
+                    <span style={{ opacity: 0.8 }}>{t('projects.stats.down')}</span>
+                  </div>
+                </Tooltip>
+                <Tooltip title={t('projects.stats.hackedTooltip')}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    background: hackedCount > 0
+                      ? (isDark ? 'rgba(220, 38, 38, 0.25)' : 'rgba(220, 38, 38, 0.15)')
+                      : (isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)'),
+                    color: hackedCount > 0 ? '#dc2626' : (isDark ? '#64748b' : '#94a3b8'),
+                    border: `1px solid ${hackedCount > 0 ? 'rgba(220, 38, 38, 0.5)' : 'transparent'}`,
+                    boxShadow: hackedCount > 0 ? '0 0 12px rgba(220, 38, 38, 0.3)' : 'none',
+                  }}>
+                    <LockOutlined style={{ fontSize: 12 }} />
+                    <span>{hackedCount}</span>
+                    <span style={{ opacity: 0.9 }}>{t('projects.stats.hacked')}</span>
+                  </div>
+                </Tooltip>
+                <Tooltip title={t('projects.stats.atRiskTooltip')}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    background: compromisedCount > 0
+                      ? (isDark ? 'rgba(249, 115, 22, 0.15)' : 'rgba(249, 115, 22, 0.1)')
+                      : (isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)'),
+                    color: compromisedCount > 0 ? '#f97316' : (isDark ? '#64748b' : '#94a3b8'),
+                    border: `1px solid ${compromisedCount > 0 ? 'rgba(249, 115, 22, 0.3)' : 'transparent'}`,
+                  }}>
+                    <ExclamationCircleOutlined style={{ fontSize: 12 }} />
+                    <span>{compromisedCount}</span>
+                    <span style={{ opacity: 0.8 }}>{t('projects.stats.atRisk')}</span>
+                  </div>
+                </Tooltip>
+                <Tooltip title={t('projects.stats.monitoringTooltip')}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    background: monitoringCount > 0
+                      ? (isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.1)')
+                      : (isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)'),
+                    color: monitoringCount > 0 ? '#eab308' : (isDark ? '#64748b' : '#94a3b8'),
+                    border: `1px solid ${monitoringCount > 0 ? 'rgba(234, 179, 8, 0.3)' : 'transparent'}`,
+                  }}>
+                    <WarningOutlined style={{ fontSize: 12 }} />
+                    <span>{monitoringCount}</span>
+                    <span style={{ opacity: 0.8 }}>{t('projects.stats.monitoring')}</span>
+                  </div>
+                </Tooltip>
               </Space>
             )}
           </div>
@@ -546,9 +546,9 @@ export function ProjectsPage() {
       />
 
       {/* Table with integrated filters */}
-      <Card 
+      <Card
         className="projects-table-card"
-        style={{ borderRadius: 16, background: isDark ? '#1e293b' : '#fff', border: isDark ? '1px solid rgba(255,255,255,0.06)' : 'none' }} 
+        style={{ borderRadius: 16, background: isDark ? '#1e293b' : '#fff', border: isDark ? '1px solid rgba(255,255,255,0.06)' : 'none' }}
         styles={{ body: { padding: 0 } }}
       >
         <div style={{ padding: isMobile ? '10px 12px' : '12px 16px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9'}` }}>
@@ -614,9 +614,9 @@ export function ProjectsPage() {
                     onChange={(value) => setFilters(f => ({ ...f, tag: value || undefined, page: 1 }))}
                     options={[
                       { label: t('projects.filters.allTags'), value: '' },
-                      ...filterOptions.tags.map((t: any) => ({ 
-                        label: <Tag color={t.color || 'default'}>{t.name}</Tag>, 
-                        value: t.slug 
+                      ...filterOptions.tags.map((t: any) => ({
+                        label: <Tag color={t.color || 'default'}>{t.name}</Tag>,
+                        value: t.slug
                       })),
                     ]}
                     placeholder="Tag"
@@ -698,17 +698,17 @@ export function ProjectsPage() {
                   onChange={(value) => setFilters(f => ({ ...f, tag: value || undefined, page: 1 }))}
                   options={[
                     { label: t('projects.filters.allTags'), value: '' },
-                    ...filterOptions.tags.map((t: any) => ({ 
-                      label: <Tag color={t.color || 'default'}>{t.name}</Tag>, 
-                      value: t.slug 
+                    ...filterOptions.tags.map((t: any) => ({
+                      label: <Tag color={t.color || 'default'}>{t.name}</Tag>,
+                      value: t.slug
                     })),
                   ]}
                   placeholder="Tag"
                   allowClear
                 />
               )}
-              <Button 
-                icon={<ReloadOutlined />} 
+              <Button
+                icon={<ReloadOutlined />}
                 onClick={() => { refetch(); refetchStats(); }}
                 type="text"
                 style={{ color: isDark ? '#94a3b8' : '#64748b' }}
@@ -725,8 +725,8 @@ export function ProjectsPage() {
           rowKey="id"
           loading={isLoading}
           pagination={{
-            current: data?.current_page || 1,
-            total: data?.total || 0,
+            current: data?.meta?.current_page || data?.current_page || 1,
+            total: data?.meta?.total || data?.total || 0,
             pageSize: filters.per_page,
             onChange: (page, pageSize) => setFilters(f => ({ ...f, page, per_page: pageSize })),
             showSizeChanger: !isMobile,

@@ -46,7 +46,7 @@ const priorityConfig = {
   low: { color: 'default', label: 'Low' },
   medium: { color: 'blue', label: 'Medium' },
   high: { color: 'orange', label: 'High' },
-  urgent: { color: 'red', label: 'Urgent' },
+  critical: { color: 'red', label: 'Critical' },
 };
 
 const statusConfig = {
@@ -79,7 +79,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
 
   // Toggle status mutation - for quick complete/uncomplete
   const toggleStatusMutation = useMutation({
-    mutationFn: ({ todoId, status }: { todoId: number; status: string }) => 
+    mutationFn: ({ todoId, status }: { todoId: number; status: string }) =>
       api.todos.update(todoId, { status } as any),
     onSuccess: (_, { status }) => {
       message.success(status === 'completed' ? 'Task completed!' : 'Task reopened');
@@ -101,7 +101,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
 
   // Update assignee mutation
   const updateAssigneeMutation = useMutation({
-    mutationFn: ({ todoId, assigneeId }: { todoId: number; assigneeId: number | null }) => 
+    mutationFn: ({ todoId, assigneeId }: { todoId: number; assigneeId: number | null }) =>
       api.todos.update(todoId, { assignee_id: assigneeId } as any),
     onSuccess: () => {
       message.success('Assignee updated');
@@ -134,13 +134,13 @@ export default function TodosSection({ project }: TodosSectionProps) {
       key: 'title',
       render: (title: string, record: any) => (
         <div>
-          <Text 
-            strong 
-            style={{ 
+          <Text
+            strong
+            style={{
               cursor: 'pointer',
               textDecoration: record.status === 'completed' ? 'line-through' : 'none',
               opacity: record.status === 'completed' ? 0.6 : 1,
-            }} 
+            }}
             onClick={() => setViewingTodo(record)}
           >
             {title}
@@ -168,14 +168,14 @@ export default function TodosSection({ project }: TodosSectionProps) {
           value={assignee?.id}
           placeholder="Assign..."
           allowClear
-          onChange={(value) => updateAssigneeMutation.mutate({ 
-            todoId: record.id, 
-            assigneeId: value || null 
+          onChange={(value) => updateAssigneeMutation.mutate({
+            todoId: record.id,
+            assigneeId: value || null
           })}
           loading={updateAssigneeMutation.isPending}
-          options={teamMembers.map((m: any) => ({ 
-            label: m.name, 
-            value: m.id 
+          options={teamMembers.map((m: any) => ({
+            label: m.name,
+            value: m.id
           }))}
           onClick={(e) => e.stopPropagation()}
         />
@@ -334,6 +334,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
         onClose={() => setShowCreateModal(false)}
         projectId={project.id}
         teamMembers={teamMembers}
+        projectResources={project.resources}
       />
 
       {editingTodo && (
@@ -343,6 +344,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
           projectId={project.id}
           todo={editingTodo}
           teamMembers={teamMembers}
+          projectResources={project.resources}
         />
       )}
 

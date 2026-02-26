@@ -25,7 +25,7 @@ export type CredentialType =
   | 'api'
   | 'other';
 
-export type TodoPriority = 'low' | 'medium' | 'high' | 'urgent' | 'critical';
+export type TodoPriority = 'low' | 'medium' | 'high' | 'critical';
 
 export type TodoStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -281,6 +281,14 @@ export interface PaginatedResponse<T> {
   total: number;
   from: number | null;
   to: number | null;
+  meta?: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+  };
 }
 
 export interface AuthResponse {
@@ -412,10 +420,10 @@ export interface TimeEntry {
   is_billable: boolean;
   status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'paid';
   timesheet_id: number | null;
-  
+
   // Computed
   formatted_duration?: string;
-  
+
   // Relationships
   user?: User;
   project?: Project;

@@ -9,7 +9,6 @@ export const priorityOptions = [
   { label: 'Low', value: 'low' },
   { label: 'Medium', value: 'medium' },
   { label: 'High', value: 'high' },
-  { label: 'Urgent', value: 'urgent' },
   { label: 'Critical', value: 'critical' },
 ];
 
