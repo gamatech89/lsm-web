@@ -4,7 +4,7 @@
  * Features: File attachments, library resource linking, consistent styling
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Modal,
   Form,
@@ -185,6 +185,47 @@ export function TodoFormModal({
     setFileList(info.fileList);
   };
 
+  // Clipboard paste handler for images
+  const handlePaste = useCallback((e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const blob = item.getAsFile();
+        if (!blob) continue;
+
+        // Create a descriptive filename with timestamp
+        const ext = blob.type.split('/')[1] || 'png';
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const fileName = `clipboard-${timestamp}.${ext}`;
+
+        const file = new File([blob], fileName, { type: blob.type });
+
+        const uploadFile: UploadFile = {
+          uid: `paste-${Date.now()}`,
+          name: fileName,
+          status: 'done',
+          originFileObj: file as any,
+          size: file.size,
+          type: file.type,
+        };
+
+        setFileList([uploadFile]);
+        message.success('📋 Image pasted from clipboard');
+        break;
+      }
+    }
+  }, [message]);
+
+  // Attach paste listener when modal is open
+  useEffect(() => {
+    if (!open) return;
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [open, handlePaste]);
+
   const userOptions = teamMembers.map(u => ({ label: u.name, value: u.id }));
 
   const libraryResourceOptions = (libraryResources as LibraryResource[]).map(r => ({
@@ -290,7 +331,8 @@ export function TodoFormModal({
             </Button>
           </Upload>
           <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-            Attach screenshots, documents, or feedback files
+            Attach screenshots, documents, or feedback files{' '}
+            <Tag color="geekblue" style={{ fontSize: 10, cursor: 'default' }}>📋 Paste supported</Tag>
           </Text>
         </Form.Item>
 
@@ -339,7 +381,7 @@ export function TodoFormModal({
           </Form.Item>
         )}
       </Form>
-    </Modal>
+    </Modal >
   );
 }
 
