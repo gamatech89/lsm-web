@@ -318,7 +318,7 @@ export function TodoFormModal({
             <Select
               mode="multiple"
               placeholder="Link resources from this project..."
-              optionFilterProp="label"
+              optionFilterProp="searchLabel"
               allowClear
               showSearch
               style={{ width: '100%' }}
@@ -327,12 +327,7 @@ export function TodoFormModal({
               options={projectResources
                 .filter((r: any) => r.type === 'link' && r.url)
                 .map((r: any) => ({
-                  label: (
-                    <Space size={4}>
-                      <LinkOutlined style={{ color: '#3b82f6' }} />
-                      {r.title}
-                    </Space>
-                  ),
+                  label: `🔗 ${r.title}`,
                   value: r.url,
                   searchLabel: r.title,
                 }))

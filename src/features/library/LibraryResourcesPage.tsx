@@ -104,7 +104,7 @@ export default function LibraryResourcesPage() {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: FormData }) => 
+    mutationFn: ({ id, data }: { id: number; data: FormData }) =>
       api.libraryResources.update(id, data),
     onSuccess: () => {
       message.success(t('library.messages.updated'));
@@ -197,7 +197,7 @@ export default function LibraryResourcesPage() {
       key: 'title',
       render: (title: string, record: LibraryResource) => (
         <Space>
-          {record.type === 'link' 
+          {record.type === 'link'
             ? <LinkOutlined style={{ color: '#3b82f6' }} />
             : <FileTextOutlined style={{ color: '#a855f7' }} />
           }
@@ -242,9 +242,9 @@ export default function LibraryResourcesPage() {
         }
         return (
           <Tooltip title={t('library.clickToDownload')}>
-            <Button 
-              type="link" 
-              size="small" 
+            <Button
+              type="link"
+              size="small"
               icon={<DownloadOutlined />}
               onClick={() => handleDownload(record)}
               style={{ padding: 0 }}
@@ -261,9 +261,9 @@ export default function LibraryResourcesPage() {
       key: 'projects_count',
       width: 100,
       render: (count: number) => (
-        <Badge 
-          count={count || 0} 
-          showZero 
+        <Badge
+          count={count || 0}
+          showZero
           color={count > 0 ? '#22c55e' : '#94a3b8'}
           style={{ fontWeight: 600 }}
         />
@@ -299,7 +299,7 @@ export default function LibraryResourcesPage() {
             onClick: () => {
               Modal.confirm({
                 title: t('library.deleteConfirm.title'),
-                content: record.projects_count && record.projects_count > 0 
+                content: record.projects_count && record.projects_count > 0
                   ? t('library.deleteConfirm.linkedWarning', { count: record.projects_count })
                   : t('library.deleteConfirm.noUndo'),
                 okText: t('common.delete'),
@@ -342,23 +342,9 @@ export default function LibraryResourcesPage() {
           </Text>
         </div>
         <div style={{ display: 'flex', gap: isMobile ? 8 : 12 }}>
-          <Button 
-            type="primary" 
-            icon={<LinkOutlined />}
-            onClick={() => {
-              setEditingResource(null);
-              setResourceType('link');
-              form.resetFields();
-              setFileList([]);
-              setShowUploadModal(true);
-            }}
-            style={isMobile ? { flex: 1 } : undefined}
-          >
-            {t('library.addLink', 'Add Link')}
-          </Button>
-          <Button 
-            type="primary" 
-            icon={<UploadOutlined />} 
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
             onClick={() => {
               setEditingResource(null);
               setResourceType('file');
@@ -368,7 +354,7 @@ export default function LibraryResourcesPage() {
             }}
             style={isMobile ? { flex: 1 } : undefined}
           >
-            {t('library.uploadFile')}
+            {t('library.addResource', 'Add Resource')}
           </Button>
         </div>
       </div>
@@ -414,7 +400,7 @@ export default function LibraryResourcesPage() {
             rowKey="id"
             loading={isLoading}
             scroll={{ x: 600 }}
-            pagination={resources.length > 10 ? { 
+            pagination={resources.length > 10 ? {
               pageSize: 10,
               showSizeChanger: !isMobile,
               size: isMobile ? 'small' : 'default',
@@ -428,8 +414,8 @@ export default function LibraryResourcesPage() {
               <div style={{ padding: 24 }}>
                 <Text type="secondary">{t('library.noResources')}</Text>
                 <div style={{ marginTop: 16 }}>
-                  <Button 
-                    type="primary" 
+                  <Button
+                    type="primary"
                     icon={<UploadOutlined />}
                     onClick={() => setShowUploadModal(true)}
                   >
