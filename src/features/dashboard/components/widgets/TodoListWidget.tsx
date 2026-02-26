@@ -31,8 +31,8 @@ export function TodoListWidget({ todos = [], loading = false }: TodoListWidgetPr
           {t('common.viewAll')}
         </Button>
       }
-      style={{ 
-        borderRadius: 16, 
+      style={{
+        borderRadius: 16,
         border: 'none',
         boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.2)' : '0 4px 24px rgba(0,0,0,0.06)',
         height: '100%',
@@ -47,18 +47,18 @@ export function TodoListWidget({ todos = [], loading = false }: TodoListWidgetPr
           dataSource={todos}
           locale={{
             emptyText: (
-              <Empty 
-                image={Empty.PRESENTED_IMAGE_SIMPLE} 
-                description={t('dashboard.noPendingTasks')} 
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={t('dashboard.noPendingTasks')}
               />
             )
           }}
           renderItem={(todo: any) => {
             const priorityConfig = getPriorityConfig(todo.priority);
-            
+
             return (
               <List.Item
-                style={{ 
+                style={{
                   padding: '16px 24px',
                   borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #f1f5f9',
                   cursor: 'pointer',
@@ -72,7 +72,7 @@ export function TodoListWidget({ todos = [], loading = false }: TodoListWidgetPr
                     <Text strong style={{ fontSize: 14 }}>
                       {todo.title}
                     </Text>
-                    {['high', 'urgent', 'critical'].includes(todo.priority) && (
+                    {['high', 'critical'].includes(todo.priority) && (
                       <Tag color={priorityConfig.color} style={{ margin: 0, borderRadius: 10 }}>
                         {todo.priority}
                       </Tag>
@@ -83,10 +83,10 @@ export function TodoListWidget({ todos = [], loading = false }: TodoListWidgetPr
                       {todo.project?.name || t('common.unknownProject')}
                     </Text>
                     {todo.due_date && (
-                       <Space size={6}>
-                         <CalendarOutlined style={{ fontSize: 12, color: '#94a3b8' }} />
-                         <Text type="secondary" style={{ fontSize: 12 }}>{formatDate(todo.due_date)}</Text>
-                       </Space>
+                      <Space size={6}>
+                        <CalendarOutlined style={{ fontSize: 12, color: '#94a3b8' }} />
+                        <Text type="secondary" style={{ fontSize: 12 }}>{formatDate(todo.due_date)}</Text>
+                      </Space>
                     )}
                   </div>
                 </div>
@@ -95,7 +95,7 @@ export function TodoListWidget({ todos = [], loading = false }: TodoListWidgetPr
           }}
         />
       </div>
-      
+
       <style>{`
         .todo-item:hover {
           background: ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'};
