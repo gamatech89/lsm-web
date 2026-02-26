@@ -317,23 +317,83 @@ export function TodoFormModal({
           </Col>
         </Row>
 
-        {/* File Attachments */}
+        {/* File Attachments — Drop / Paste Zone */}
         <Form.Item label={<><PaperClipOutlined /> Attachments</>}>
-          <Upload
-            fileList={fileList}
-            onChange={handleFileChange}
-            beforeUpload={() => false}
-            multiple={false}
-            maxCount={1}
-          >
-            <Button icon={<UploadOutlined />}>
-              Attach Files
-            </Button>
-          </Upload>
-          <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-            Attach screenshots, documents, or feedback files{' '}
-            <Tag color="geekblue" style={{ fontSize: 10, cursor: 'default' }}>📋 Paste supported</Tag>
-          </Text>
+          {fileList.length > 0 ? (
+            /* ── Preview Mode ── */
+            <div style={{
+              position: 'relative',
+              borderRadius: 8,
+              border: '1px solid #d9d9d9',
+              padding: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}>
+              {/* Thumbnail for images, icon for other files */}
+              {fileList[0].originFileObj?.type?.startsWith('image/') ? (
+                <img
+                  src={URL.createObjectURL(fileList[0].originFileObj as Blob)}
+                  alt="preview"
+                  style={{
+                    width: 64,
+                    height: 64,
+                    objectFit: 'cover',
+                    borderRadius: 6,
+                    border: '1px solid #e5e7eb',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 6,
+                  background: '#f5f3ff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <PaperClipOutlined style={{ fontSize: 24, color: '#a855f7' }} />
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Text strong style={{ display: 'block', fontSize: 13 }} ellipsis>
+                  {fileList[0].name}
+                </Text>
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  {fileList[0].size ? `${(fileList[0].size / 1024).toFixed(1)} KB` : ''}
+                </Text>
+              </div>
+              <Button
+                type="text"
+                danger
+                size="small"
+                onClick={() => setFileList([])}
+                style={{ fontSize: 12 }}
+              >
+                Remove
+              </Button>
+            </div>
+          ) : (
+            /* ── Empty Drop/Paste Zone ── */
+            <Upload.Dragger
+              fileList={fileList}
+              onChange={handleFileChange}
+              beforeUpload={() => false}
+              multiple={false}
+              maxCount={1}
+              showUploadList={false}
+              style={{ padding: '12px 0' }}
+            >
+              <p style={{ margin: 0, fontSize: 13, color: '#8c8c8c' }}>
+                <UploadOutlined style={{ fontSize: 20, color: '#a855f7', display: 'block', marginBottom: 4 }} />
+                Drop file, <Text style={{ color: '#6366f1', fontWeight: 500 }}>browse</Text>, or <Text style={{ color: '#6366f1', fontWeight: 500 }}>paste (Ctrl+V)</Text>
+              </p>
+              <p style={{ margin: 0, fontSize: 11, color: '#bfbfbf', marginTop: 2 }}>
+                Screenshots, documents, or feedback files · Max 10 MB
+              </p>
+            </Upload.Dragger>
+          )}
         </Form.Item>
 
         {/* Library Resources */}
