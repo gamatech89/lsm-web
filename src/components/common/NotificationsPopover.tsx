@@ -128,11 +128,11 @@ export function NotificationsPopover() {
     const { data } = notification;
 
     if (data.project_id) {
-       navigate(`/projects/${data.project_id}`);
+      navigate(`/projects/${data.project_id}`);
     } else if (data.url) {
-        navigate(data.url);
+      navigate(data.url);
     }
-    
+
     setOpen(false);
   };
 
@@ -140,8 +140,8 @@ export function NotificationsPopover() {
 
   const content = (
     <div style={{ width: 350, maxHeight: 400, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ 
-        padding: '12px 16px', 
+      <div style={{
+        padding: '12px 16px',
         borderBottom: isDark ? '1px solid #334155' : '1px solid #f0f0f0',
         display: 'flex',
         justifyContent: 'space-between',
@@ -149,9 +149,9 @@ export function NotificationsPopover() {
       }}>
         <Text strong>Notifications</Text>
         {unreadCount > 0 && (
-          <Button 
-            type="link" 
-            size="small" 
+          <Button
+            type="link"
+            size="small"
             onClick={() => markAllReadMutation.mutate()}
             loading={markAllReadMutation.isPending}
             style={{ padding: 0 }}
@@ -167,22 +167,22 @@ export function NotificationsPopover() {
             <Spin size="small" />
           </div>
         ) : notifications.length === 0 ? (
-          <Empty 
-            image={Empty.PRESENTED_IMAGE_SIMPLE} 
-            description="No notifications" 
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="No notifications"
             style={{ margin: '24px 0' }}
           />
         ) : (
           <List
             dataSource={notifications}
             renderItem={(item: any) => (
-              <div 
+              <div
                 onClick={() => handleNotificationClick(item)}
-                style={{ 
+                style={{
                   padding: '12px 16px',
                   cursor: 'pointer',
-                  background: !item.read_at 
-                    ? (isDark ? 'rgba(99, 102, 241, 0.1)' : '#f0f9ff') 
+                  background: !item.read_at
+                    ? (isDark ? 'rgba(99, 102, 241, 0.1)' : '#f0f9ff')
                     : 'transparent',
                   borderBottom: isDark ? '1px solid #334155' : '1px solid #f0f0f0',
                   transition: 'background 0.2s',
@@ -191,33 +191,51 @@ export function NotificationsPopover() {
                 }}
                 className="notification-item"
               >
-                  {/* Icon based on notification data type */}
-                  <div style={{ marginTop: 2 }}>
-                     {getNotificationIcon(item)}
-                  </div>
-                  
-                  <div style={{ flex: 1 }}>
-                    <div style={{ marginBottom: 4 }}>
-                       <Text style={{ fontSize: 13 }}>
-                          {getNotificationMessage(item)}
-                       </Text>
-                    </div>
-                    <Text type="secondary" style={{ fontSize: 11 }}>
-                      {formatRelativeTime(item.created_at)}
+                {/* Icon based on notification data type */}
+                <div style={{ marginTop: 2 }}>
+                  {getNotificationIcon(item)}
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ marginBottom: 4 }}>
+                    <Text style={{ fontSize: 13 }}>
+                      {getNotificationMessage(item)}
                     </Text>
                   </div>
-                  
-                  {!item.read_at && (
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1' }} />
-                    </div>
-                  )}
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    {formatRelativeTime(item.created_at)}
+                  </Text>
+                </div>
+
+                {!item.read_at && (
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1' }} />
+                  </div>
+                )}
               </div>
             )}
           />
         )}
       </div>
-      
+
+      {/* View All footer */}
+      {notifications.length > 0 && (
+        <div style={{
+          padding: '10px 16px',
+          borderTop: isDark ? '1px solid #334155' : '1px solid #f0f0f0',
+          textAlign: 'center',
+        }}>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => { navigate('/notifications'); setOpen(false); }}
+            style={{ fontSize: 13, color: '#6366f1' }}
+          >
+            View All Notifications
+          </Button>
+        </div>
+      )}
+
       <style>{`
           .notification-item:hover {
               background: ${isDark ? 'rgba(255,255,255,0.05)' : '#fafafa'} !important;

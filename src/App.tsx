@@ -28,17 +28,18 @@ import { AnalyticsPage } from './features/time/pages/AnalyticsPage';
 import { InvoicesPage } from './features/time/pages/InvoicesPage';
 import SupportPage from './features/support/pages/SupportPage';
 import LibraryResourcesPage from './features/library/LibraryResourcesPage';
+import NotificationsPage from './features/notifications/NotificationsPage';
 
 /**
  * Protected Route Wrapper
  */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state: AuthState) => state.isAuthenticated);
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return <>{children}</>;
 }
 
@@ -47,11 +48,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
  */
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state: AuthState) => state.user);
-  
+
   if (user?.role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return <>{children}</>;
 }
 
@@ -65,7 +66,7 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/share/:token" element={<PublicSharePage />} />
-      
+
       {/* Protected Routes */}
       <Route
         path="/"
@@ -86,14 +87,15 @@ export function App() {
         <Route path="team" element={<TeamPage />} />
         <Route path="tags" element={<TagsPage />} />
         <Route path="profile" element={<ProfilePage />} />
-        
+        <Route path="notifications" element={<NotificationsPage />} />
+
         {/* Time Tracking */}
         <Route path="time" element={<MyTimePage />} />
         <Route path="time/approvals" element={<ApprovalsPage />} />
         <Route path="time/reports" element={<FinancialReportsPage />} />
         <Route path="time/analytics" element={<AnalyticsPage />} />
         <Route path="time/invoices" element={<InvoicesPage />} />
-        
+
         {/* Admin Only Routes */}
         <Route
           path="activity"
@@ -112,7 +114,7 @@ export function App() {
           }
         />
       </Route>
-      
+
       {/* 404 */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
