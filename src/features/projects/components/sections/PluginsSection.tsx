@@ -99,12 +99,12 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
     const pluginList = (pluginsData as any)?.data || pluginsData || [];
     const updates = (updatesData as any)?.data || updatesData;
     const pluginUpdates = updates?.plugins || [];
-    
+
     console.log('🔍 [PLUGINS DEBUG] Raw pluginsData:', pluginsData);
     console.log('🔍 [PLUGINS DEBUG] Raw updatesData:', updatesData);
     console.log('🔍 [PLUGINS DEBUG] Parsed pluginList:', pluginList);
     console.log('🔍 [PLUGINS DEBUG] Parsed pluginUpdates:', pluginUpdates);
-    
+
     // Create a map of update info by slug as fallback
     const updateMap = new Map<string, any>();
     for (const u of pluginUpdates) {
@@ -117,7 +117,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
     // If pluginList is an array, use it; otherwise check if it has a plugins key
     const rawPlugins = Array.isArray(pluginList) ? pluginList : (pluginList?.plugins || []);
     console.log('🔍 [PLUGINS DEBUG] rawPlugins count:', rawPlugins.length);
-    
+
     if (rawPlugins.length === 0) {
       console.log('⚠️ [PLUGINS DEBUG] NO PLUGINS - Using fallback to updates-only');
       // Fallback to updates-only if no plugins endpoint
@@ -136,14 +136,14 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
         };
       });
     }
-    
+
     // Build plugin list from all plugins
     // PREFER the plugin's own update_available field (from /plugins endpoint)
     // Only fall back to updates map if the plugin doesn't have that info
     return rawPlugins.map((p: any) => {
       const slug = p.slug || p.plugin?.replace(/^.*\/|\.php$/g, '') || 'unknown';
       const updateInfo = updateMap.get(slug);
-      
+
       console.log('🔍 [PLUGIN MAPPING] Processing:', {
         raw_plugin: p,
         computed_slug: slug,
@@ -151,11 +151,11 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
         has_p_plugin: !!p.plugin,
         updateInfo: updateInfo,
       });
-      
+
       // Plugin's own fields take priority
       const hasUpdate = p.update_available ?? !!updateInfo?.new_version;
       const newVersion = p.new_version || updateInfo?.new_version;
-      
+
       return {
         slug,
         name: p.name || p.Name || p.plugin?.split('/')[0]?.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || slug || 'Unknown Plugin',
@@ -253,8 +253,18 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
     mutationFn: async () => {
       return api.lsm.updateAllPlugins(project.id).then(r => r.data);
     },
-    onSuccess: () => {
-      message.success('All plugins updated successfully');
+    onSuccess: (data: any) => {
+      const result = data?.data || data;
+      const updated = result?.updated || [];
+      const failed = result?.failed || [];
+
+      if (failed.length > 0 && updated.length > 0) {
+        message.warning(`Updated ${updated.length} plugin${updated.length !== 1 ? 's' : ''}, ${failed.length} failed: ${failed.join(', ')}`);
+      } else if (failed.length > 0 && updated.length === 0) {
+        message.error(`All updates failed: ${failed.join(', ')}`);
+      } else {
+        message.success(`${updated.length} plugin${updated.length !== 1 ? 's' : ''} updated successfully`);
+      }
       queryClient.invalidateQueries({ queryKey: ['project-plugins', project.id] });
       queryClient.invalidateQueries({ queryKey: ['project-updates', project.id] });
     },
@@ -389,10 +399,10 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
                 });
                 updatePluginMutation.mutate(record.slug);
               }}
-              style={{ 
+              style={{
                 borderRadius: 6,
-                background: record.vulnerability 
-                  ? '#ef4444' 
+                background: record.vulnerability
+                  ? '#ef4444'
                   : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 border: 'none',
               }}
@@ -449,9 +459,9 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
   return (
     <div style={{ padding: '24px 0' }}>
       {/* Stats Summary */}
-      <div style={{ 
-        display: 'flex', 
-        gap: 24, 
+      <div style={{
+        display: 'flex',
+        gap: 24,
         marginBottom: 20,
         padding: '12px 16px',
         background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
@@ -487,12 +497,12 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
         </Space>
         <Space>
           {updatesCount > 0 && (
-            <Button 
-              type="primary" 
-              icon={<SyncOutlined />} 
+            <Button
+              type="primary"
+              icon={<SyncOutlined />}
               onClick={() => updateAllPluginsMutation.mutate()}
               loading={updateAllPluginsMutation.isPending}
-              style={{ 
+              style={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 border: 'none',
               }}
@@ -546,7 +556,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
       </div>
 
       {/* Table */}
-      <div style={{ 
+      <div style={{
         background: isDark ? '#1e293b' : '#fff',
         borderRadius: 12,
         border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',

@@ -96,6 +96,16 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
     onError: () => message.error('Failed to activate theme'),
   });
 
+  // Update theme mutation
+  const updateThemeMutation = useMutation({
+    mutationFn: (slug: string) => api.lsm.updateTheme(project.id, slug),
+    onSuccess: () => {
+      message.success('Theme updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['project-themes', project.id] });
+    },
+    onError: (error: any) => message.error(error?.response?.data?.error || 'Failed to update theme'),
+  });
+
   // Show empty state if not connected
   if (!hasLsmConnection) {
     return (
@@ -190,18 +200,20 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
       render: (_: any, record: Theme) => (
         <Space>
           {record.update_available && (
-            <Tooltip title="Update available">
-              <Button 
-                type="primary" 
-                size="small" 
+            <Tooltip title={`Update to ${record.new_version}`}>
+              <Button
+                type="primary"
+                size="small"
                 icon={<SyncOutlined />}
+                onClick={() => updateThemeMutation.mutate(record.slug)}
+                loading={updateThemeMutation.isPending}
               >
                 Update
               </Button>
             </Tooltip>
           )}
           <Tooltip title="Activate this theme">
-            <Button 
+            <Button
               size="small"
               icon={<SwapOutlined />}
               onClick={() => activateThemeMutation.mutate(record.slug)}
@@ -293,11 +305,16 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
             <Col>
               <Space direction="vertical" align="end">
                 {activeTheme.update_available && (
-                  <Button type="primary" icon={<SyncOutlined />}>
+                  <Button
+                    type="primary"
+                    icon={<SyncOutlined />}
+                    onClick={() => updateThemeMutation.mutate(activeTheme.slug)}
+                    loading={updateThemeMutation.isPending}
+                  >
                     Update Theme
                   </Button>
                 )}
-                <Button 
+                <Button
                   onClick={() => switchThemeMutation.mutate()}
                   loading={switchThemeMutation.isPending}
                 >

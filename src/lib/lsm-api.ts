@@ -239,6 +239,12 @@ export function createLsmApi(client: AxiosInstance) {
       client.post<any>(`${basePath(projectId)}/activate-theme`, { slug }),
 
     /**
+     * Update a specific theme (longer timeout for download + install)
+     */
+    updateTheme: (projectId: number, slug: string) =>
+      client.post<any>(`${basePath(projectId)}/update-theme`, { slug }, { timeout: 120000 }),
+
+    /**
      * Execute full emergency recovery
      */
     emergencyRecovery: (projectId: number) =>
