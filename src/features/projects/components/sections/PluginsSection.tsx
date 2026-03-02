@@ -349,27 +349,6 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
       ),
     },
     {
-      title: (
-        <Tooltip title="Automatically update plugins when new versions are released">
-          <span>Auto-update</span>
-        </Tooltip>
-      ),
-      key: 'auto_update',
-      width: 100,
-      align: 'center',
-      render: (_, record: Plugin) => (
-        <Switch
-          checked={record.auto_update}
-          loading={toggleAutoUpdateMutation.isPending}
-          onChange={(checked) =>
-            toggleAutoUpdateMutation.mutate({ slug: record.slug, enabled: checked })
-          }
-          size="small"
-          disabled={!record.is_active}
-        />
-      ),
-    },
-    {
       title: 'Update',
       key: 'update',
       width: 180,
