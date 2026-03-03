@@ -65,12 +65,13 @@ export function FloatingTimerWidget() {
 
   // Import auth store to check user role
   const user = useAuthStore((state) => state.user);
-  
-  // Hide for admin users - they don't track time
+
+  // Hide for pure admin users (role=admin) - they don't track time
+  // Developer-admins (is_admin=true, role=developer) still track time
   if (user?.role === 'admin') {
     return null;
   }
-  
+
   const {
     runningTimer,
     elapsedSeconds,
@@ -197,19 +198,19 @@ export function FloatingTimerWidget() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      
+
       // Don't close if clicking inside the popup
       if (popupRef.current && popupRef.current.contains(target)) {
         return;
       }
-      
+
       // Don't close if clicking on Ant Design dropdown portals
-      if (target.closest('.ant-select-dropdown') || 
-          target.closest('.ant-popover') ||
-          target.closest('.ant-popconfirm')) {
+      if (target.closest('.ant-select-dropdown') ||
+        target.closest('.ant-popover') ||
+        target.closest('.ant-popconfirm')) {
         return;
       }
-      
+
       // Close popup if not running
       if (!runningTimer) {
         setIsPopupOpen(false);

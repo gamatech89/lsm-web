@@ -49,7 +49,7 @@ const { Text } = Typography;
 
 // Custom hook for responsive breakpoints
 function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() => 
+  const [matches, setMatches] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia(query).matches : false
   );
   useEffect(() => {
@@ -412,9 +412,9 @@ export function AuthenticatedLayout() {
       )}
 
       {/* Main Content Area */}
-      <Layout 
-        style={{ 
-          marginLeft: siderWidth, 
+      <Layout
+        style={{
+          marginLeft: siderWidth,
           transition: 'margin-left 0.2s',
           background: contentBg,
         }}
@@ -439,9 +439,9 @@ export function AuthenticatedLayout() {
               type="text"
               icon={isMobile ? <MenuUnfoldOutlined /> : (collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />)}
               onClick={() => isMobile ? setDrawerOpen(true) : setCollapsed(!collapsed)}
-              style={{ 
-                fontSize: 16, 
-                width: 40, 
+              style={{
+                fontSize: 16,
+                width: 40,
                 height: 40,
                 borderRadius: 10,
                 background: isDark ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.08)',
@@ -478,14 +478,14 @@ export function AuthenticatedLayout() {
             )}
 
             {/* Set Status — icon only on mobile */}
-            <Button 
-                type="text" 
-                danger
-                icon={<MedicineBoxOutlined />}
-                onClick={() => setIsAvailabilityModalOpen(true)}
-                style={{ borderRadius: 10, color: '#ef4444' }}
+            <Button
+              type="text"
+              danger
+              icon={<MedicineBoxOutlined />}
+              onClick={() => setIsAvailabilityModalOpen(true)}
+              style={{ borderRadius: 10, color: '#ef4444' }}
             >
-                {!isMobile && t('availability.setStatus')}
+              {!isMobile && t('availability.setStatus')}
             </Button>
 
             {/* Notifications */}
@@ -493,9 +493,9 @@ export function AuthenticatedLayout() {
 
             {/* Divider — hidden on mobile */}
             {!isMobile && (
-              <div style={{ 
-                width: 1, 
-                height: 24, 
+              <div style={{
+                width: 1,
+                height: 24,
                 background: borderColor,
                 margin: '0 4px',
               }} />
@@ -538,8 +538,8 @@ export function AuthenticatedLayout() {
 
             {/* User Menu */}
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
-              <Space 
-                style={{ 
+              <Space
+                style={{
                   cursor: 'pointer',
                   padding: '4px 8px',
                   borderRadius: 8,
@@ -550,7 +550,7 @@ export function AuthenticatedLayout() {
               >
                 <Avatar
                   size={isMobile ? 32 : 36}
-                  style={{ 
+                  style={{
                     background: 'linear-gradient(135deg, #6B21A8 0%, #A855F7 100%)',
                     fontWeight: 600,
                   }}
@@ -561,19 +561,19 @@ export function AuthenticatedLayout() {
                 {/* Hide user text on mobile */}
                 {!isMobile && (
                   <div style={{ lineHeight: 1.2 }}>
-                    <Text 
-                      strong 
-                      style={{ 
-                        display: 'block', 
+                    <Text
+                      strong
+                      style={{
+                        display: 'block',
                         color: textColor,
                         fontSize: 13,
                       }}
                     >
                       {user?.name}
                     </Text>
-                    <Text 
-                      style={{ 
-                        fontSize: 11, 
+                    <Text
+                      style={{
+                        fontSize: 11,
                         color: textSecondary,
                         textTransform: 'capitalize',
                       }}
@@ -601,11 +601,11 @@ export function AuthenticatedLayout() {
       {/* Floating Timer Widget */}
       <Suspense fallback={null}>
         <FloatingTimerWidget />
-        <SetAvailabilityModal 
-          open={isAvailabilityModalOpen} 
-          onClose={() => setIsAvailabilityModalOpen(false)} 
+        <SetAvailabilityModal
+          open={isAvailabilityModalOpen}
+          onClose={() => setIsAvailabilityModalOpen(false)}
         />
-        {user?.role === 'admin' && <AiChatPanel />}
+        {(user?.role === 'admin' || user?.is_admin) && <AiChatPanel />}
       </Suspense>
 
       {/* Sidebar Styles */}

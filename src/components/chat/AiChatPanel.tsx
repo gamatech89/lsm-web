@@ -12,7 +12,7 @@ export function AiChatPanel() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const user = useAuthStore((state) => state.user);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
-  
+
   const isDark = resolvedTheme === 'dark';
 
   const {
@@ -24,8 +24,8 @@ export function AiChatPanel() {
     dismissError,
   } = useAiChat();
 
-  // Only show for admins
-  if (user?.role !== 'admin') {
+  // Only show for admins (role=admin or is_admin flag)
+  if (user?.role !== 'admin' && !user?.is_admin) {
     return null;
   }
 
@@ -59,7 +59,7 @@ export function AiChatPanel() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-    
+
     sendMessage(input);
     setInput('');
   };
@@ -101,7 +101,7 @@ export function AiChatPanel() {
       {/* Floating button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-300 hover:scale-105 ${isOpen ? 'hidden' : 'flex'} items-center gap-2`}
+        className={`fixed bottom-28 right-6 z-50 p-4 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-300 hover:scale-105 ${isOpen ? 'hidden' : 'flex'} items-center gap-2`}
         title="LSM AI Assistant (⌘K)"
       >
         <Bot className="w-6 h-6" />
@@ -110,18 +110,18 @@ export function AiChatPanel() {
 
       {/* Chat panel */}
       {isOpen && (
-        <div 
+        <div
           className="fixed bottom-6 right-6 z-50 w-[420px] h-[600px] max-h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           style={{
             background: colors.panelBg,
             border: `1px solid ${colors.border}`,
-            boxShadow: isDark 
-              ? '0 25px 50px -12px rgba(0, 0, 0, 0.5)' 
+            boxShadow: isDark
+              ? '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
               : '0 25px 50px -12px rgba(124, 58, 237, 0.25)',
           }}
         >
           {/* Header */}
-          <div 
+          <div
             className="flex items-center justify-between px-4 py-3"
             style={{
               background: colors.headerBg,
@@ -141,7 +141,7 @@ export function AiChatPanel() {
               <button
                 onClick={clearMessages}
                 className="p-2 rounded-xl transition-all duration-200"
-                style={{ 
+                style={{
                   background: 'transparent',
                   color: 'rgba(255,255,255,0.7)',
                   border: 'none',
@@ -162,7 +162,7 @@ export function AiChatPanel() {
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 rounded-xl transition-all duration-200"
-                style={{ 
+                style={{
                   background: 'transparent',
                   color: 'rgba(255,255,255,0.7)',
                   border: 'none',
@@ -184,27 +184,27 @@ export function AiChatPanel() {
           </div>
 
           {/* Messages */}
-          <div 
+          <div
             className="flex-1 overflow-y-auto p-4"
             style={{ backgroundColor: colors.messagesBg }}
           >
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center px-6">
-                <div 
+                <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-violet-500/30"
-                  style={{ 
+                  style={{
                     background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
                   }}
                 >
                   <Bot className="w-8 h-8 text-white" />
                 </div>
-                <h3 
+                <h3
                   className="text-lg font-semibold mb-2"
                   style={{ color: colors.text }}
                 >
                   How can I help you today?
                 </h3>
-                <p 
+                <p
                   className="text-sm leading-relaxed"
                   style={{ color: colors.textMuted }}
                 >
@@ -230,9 +230,9 @@ export function AiChatPanel() {
 
           {/* Error banner */}
           {error && (
-            <div 
+            <div
               className="px-4 py-2"
-              style={{ 
+              style={{
                 backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)',
                 borderTop: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'}`,
               }}
@@ -250,10 +250,10 @@ export function AiChatPanel() {
           )}
 
           {/* Input */}
-          <form 
-            onSubmit={handleSubmit} 
+          <form
+            onSubmit={handleSubmit}
             className="p-4"
-            style={{ 
+            style={{
               background: colors.inputBg,
               borderTop: `1px solid ${colors.border}`,
             }}
@@ -267,7 +267,7 @@ export function AiChatPanel() {
                 placeholder="Ask anything about your sites..."
                 rows={1}
                 className="flex-1 resize-none rounded-xl px-4 py-3 text-sm focus:outline-none transition-all"
-                style={{ 
+                style={{
                   maxHeight: '120px',
                   backgroundColor: colors.inputBgInner,
                   border: `1px solid ${colors.inputBorder}`,
@@ -291,7 +291,7 @@ export function AiChatPanel() {
                 <Send className="w-5 h-5" />
               </button>
             </div>
-            <p 
+            <p
               className="text-xs mt-2 text-center"
               style={{ color: colors.textFaint }}
             >
