@@ -124,6 +124,14 @@ export function ProjectDetailPageV2() {
     staleTime: 10000,
   });
 
+  // Fetch updates for badge counts in sidebar nav
+  const { data: navUpdates } = useQuery({
+    queryKey: ['lsm-updates', projectId],
+    queryFn: () => api.lsm.getUpdates(projectId).then(r => (r.data as any)?.data || r.data),
+    enabled: !!project?.health_check_secret && lsmStatus?.connected,
+    staleTime: 60000,
+  });
+
   // SSO Login
   const [ssoLoading, setSsoLoading] = useState(false);
   const handleSsoLogin = async () => {
@@ -211,13 +219,6 @@ export function ProjectDetailPageV2() {
   const pendingTodosCount = project.todos?.filter((t: any) => t.status !== 'completed').length || 0;
   const resourcesCount = project.resources?.length || 0;
 
-  // Fetch updates for badge counts in sidebar nav
-  const { data: navUpdates } = useQuery({
-    queryKey: ['lsm-updates', projectId],
-    queryFn: () => api.lsm.getUpdates(projectId).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project?.health_check_secret && lsmStatus?.connected,
-    staleTime: 60000,
-  });
   const pluginUpdateCount = navUpdates?.plugins?.length || 0;
   const themeUpdateCount = navUpdates?.themes?.length || 0;
   const coreUpdateCount = navUpdates?.core ? 1 : 0;
