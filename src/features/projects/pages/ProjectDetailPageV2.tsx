@@ -211,6 +211,17 @@ export function ProjectDetailPageV2() {
   const pendingTodosCount = project.todos?.filter((t: any) => t.status !== 'completed').length || 0;
   const resourcesCount = project.resources?.length || 0;
 
+  // Fetch updates for badge counts in sidebar nav
+  const { data: navUpdates } = useQuery({
+    queryKey: ['lsm-updates', projectId],
+    queryFn: () => api.lsm.getUpdates(projectId).then(r => (r.data as any)?.data || r.data),
+    enabled: !!project?.health_check_secret && lsmStatus?.connected,
+    staleTime: 60000,
+  });
+  const pluginUpdateCount = navUpdates?.plugins?.length || 0;
+  const themeUpdateCount = navUpdates?.themes?.length || 0;
+  const coreUpdateCount = navUpdates?.core ? 1 : 0;
+
   // Render active section content
   const renderSectionContent = () => {
     const commonProps = { project };
@@ -385,6 +396,9 @@ export function ProjectDetailPageV2() {
             counts={{
               todos: pendingTodosCount,
               resources: resourcesCount,
+              plugins: pluginUpdateCount,
+              themes: themeUpdateCount,
+              core: coreUpdateCount,
             }}
             hasLsmConnection={!!project.health_check_secret && lsmStatus?.connected}
             canManageCredentials={canManageCredentials}
@@ -461,6 +475,9 @@ export function ProjectDetailPageV2() {
           counts={{
             todos: pendingTodosCount,
             resources: resourcesCount,
+            plugins: pluginUpdateCount,
+            themes: themeUpdateCount,
+            core: coreUpdateCount,
           }}
           hasLsmConnection={!!project.health_check_secret && lsmStatus?.connected}
         />
