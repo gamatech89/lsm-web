@@ -9,7 +9,7 @@
 // ENUMS & CONSTANTS
 // =============================================================================
 
-export type HealthStatus = 'online' | 'down_error' | 'updating';
+export type HealthStatus = 'online' | 'down_error' | 'confirming_down' | 'updating';
 
 export type SecurityStatus = 'secure' | 'monitoring' | 'compromised' | 'hacked';
 

@@ -28,6 +28,12 @@ export const healthStatusConfig: Record<HealthStatus, StatusConfig> = {
     bgColor: '#fff2f0',
     icon: 'CloseCircle',
   },
+  confirming_down: {
+    label: 'Checking...',
+    color: '#faad14',
+    bgColor: '#fffbe6',
+    icon: 'ExclamationCircle',
+  },
   updating: {
     label: 'Updating',
     color: '#faad14',

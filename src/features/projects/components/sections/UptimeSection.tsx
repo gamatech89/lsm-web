@@ -110,7 +110,7 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
 
   // Determine status - check for 'online' (DB value) and 'healthy'/'ok' (API values)
   const isOnline = healthStatus === 'online' || healthStatus === 'healthy' || healthStatus === 'ok';
-  const isWarning = healthStatus === 'warning' || healthStatus === 'updating';
+  const isWarning = healthStatus === 'warning' || healthStatus === 'updating' || healthStatus === 'confirming_down';
   const isDown = healthStatus === 'down_error' || healthStatus === 'down';
   const hasNeverChecked = !lastCheckedAt;
 
