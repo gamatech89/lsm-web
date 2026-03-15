@@ -324,47 +324,47 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
 
               {/* Key metrics */}
               <Col xs={24} sm={16} md={18}>
-                <Row gutter={[16, 16]}>
+               <Row gutter={[16, 16]}>
                   {/* Trackers */}
                   <Col xs={12} sm={6}>
-                    <Card
-                      size="small"
+                    <div
                       style={{
                         ...cardStyle,
                         borderTop: `3px solid ${(auditData.summary?.trackingRequests || 0) > 0 ? '#ef4444' : '#22c55e'}`,
                         textAlign: 'center',
+                        padding: '16px 12px',
                       }}
                     >
                       <BugOutlined style={{ fontSize: 24, color: (auditData.summary?.trackingRequests || 0) > 0 ? '#ef4444' : '#22c55e', marginBottom: 4 }} />
                       <Statistic value={auditData.summary?.trackingRequests || 0} valueStyle={{ fontSize: 24, fontWeight: 700 }} />
                       <Text type="secondary" style={{ fontSize: 11 }}>{t('gdpr.stats.trackers')}</Text>
-                    </Card>
+                    </div>
                   </Col>
 
                   {/* Tracking Cookies */}
                   <Col xs={12} sm={6}>
-                    <Card
-                      size="small"
+                    <div
                       style={{
                         ...cardStyle,
                         borderTop: `3px solid ${(auditData.summary?.trackingCookies || 0) > 0 ? '#ef4444' : '#22c55e'}`,
                         textAlign: 'center',
+                        padding: '16px 12px',
                       }}
                     >
                       <LockOutlined style={{ fontSize: 24, color: (auditData.summary?.trackingCookies || 0) > 0 ? '#ef4444' : '#22c55e', marginBottom: 4 }} />
                       <Statistic value={auditData.summary?.trackingCookies || 0} valueStyle={{ fontSize: 24, fontWeight: 700 }} />
                       <Text type="secondary" style={{ fontSize: 11 }}>{t('gdpr.stats.trackingCookies')}</Text>
-                    </Card>
+                    </div>
                   </Col>
 
                   {/* Banner */}
                   <Col xs={12} sm={6}>
-                    <Card
-                      size="small"
+                    <div
                       style={{
                         ...cardStyle,
                         borderTop: `3px solid ${auditData.summary?.cookieBannerDetected ? '#22c55e' : '#ef4444'}`,
                         textAlign: 'center',
+                        padding: '16px 12px',
                       }}
                     >
                       {auditData.summary?.cookieBannerDetected
@@ -374,18 +374,18 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
                       <Text type="secondary" style={{ fontSize: 11 }}>
                         {t('gdpr.stats.banner')} {auditData.summary?.cookieBannerSolution?.length > 0 && `(${auditData.summary.cookieBannerSolution.join(', ')})`}
                       </Text>
-                    </Card>
+                    </div>
                   </Col>
 
                   {/* Accept/Reject Flow */}
                   {auditData.summary?.acceptFlowWorks !== null && auditData.summary?.acceptFlowWorks !== undefined && (
                     <Col xs={12} sm={6}>
-                      <Card
-                        size="small"
+                      <div
                         style={{
                           ...cardStyle,
                           borderTop: `3px solid ${auditData.summary.acceptFlowWorks && auditData.summary.rejectFlowClean ? '#22c55e' : '#ef4444'}`,
                           textAlign: 'center',
+                          padding: '16px 12px',
                         }}
                       >
                         <Space direction="vertical" size={2}>
@@ -412,7 +412,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
                             </>
                           )}
                         </Space>
-                      </Card>
+                      </div>
                     </Col>
                   )}
                 </Row>
