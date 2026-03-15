@@ -53,6 +53,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
+import { useThemeStore } from '@/stores/theme';
 
 interface GdprAuditSectionProps {
   project: any;
@@ -62,6 +63,13 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
   const queryClient = useQueryClient();
   const { message } = App.useApp();
   const [auditMode, setAuditMode] = useState<'quick' | 'full'>('quick');
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
+  const cardStyle = {
+    borderRadius: 12,
+    background: isDark ? '#1e293b' : '#fff',
+    border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+  };
 
 
   const { data: latestReport, isLoading: loadingReport } = useQuery({
@@ -211,7 +219,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
 
       {/* Running */}
       {runAuditMutation.isPending && (
-        <Card style={{ borderRadius: 12, textAlign: 'center', padding: 40, marginBottom: 16 }}>
+        <Card style={{ ...cardStyle, textAlign: 'center', padding: 40, marginBottom: 16 }}>
           <Spin size="large" />
           <div style={{ marginTop: 16 }}>
             <Text strong style={{ fontSize: 16 }}>
@@ -293,7 +301,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
                   </Tag>
                 </Space>
               }
-              style={{ borderRadius: 12, marginBottom: 16 }}
+              style={{ ...cardStyle, marginBottom: 16 }}
             >
               {/* Summary text */}
               <Alert
@@ -387,7 +395,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
           {/* Score + Summary */}
           <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
             <Col xs={24} sm={8} md={6}>
-              <Card style={{ borderRadius: 12, textAlign: 'center', height: '100%' }}>
+              <Card style={{ ...cardStyle, textAlign: 'center', height: '100%' }}>
                 <Progress
                   type="circle"
                   percent={auditData.aiSummary?.score ?? auditData.score ?? 0}
@@ -407,7 +415,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
             </Col>
 
             <Col xs={12} sm={4} md={4}>
-              <Card style={{ borderRadius: 12, textAlign: 'center', height: '100%' }}>
+              <Card style={{ ...cardStyle, textAlign: 'center', height: '100%' }}>
                 <BugOutlined style={{ fontSize: 28, color: (auditData.summary?.trackingRequests || 0) > 0 ? '#ef4444' : '#22c55e', marginBottom: 6 }} />
                 <Statistic value={auditData.summary?.trackingRequests || 0} valueStyle={{ fontSize: 22, fontWeight: 700 }} />
                 <Text type="secondary" style={{ fontSize: 11 }}>Trackers</Text>
@@ -415,7 +423,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
             </Col>
 
             <Col xs={12} sm={4} md={4}>
-              <Card style={{ borderRadius: 12, textAlign: 'center', height: '100%' }}>
+              <Card style={{ ...cardStyle, textAlign: 'center', height: '100%' }}>
                 <LockOutlined style={{ fontSize: 28, color: (auditData.summary?.trackingCookies || 0) > 0 ? '#ef4444' : '#22c55e', marginBottom: 6 }} />
                 <Statistic value={auditData.summary?.trackingCookies || 0} valueStyle={{ fontSize: 22, fontWeight: 700 }} />
                 <Text type="secondary" style={{ fontSize: 11 }}>Tracking Cookies</Text>
@@ -423,7 +431,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
             </Col>
 
             <Col xs={12} sm={4} md={5}>
-              <Card style={{ borderRadius: 12, textAlign: 'center', height: '100%' }}>
+              <Card style={{ ...cardStyle, textAlign: 'center', height: '100%' }}>
                 {auditData.summary?.cookieBannerDetected ? (
                   <CheckCircleOutlined style={{ fontSize: 28, color: '#22c55e', marginBottom: 6 }} />
                 ) : (
@@ -439,7 +447,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
             {/* Accept/Reject flow cards (full mode) */}
             {auditData.summary?.acceptFlowWorks !== null && auditData.summary?.acceptFlowWorks !== undefined && (
               <Col xs={12} sm={4} md={5}>
-                <Card style={{ borderRadius: 12, textAlign: 'center', height: '100%' }}>
+                <Card style={{ ...cardStyle, textAlign: 'center', height: '100%' }}>
                   <Space direction="vertical" size={4}>
                     <div>
                       {auditData.summary.acceptFlowWorks
@@ -491,7 +499,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
           {auditData.checks && auditData.checks.length > 0 && (
             <Card
               title={<Space><EyeOutlined /><span>Audit Checks</span></Space>}
-              style={{ borderRadius: 12, marginBottom: 16 }}
+              style={{ ...cardStyle, marginBottom: 16 }}
             >
               <Table
                 dataSource={auditData.checks.map((c: any, i: number) => ({ ...c, key: i }))}
@@ -537,7 +545,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
           {auditData.cookieBanner && (
             <Card
               title={<Space><GlobalOutlined /><span>Cookie Banner Analysis</span></Space>}
-              style={{ borderRadius: 12, marginBottom: 16 }}
+              style={{ ...cardStyle, marginBottom: 16 }}
             >
               <Descriptions bordered size="small" column={1}>
                 <Descriptions.Item label="Detected">
@@ -613,7 +621,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
           {auditData.trackingByService && Object.keys(auditData.trackingByService).length > 0 && (
             <Card
               title={<Space><BugOutlined /><span>Tracking Services (pre-consent)</span><Tag color="error">{Object.keys(auditData.trackingByService).length}</Tag></Space>}
-              style={{ borderRadius: 12, marginBottom: 16 }}
+              style={{ ...cardStyle, marginBottom: 16 }}
             >
               <Table
                 dataSource={Object.entries(auditData.trackingByService).map(([service, info]: [string, any]) => ({ key: service, service, ...info }))}
@@ -643,7 +651,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
           {(auditData.cookies || []).length > 0 && (
             <Card
               title={<Space><LockOutlined /><span>All Cookies</span><Tag>{auditData.cookies.length}</Tag></Space>}
-              style={{ borderRadius: 12, marginBottom: 16 }}
+              style={{ ...cardStyle, marginBottom: 16 }}
             >
               <Table
                 dataSource={auditData.cookies.map((c: any, i: number) => ({ ...c, key: `${c.name}-${i}` }))}
@@ -677,7 +685,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
           {auditData.scenarios?.acceptAll && (
             <Card
               title={<Space><CheckOutlined style={{ color: '#22c55e' }} /><span>Accept-All Flow</span></Space>}
-              style={{ borderRadius: 12, marginBottom: 16 }}
+              style={{ ...cardStyle, marginBottom: 16 }}
             >
               {auditData.scenarios.acceptAll.clicked ? (
                 <div>
@@ -708,7 +716,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
           {auditData.scenarios?.reject && (
             <Card
               title={<Space><StopOutlined style={{ color: auditData.summary?.rejectFlowClean ? '#22c55e' : '#ef4444' }} /><span>Reject Flow</span></Space>}
-              style={{ borderRadius: 12, marginBottom: 16 }}
+              style={{ ...cardStyle, marginBottom: 16 }}
             >
               {auditData.scenarios.reject.clicked ? (
                 <div>
@@ -739,7 +747,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
           )}
 
           {/* Metadata */}
-          <Card style={{ borderRadius: 12 }}>
+          <Card style={cardStyle}>
             <Space split={<Divider type="vertical" />}>
               <Space>
                 <ClockCircleOutlined style={{ color: '#64748b' }} />
