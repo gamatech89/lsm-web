@@ -422,20 +422,29 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
 
           {/* Issues Alert */}
           {auditData.issues && auditData.issues.length > 0 && (
-            <Alert
-              type={score >= 80 ? 'info' : score >= 50 ? 'warning' : 'error'}
-              showIcon
-              icon={<ExclamationCircleOutlined />}
-              message={`${auditData.issues.length} issue(s) detected`}
-              description={
-                <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-                  {auditData.issues.map((issue: string, i: number) => (
-                    <li key={i} style={{ marginBottom: 4 }}>{issue}</li>
-                  ))}
-                </ul>
-              }
-              style={{ marginBottom: 16, borderRadius: 8 }}
-            />
+            <div
+              style={{
+                marginBottom: 16,
+                borderRadius: 8,
+                padding: '12px 16px',
+                background: isDark
+                  ? (score >= 80 ? 'rgba(99, 102, 241, 0.1)' : score >= 50 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)')
+                  : (score >= 80 ? '#f0f5ff' : score >= 50 ? '#fffbe6' : '#fff2f0'),
+                border: `1px solid ${score >= 80 ? (isDark ? 'rgba(99, 102, 241, 0.3)' : '#d6e4ff') : score >= 50 ? (isDark ? 'rgba(245, 158, 11, 0.25)' : '#ffe58f') : (isDark ? 'rgba(239, 68, 68, 0.25)' : '#ffccc7')}`,
+              }}
+            >
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                <ExclamationCircleOutlined style={{ color: score >= 80 ? '#6366f1' : score >= 50 ? '#f59e0b' : '#ef4444', marginTop: 3 }} />
+                <div>
+                  <Text strong>{auditData.issues.length} issue(s) detected</Text>
+                  <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
+                    {auditData.issues.map((issue: string, i: number) => (
+                      <li key={i} style={{ marginBottom: 4 }}>{issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* ═══════════════════════════════════════════════════════════
@@ -459,15 +468,27 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
               style={{ ...cardStyle, marginBottom: 24 }}
             >
               {/* Summary text */}
-              <Alert
-                type={
-                  (auditData.aiSummary.score ?? 0) >= 80 ? 'success' :
-                  (auditData.aiSummary.score ?? 0) >= 50 ? 'warning' : 'error'
-                }
-                message={auditData.aiSummary.summary}
-                showIcon
-                style={{ marginBottom: 16, borderRadius: 8 }}
-              />
+              <div
+                style={{
+                  marginBottom: 16,
+                  borderRadius: 8,
+                  padding: '12px 16px',
+                  display: 'flex',
+                  gap: 8,
+                  alignItems: 'flex-start',
+                  background: isDark
+                    ? ((auditData.aiSummary.score ?? 0) >= 80 ? 'rgba(34, 197, 94, 0.1)' : (auditData.aiSummary.score ?? 0) >= 50 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)')
+                    : ((auditData.aiSummary.score ?? 0) >= 80 ? '#f6ffed' : (auditData.aiSummary.score ?? 0) >= 50 ? '#fffbe6' : '#fff2f0'),
+                  border: `1px solid ${(auditData.aiSummary.score ?? 0) >= 80 ? (isDark ? 'rgba(34, 197, 94, 0.25)' : '#b7eb8f') : (auditData.aiSummary.score ?? 0) >= 50 ? (isDark ? 'rgba(245, 158, 11, 0.25)' : '#ffe58f') : (isDark ? 'rgba(239, 68, 68, 0.25)' : '#ffccc7')}`,
+                }}
+              >
+                {(auditData.aiSummary.score ?? 0) >= 80
+                  ? <CheckCircleOutlined style={{ color: '#22c55e', marginTop: 3, flexShrink: 0 }} />
+                  : (auditData.aiSummary.score ?? 0) >= 50
+                    ? <WarningOutlined style={{ color: '#f59e0b', marginTop: 3, flexShrink: 0 }} />
+                    : <CloseCircleOutlined style={{ color: '#ef4444', marginTop: 3, flexShrink: 0 }} />}
+                <Text>{auditData.aiSummary.summary}</Text>
+              </div>
 
               {/* Violations */}
               {auditData.aiSummary.violations?.length > 0 && (
