@@ -72,6 +72,9 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
   const [pendingJobId, setPendingJobId] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [auditStartTime, setAuditStartTime] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [activeStep, setActiveStep] = useState(0);
 
   const cardStyle = {
     borderRadius: 12,
@@ -85,6 +88,24 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
     enabled: !!project.id,
     staleTime: 1000 * 60 * 5,
   });
+
+  // Audit progress steps
+  const quickSteps = [
+    { icon: <GlobalOutlined />, label: 'Connecting to website...', color: '#6366f1' },
+    { icon: <BugOutlined />, label: 'Scanning for trackers & cookies...', color: '#8b5cf6' },
+    { icon: <EyeOutlined />, label: 'Detecting consent banner...', color: '#a78bfa' },
+    { icon: <ExperimentOutlined />, label: 'AI analyzing compliance...', color: '#6366f1' },
+  ];
+  const fullSteps = [
+    { icon: <GlobalOutlined />, label: 'Connecting to website...', color: '#6366f1' },
+    { icon: <BugOutlined />, label: 'Scanning pre-consent trackers...', color: '#8b5cf6' },
+    { icon: <EyeOutlined />, label: 'Detecting consent banner UI...', color: '#a78bfa' },
+    { icon: <CheckOutlined />, label: 'Testing Accept-All flow...', color: '#22c55e' },
+    { icon: <StopOutlined />, label: 'Testing Reject flow...', color: '#ef4444' },
+    { icon: <LockOutlined />, label: 'Analyzing cookies & compliance...', color: '#f59e0b' },
+    { icon: <ExperimentOutlined />, label: 'AI generating report...', color: '#6366f1' },
+  ];
+  const steps = auditMode === 'full' ? fullSteps : quickSteps;
 
   // Poll for audit status when we have a pending job
   useEffect(() => {
@@ -100,28 +121,27 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
         const data = res.data;
 
         if (data.status === 'completed') {
-          // Audit done — clear polling and refresh data
           setPendingJobId(null);
           setIsPolling(false);
+          setAuditStartTime(null);
+          setActiveStep(0);
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           message.success('GDPR audit completed!');
           queryClient.invalidateQueries({ queryKey: ['gdpr-audit', project.id] });
         } else if (data.status === 'failed') {
           setPendingJobId(null);
           setIsPolling(false);
+          setAuditStartTime(null);
+          setActiveStep(0);
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           message.error(data.message || 'GDPR audit failed');
         }
-        // else status === 'processing' — keep polling
       } catch (error: any) {
         console.error('Polling error:', error);
-        // Don't stop polling on network hiccup, only after many failures
       }
     };
 
-    // Poll every 4 seconds
     pollIntervalRef.current = setInterval(poll, 4000);
-    // Also poll immediately
     poll();
 
     return () => {
@@ -129,21 +149,43 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
     };
   }, [pendingJobId, project.id, i18n.language]);
 
+  // Elapsed time counter & step progression
+  useEffect(() => {
+    if (!auditStartTime) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - auditStartTime) / 1000);
+      setElapsedSeconds(elapsed);
+
+      // Auto-advance steps based on elapsed time
+      const stepDuration = auditMode === 'full'
+        ? [0, 5, 15, 25, 40, 55, 65] // full: ~80s total
+        : [0, 3, 8, 14];              // quick: ~18s total
+      const currentStep = stepDuration.filter(t => elapsed >= t).length - 1;
+      setActiveStep(Math.min(currentStep, steps.length - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [auditStartTime, auditMode]);
+
   const runAuditMutation = useMutation({
     mutationFn: (mode: string) => apiClient.post(`/projects/${project.id}/gdpr-audit`, { mode, locale: i18n.language?.startsWith('de') ? 'de' : 'en' }),
     onSuccess: (response) => {
       const data = response.data;
       if (data.status === 'processing' && data.jobId) {
-        // Async mode — start polling
         setPendingJobId(data.jobId);
+        setAuditStartTime(Date.now());
+        setActiveStep(0);
       } else if (data.status === 'completed') {
-        // Sync mode (local dev) — done immediately
         message.success('GDPR audit completed!');
         queryClient.invalidateQueries({ queryKey: ['gdpr-audit', project.id] });
       }
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Failed to run GDPR audit');
+      setAuditStartTime(null);
+      setActiveStep(0);
     },
   });
 
@@ -215,6 +257,12 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
     return <CloseCircleOutlined style={{ color: '#ef4444', fontSize: 18 }} />;
   };
 
+  const formatElapsed = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  };
+
   return (
     <div style={{ padding: '24px 0' }}>
       {/* Header */}
@@ -272,18 +320,126 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
         </Row>
       </div>
 
-      {/* Running */}
+      {/* Running — Stepped Progress */}
       {isAuditRunning && (
-        <Card style={{ ...cardStyle, textAlign: 'center', padding: 40, marginBottom: 16 }}>
-          <Spin size="large" />
-          <div style={{ marginTop: 16 }}>
-            <Text strong style={{ fontSize: 16 }}>
-              {t('gdpr.running.title', { mode: auditMode === 'full' ? t('gdpr.full') : t('gdpr.quick') })}
-            </Text>
+        <Card
+          style={{
+            ...cardStyle,
+            marginBottom: 16,
+            overflow: 'hidden',
+            background: isDark
+              ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.04) 100%)'
+              : 'linear-gradient(135deg, rgba(99, 102, 241, 0.04) 0%, rgba(139, 92, 246, 0.02) 100%)',
+          }}
+        >
+          {/* Animated progress bar at top */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+            background: isDark ? '#334155' : '#e2e8f0',
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              height: '100%',
+              background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa, #6366f1)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 2s linear infinite',
+              width: `${Math.min(((activeStep + 1) / steps.length) * 100, 95)}%`,
+              transition: 'width 1s ease',
+              borderRadius: 2,
+            }} />
           </div>
-          <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-            {t('gdpr.running.subtitle')}
-          </Text>
+          <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+
+          <div style={{ padding: '24px 28px' }}>
+            {/* Title row with elapsed time */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div>
+                <Text strong style={{ fontSize: 16 }}>
+                  <SafetyOutlined style={{ marginRight: 8, color: '#6366f1' }} />
+                  {auditMode === 'full' ? 'Running Full Audit' : 'Running Quick Scan'}
+                </Text>
+                <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 2 }}>
+                  {project.url}
+                </Text>
+              </div>
+              <Tag
+                style={{
+                  fontSize: 13,
+                  padding: '4px 12px',
+                  fontWeight: 600,
+                  fontVariantNumeric: 'tabular-nums',
+                  background: isDark ? '#1e293b' : '#f8fafc',
+                  border: isDark ? '1px solid #475569' : '1px solid #e2e8f0',
+                }}
+              >
+                <ClockCircleOutlined style={{ marginRight: 4, color: '#6366f1' }} />
+                {formatElapsed(elapsedSeconds)}
+              </Tag>
+            </div>
+
+            {/* Step indicators */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {steps.map((step, i) => {
+                const isActive = i === activeStep;
+                const isDone = i < activeStep;
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      transition: 'all 0.4s ease',
+                      background: isActive
+                        ? (isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.08)')
+                        : 'transparent',
+                      opacity: isDone ? 0.5 : i > activeStep ? 0.35 : 1,
+                    }}
+                  >
+                    {/* Icon */}
+                    <div style={{
+                      width: 28, height: 28,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 14,
+                      flexShrink: 0,
+                      transition: 'all 0.3s ease',
+                      background: isDone
+                        ? '#22c55e'
+                        : isActive
+                          ? step.color
+                          : (isDark ? '#334155' : '#e2e8f0'),
+                      color: isDone || isActive ? '#fff' : (isDark ? '#64748b' : '#94a3b8'),
+                    }}>
+                      {isDone ? <CheckOutlined style={{ fontSize: 12 }} /> : step.icon}
+                    </div>
+
+                    {/* Label */}
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: isActive ? 600 : 400,
+                        color: isActive
+                          ? (isDark ? '#e2e8f0' : '#1e293b')
+                          : (isDark ? '#94a3b8' : '#64748b'),
+                      }}
+                    >
+                      {isDone ? step.label.replace('...', '') + ' ✓' : step.label}
+                    </Text>
+
+                    {/* Spinning indicator for active step */}
+                    {isActive && (
+                      <Spin size="small" style={{ marginLeft: 'auto' }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </Card>
       )}
 
