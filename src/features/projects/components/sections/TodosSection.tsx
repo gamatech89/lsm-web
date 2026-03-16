@@ -652,10 +652,12 @@ export default function TodosSection({ project }: TodosSectionProps) {
                   minWidth: 250,
                   background: isDropTarget
                     ? isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.08)'
-                    : isDark ? '#1e293b' : '#f8fafc',
+                    : isDark ? 'rgba(15,23,42,0.6)' : '#f8fafc',
                   borderRadius: 12,
                   padding: 12,
-                  border: isDropTarget ? '2px dashed #6366f1' : '2px dashed transparent',
+                  border: isDropTarget
+                    ? '2px dashed #6366f1'
+                    : isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e2e8f0',
                   transition: 'all 0.2s ease',
                   minHeight: 200,
                 }}
@@ -688,12 +690,17 @@ export default function TodosSection({ project }: TodosSectionProps) {
                             borderRadius: 8,
                             cursor: 'grab',
                             borderLeft: `3px solid ${borderColor}`,
+                            border: isDark ? `1px solid rgba(255,255,255,0.08)` : undefined,
+                            borderLeftWidth: 3,
+                            borderLeftStyle: 'solid',
+                            borderLeftColor: borderColor,
                             opacity: isDragging ? 0.5 : 1,
                             transform: isDragging ? 'scale(0.95)' : 'none',
                             transition: 'all 0.15s ease',
                             background: overdue
-                              ? isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.04)'
-                              : isDark ? '#0f172a' : '#fff',
+                              ? isDark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.04)'
+                              : isDark ? '#1e293b' : '#fff',
+                            boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.06)',
                           }}
                           onClick={() => setViewingTodo(todo)}
                         >
@@ -733,7 +740,8 @@ export default function TodosSection({ project }: TodosSectionProps) {
                     textAlign: 'center',
                     padding: 24,
                     borderRadius: 8,
-                    border: isDark ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0',
+                    background: isDark ? 'rgba(30,41,59,0.5)' : 'rgba(241,245,249,0.5)',
+                    border: isDark ? '1px dashed rgba(255,255,255,0.08)' : '1px dashed #e2e8f0',
                   }}>
                     <Text type="secondary" style={{ fontSize: 12, fontStyle: 'italic' }}>
                       {isDropTarget ? 'Drop here' : 'No tasks'}
