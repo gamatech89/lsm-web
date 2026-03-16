@@ -49,9 +49,10 @@ export function ShareCredentialModal({ open, onClose, credential }: ShareCredent
   // Generate Link Mutation
   const shareMutation = useMutation({
     mutationFn: (values: any) => {
+      const actualMaxViews = values.max_views === -1 ? values.custom_max_views : values.max_views;
       return apiClient.post(`/credentials/${credential?.id}/share`, {
         expires_in_minutes: values.expires_in,
-        max_views: values.max_views,
+        max_views: actualMaxViews,
         access_password: values.has_password ? values.password : null,
         recipient_email: values.recipient_email,
         note: values.note

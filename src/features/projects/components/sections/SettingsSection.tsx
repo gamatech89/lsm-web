@@ -140,7 +140,7 @@ export default function SettingsSection({ project }: SettingsSectionProps) {
 
   const saveNotifPrefsMutation = useMutation({
     mutationFn: () => 
-      api.projects.update(project.id, { notification_preferences: notifPrefs }),
+      api.projects.update(project.id, { notification_preferences: notifPrefs as any }),
     onSuccess: () => {
       message.success('Notification preferences saved!');
       queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
@@ -278,7 +278,7 @@ export default function SettingsSection({ project }: SettingsSectionProps) {
                 <Text strong>Uptime Monitoring</Text>
               </Space>
               <div style={{ marginLeft: 22 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>Check site availability every 5 minutes</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>Check site availability based on global interval</Text>
               </div>
             </div>
             <Switch 

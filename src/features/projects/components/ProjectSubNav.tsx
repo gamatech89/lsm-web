@@ -29,6 +29,7 @@ import {
   ToolOutlined,
   HistoryOutlined,
   LockOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useThemeStore } from '@/stores/theme';
 import { ProjectSelector } from './ProjectSelector';
@@ -175,6 +176,16 @@ export function ProjectSubNav({
           key: 'uptime',
           icon: <DesktopOutlined />,
           label: 'Uptime',
+        },
+        {
+          key: 'gdpr-audit',
+          icon: <SafetyOutlined />,
+          label: 'GDPR Audit',
+        },
+        {
+          key: 'accessibility-audit',
+          icon: <EyeOutlined />,
+          label: 'Accessibility',
         },
         {
           key: 'performance',

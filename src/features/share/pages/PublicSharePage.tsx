@@ -35,64 +35,76 @@ const { Title, Text } = Typography;
 const STYLE_ID = 'share-page-styles-v2';
 
 const css = `
-  /* ── Base ── */
-  .sp {
+  /* ── Layout (Similar to LoginPage) ── */
+  .auth-container {
     min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    background: #161218;
+    overflow: hidden;
+  }
+  .auth-branding {
+    background: linear-gradient(135deg, #440C71 0%, #6B21A8 50%, #7C3AED 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .auth-branding-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(255,255,255,0.03) 0%, transparent 30%);
+    pointer-events: none;
+  }
+  .auth-branding-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    max-width: 420px;
+    width: 100%;
+  }
+  .auth-logo {
+    width: 180px;
+    height: auto;
+    max-height: 160px;
+    filter: brightness(1.1);
+    margin-bottom: 16px;
+  }
+  .auth-tagline {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 17px;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 40px;
+  }
+  .auth-form-column {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px;
-    background: #0F0F13;
-    position: relative;
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    padding: 48px;
+    background: #161218;
+    overflow-y: auto;
   }
 
-  .sp::before {
-    content: '';
-    position: absolute;
-    top: -40%;
-    left: -20%;
-    width: 80%;
-    height: 80%;
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 60%);
-    pointer-events: none;
+  /* ── Responsive ── */
+  @media (max-width: 1024px) {
+    .auth-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .auth-branding { padding: 32px 24px; }
+    .auth-form-column { padding: 32px 24px; }
   }
-  .sp::after {
-    content: '';
-    position: absolute;
-    bottom: -30%;
-    right: -10%;
-    width: 60%;
-    height: 60%;
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  /* ── Brand ── */
-  .sp-brand {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-    margin-bottom: 32px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .sp-brand img {
-    height: 28px;
-    opacity: 0.7;
-  }
-  .sp-brand-divider {
-    width: 1px;
-    height: 20px;
-    background: rgba(255,255,255,0.15);
-  }
-  .sp-brand-label {
-    color: rgba(255,255,255,0.4);
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.3px;
+  @media (max-width: 767px) {
+    .auth-container { min-height: 100dvh; }
+    .auth-branding { padding: 28px 20px 20px; }
+    .auth-logo { width: 100px; margin-bottom: 8px; }
+    .auth-tagline { font-size: 14px; margin-bottom: 16px; }
+    .auth-form-column { padding: 24px 20px 32px; justify-content: flex-start; }
   }
 
   /* ── Card ── */
@@ -101,9 +113,10 @@ const css = `
     z-index: 1;
     width: 100%;
     max-width: 440px;
-    background: #18181F;
+    background: #1F1A23;
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 16px;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
     overflow: hidden;
   }
 
@@ -323,8 +336,8 @@ const css = `
     z-index: 1;
     text-align: center;
     margin-top: 24px;
-    color: rgba(255,255,255,0.2);
-    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -344,6 +357,8 @@ const css = `
     align-items: center;
     justify-content: center;
     margin-bottom: 20px;
+    margin-left: auto;
+    margin-right: auto;
     font-size: 24px;
     color: rgba(255,255,255,0.5);
   }
@@ -401,6 +416,8 @@ const css = `
     align-items: center;
     justify-content: center;
     margin-bottom: 20px;
+    margin-left: auto;
+    margin-right: auto;
     font-size: 24px;
     color: #EF4444;
   }
@@ -419,23 +436,6 @@ const css = `
   .sp-loading {
     text-align: center;
     padding: 56px 28px;
-  }
-
-  /* ── Responsive ── */
-  @media (max-width: 480px) {
-    .sp { padding: 16px; }
-    .sp-card { border-radius: 14px; }
-    .sp-header { padding: 22px 20px 16px; }
-    .sp-body { padding: 16px 20px 20px; }
-    .sp-footer-cta { padding: 0 20px 20px; }
-    .sp-share-note { margin: 0 20px 16px; }
-    .sp-meta-item { padding: 12px 10px; }
-    .sp-meta-label { font-size: 9px; }
-    .sp-meta-value { font-size: 12px; }
-    .sp-title { font-size: 18px !important; }
-    .sp-field { padding: 12px 0; }
-    .sp-gate { padding: 32px 20px; }
-    .sp-error { padding: 40px 20px; }
   }
 `;
 
@@ -642,14 +642,16 @@ export function PublicSharePage() {
   // ── Render: Loading ──
   if (loading) {
     return (
-      <div className="sp">
+      <div className="auth-container">
         <Brand />
-        <div className="sp-card">
-          <div className="sp-loading">
-            <Spin size="large" />
-            <Text style={{ display: 'block', color: 'rgba(255,255,255,0.4)', marginTop: 16, fontSize: 13 }}>
-              Accessing credentials...
-            </Text>
+        <div className="auth-form-column">
+          <div className="sp-card">
+            <div className="sp-loading">
+              <Spin size="large" />
+              <Text style={{ display: 'block', color: 'rgba(255,255,255,0.4)', marginTop: 16, fontSize: 13 }}>
+                Accessing credentials...
+              </Text>
+            </div>
           </div>
         </div>
       </div>
@@ -659,16 +661,18 @@ export function PublicSharePage() {
   // ── Render: Error ──
   if (error && !credential) {
     return (
-      <div className="sp">
+      <div className="auth-container">
         <Brand />
-        <div className="sp-card">
-          <div className="sp-error">
-            <div className="sp-error-icon">✕</div>
-            <Title level={4} className="sp-error-title">Access Denied</Title>
-            <Text className="sp-error-desc">{error}</Text>
+        <div className="auth-form-column">
+          <div className="sp-card">
+            <div className="sp-error">
+              <div className="sp-error-icon">✕</div>
+              <Title level={4} className="sp-error-title">Access Denied</Title>
+              <Text className="sp-error-desc">{error}</Text>
+            </div>
           </div>
+          <Footer />
         </div>
-        <Footer />
       </div>
     );
   }
@@ -676,62 +680,64 @@ export function PublicSharePage() {
   // ── Render: Password Gate ──
   if (requiresPassword) {
     return (
-      <div className="sp">
+      <div className="auth-container">
         <Brand />
-        <div className="sp-card">
-          {/* Show basic meta if available */}
-          {meta && (
-            <div className="sp-header">
-              <div className="sp-type-badge">
-                <SafetyOutlined />{meta.credential_type || 'Credential'}
-              </div>
-              <Title level={4} className="sp-title">{meta.credential_title || 'Shared Credential'}</Title>
-            </div>
-          )}
-          {shareInfo.expires_at && (
-            <div className="sp-meta">
-              <div className="sp-meta-item">
-                <span className="sp-meta-label">Expires in</span>
-                <span className={`sp-meta-value ${getExpiryStatus()}`}>{formatExpiry(shareInfo.expires_at)}</span>
-              </div>
-              {shareInfo.max_views && (
-                <div className="sp-meta-item">
-                  <span className="sp-meta-label">Views left</span>
-                  <span className={`sp-meta-value ${getViewsStatus()}`}>
-                    {shareInfo.views_remaining} / {shareInfo.max_views}
-                  </span>
+        <div className="auth-form-column">
+          <div className="sp-card">
+            {/* Show basic meta if available */}
+            {meta && (
+              <div className="sp-header">
+                <div className="sp-type-badge">
+                  <SafetyOutlined />{meta.credential_type || 'Credential'}
                 </div>
-              )}
+                <Title level={4} className="sp-title">{meta.credential_title || 'Shared Credential'}</Title>
+              </div>
+            )}
+            {shareInfo.expires_at && (
+              <div className="sp-meta">
+                <div className="sp-meta-item">
+                  <span className="sp-meta-label">Expires in</span>
+                  <span className={`sp-meta-value ${getExpiryStatus()}`}>{formatExpiry(shareInfo.expires_at)}</span>
+                </div>
+                {shareInfo.max_views && (
+                  <div className="sp-meta-item">
+                    <span className="sp-meta-label">Views left</span>
+                    <span className={`sp-meta-value ${getViewsStatus()}`}>
+                      {shareInfo.views_remaining} / {shareInfo.max_views}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="sp-gate">
+              <div className="sp-gate-icon"><LockOutlined /></div>
+              <Title level={4} className="sp-gate-title">Password Protected</Title>
+              <Text className="sp-gate-desc">
+                Enter the password to view this credential.
+              </Text>
+              <Input.Password
+                size="large"
+                placeholder="Enter access password"
+                prefix={<LockOutlined />}
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                onPressEnter={handlePasswordSubmit}
+                className="sp-gate-input"
+              />
+              <Button
+                type="primary"
+                size="large"
+                block
+                onClick={handlePasswordSubmit}
+                disabled={!passwordInput}
+                className="sp-gate-btn"
+              >
+                Unlock
+              </Button>
             </div>
-          )}
-          <div className="sp-gate">
-            <div className="sp-gate-icon"><LockOutlined /></div>
-            <Title level={4} className="sp-gate-title">Password Protected</Title>
-            <Text className="sp-gate-desc">
-              Enter the password to view this credential.
-            </Text>
-            <Input.Password
-              size="large"
-              placeholder="Enter access password"
-              prefix={<LockOutlined />}
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              onPressEnter={handlePasswordSubmit}
-              className="sp-gate-input"
-            />
-            <Button
-              type="primary"
-              size="large"
-              block
-              onClick={handlePasswordSubmit}
-              disabled={!passwordInput}
-              className="sp-gate-btn"
-            >
-              Unlock
-            </Button>
           </div>
+          <Footer />
         </div>
-        <Footer />
       </div>
     );
   }
@@ -740,149 +746,151 @@ export function PublicSharePage() {
   if (!credential) return null;
 
   return (
-    <div className="sp">
+    <div className="auth-container">
       <Brand />
 
-      <div className="sp-card">
-        {/* Header */}
-        <div className="sp-header">
-          <div className="sp-type-badge">
-            <SafetyOutlined />{credential.type || 'Credential'}
-          </div>
-          <Title level={4} className="sp-title">{credential.title}</Title>
-          {credential.project_name && (
-            <Text className="sp-project">{credential.project_name}</Text>
-          )}
-        </div>
-
-        {/* Meta Bar */}
-        <div className="sp-meta">
-          {shareInfo.expires_at && (
-            <div className="sp-meta-item">
-              <span className="sp-meta-label"><ClockCircleOutlined style={{ marginRight: 4 }} />Expires</span>
-              <span className={`sp-meta-value ${getExpiryStatus()}`}>
-                {formatExpiry(shareInfo.expires_at)}
-              </span>
+      <div className="auth-form-column">
+        <div className="sp-card">
+          {/* Header */}
+          <div className="sp-header">
+            <div className="sp-type-badge">
+              <SafetyOutlined />{credential.type || 'Credential'}
             </div>
-          )}
-          {shareInfo.max_views != null && (
-            <div className="sp-meta-item">
-              <span className="sp-meta-label"><EyeFilled style={{ marginRight: 4 }} />Views</span>
-              <span className={`sp-meta-value ${getViewsStatus()}`}>
-                {shareInfo.view_count} / {shareInfo.max_views}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Share Note */}
-        {shareInfo.note && (
-          <div className="sp-share-note">
-            <span className="sp-share-note-label">Note from sender</span>
-            <span className="sp-share-note-text">{shareInfo.note}</span>
+            <Title level={4} className="sp-title">{credential.title}</Title>
+            {credential.project_name && (
+              <Text className="sp-project">{credential.project_name}</Text>
+            )}
           </div>
-        )}
 
-        {/* Credential Fields */}
-        <div className="sp-body">
-          <div className="sp-fields">
-            {/* Dynamic Metadata */}
-            {credential.metadata && Object.entries(credential.metadata).map(([key, value]) => (
-              <div key={key} className="sp-field">
-                <div className="sp-field-info">
-                  <span className="sp-field-label">{key.replace(/_/g, ' ')}</span>
-                  <span className="sp-field-value">{String(value)}</span>
-                </div>
-                <div className="sp-field-actions">
-                  <Btn field={key} value={String(value)} />
-                </div>
+          {/* Meta Bar */}
+          <div className="sp-meta">
+            {shareInfo.expires_at && (
+              <div className="sp-meta-item">
+                <span className="sp-meta-label"><ClockCircleOutlined style={{ marginRight: 4 }} />Expires</span>
+                <span className={`sp-meta-value ${getExpiryStatus()}`}>
+                  {formatExpiry(shareInfo.expires_at)}
+                </span>
               </div>
-            ))}
+            )}
+            {shareInfo.max_views != null && (
+              <div className="sp-meta-item">
+                <span className="sp-meta-label"><EyeFilled style={{ marginRight: 4 }} />Views</span>
+                <span className={`sp-meta-value ${getViewsStatus()}`}>
+                  {shareInfo.view_count} / {shareInfo.max_views}
+                </span>
+              </div>
+            )}
+          </div>
 
-            {/* URL */}
-            {credential.url && (
+          {/* Share Note */}
+          {shareInfo.note && (
+            <div className="sp-share-note">
+              <span className="sp-share-note-label">Note from sender</span>
+              <span className="sp-share-note-text">{shareInfo.note}</span>
+            </div>
+          )}
+
+          {/* Credential Fields */}
+          <div className="sp-body">
+            <div className="sp-fields">
+              {/* Dynamic Metadata */}
+              {credential.metadata && Object.entries(credential.metadata).map(([key, value]) => (
+                <div key={key} className="sp-field">
+                  <div className="sp-field-info">
+                    <span className="sp-field-label">{key.replace(/_/g, ' ')}</span>
+                    <span className="sp-field-value">{String(value)}</span>
+                  </div>
+                  <div className="sp-field-actions">
+                    <Btn field={key} value={String(value)} />
+                  </div>
+                </div>
+              ))}
+
+              {/* URL */}
+              {credential.url && (
+                <div className="sp-field">
+                  <div className="sp-field-info">
+                    <span className="sp-field-label">URL</span>
+                    <span className="sp-field-value">
+                      <a href={credential.url} target="_blank" rel="noopener noreferrer">
+                        {credential.url}
+                      </a>
+                    </span>
+                  </div>
+                  <div className="sp-field-actions">
+                    <Btn field="URL" value={credential.url} />
+                    <Tooltip title="Open">
+                      <button className="sp-icon-btn" onClick={() => window.open(credential.url, '_blank')}>
+                        <LinkOutlined />
+                      </button>
+                    </Tooltip>
+                  </div>
+                </div>
+              )}
+
+              {/* Username */}
+              {credential.username && (
+                <div className="sp-field">
+                  <div className="sp-field-info">
+                    <span className="sp-field-label">Username</span>
+                    <span className="sp-field-value">{credential.username}</span>
+                  </div>
+                  <div className="sp-field-actions">
+                    <Btn field="Username" value={credential.username} />
+                  </div>
+                </div>
+              )}
+
+              {/* Password */}
               <div className="sp-field">
                 <div className="sp-field-info">
-                  <span className="sp-field-label">URL</span>
-                  <span className="sp-field-value">
-                    <a href={credential.url} target="_blank" rel="noopener noreferrer">
-                      {credential.url}
-                    </a>
+                  <span className="sp-field-label">Password</span>
+                  <span className={`sp-field-value ${showPassword ? '' : 'sp-field-masked'}`}>
+                    {showPassword ? credential.password : '••••••••••••'}
                   </span>
                 </div>
                 <div className="sp-field-actions">
-                  <Btn field="URL" value={credential.url} />
-                  <Tooltip title="Open">
-                    <button className="sp-icon-btn" onClick={() => window.open(credential.url, '_blank')}>
-                      <LinkOutlined />
+                  <Tooltip title={showPassword ? 'Hide' : 'Reveal'}>
+                    <button className="sp-icon-btn" onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
                     </button>
                   </Tooltip>
+                  <Btn field="Password" value={credential.password} />
                 </div>
               </div>
-            )}
 
-            {/* Username */}
-            {credential.username && (
-              <div className="sp-field">
-                <div className="sp-field-info">
-                  <span className="sp-field-label">Username</span>
-                  <span className="sp-field-value">{credential.username}</span>
+              {/* Note */}
+              {credential.note && (
+                <div className="sp-field">
+                  <div className="sp-field-info">
+                    <span className="sp-field-label">Notes</span>
+                    <span className="sp-field-value sp-field-note">{credential.note}</span>
+                  </div>
+                  <div className="sp-field-actions" style={{ alignSelf: 'flex-start', marginTop: 2 }}>
+                    <Btn field="Notes" value={credential.note} />
+                  </div>
                 </div>
-                <div className="sp-field-actions">
-                  <Btn field="Username" value={credential.username} />
-                </div>
-              </div>
-            )}
-
-            {/* Password */}
-            <div className="sp-field">
-              <div className="sp-field-info">
-                <span className="sp-field-label">Password</span>
-                <span className={`sp-field-value ${showPassword ? '' : 'sp-field-masked'}`}>
-                  {showPassword ? credential.password : '••••••••••••'}
-                </span>
-              </div>
-              <div className="sp-field-actions">
-                <Tooltip title={showPassword ? 'Hide' : 'Reveal'}>
-                  <button className="sp-icon-btn" onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                  </button>
-                </Tooltip>
-                <Btn field="Password" value={credential.password} />
-              </div>
+              )}
             </div>
+          </div>
 
-            {/* Note */}
-            {credential.note && (
-              <div className="sp-field">
-                <div className="sp-field-info">
-                  <span className="sp-field-label">Notes</span>
-                  <span className="sp-field-value sp-field-note">{credential.note}</span>
-                </div>
-                <div className="sp-field-actions" style={{ alignSelf: 'flex-start', marginTop: 2 }}>
-                  <Btn field="Notes" value={credential.note} />
-                </div>
-              </div>
-            )}
+          {/* Copy All */}
+          <div className="sp-footer-cta">
+            <button
+              className={`sp-copy-all ${copiedField === 'all' ? 'copied' : ''}`}
+              onClick={copyAllCredentials}
+            >
+              {copiedField === 'all' ? (
+                <><CheckOutlined /> Copied to clipboard</>
+              ) : (
+                <><SnippetsOutlined /> Copy all credentials</>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Copy All */}
-        <div className="sp-footer-cta">
-          <button
-            className={`sp-copy-all ${copiedField === 'all' ? 'copied' : ''}`}
-            onClick={copyAllCredentials}
-          >
-            {copiedField === 'all' ? (
-              <><CheckOutlined /> Copied to clipboard</>
-            ) : (
-              <><SnippetsOutlined /> Copy all credentials</>
-            )}
-          </button>
-        </div>
+        <Footer />
       </div>
-
-      <Footer />
     </div>
   );
 }
@@ -890,10 +898,18 @@ export function PublicSharePage() {
 // ── Sub Components ──
 function Brand() {
   return (
-    <div className="sp-brand">
-      <img src="/logo-landeseiten.svg" alt="LSM" />
-      <div className="sp-brand-divider" />
-      <span className="sp-brand-label">Secure Share</span>
+    <div className="auth-branding">
+      <div className="auth-branding-bg" />
+      <div className="auth-branding-content">
+        <img
+          src="/logo-landeseiten.svg"
+          alt="Landeseiten.de"
+          className="auth-logo"
+        />
+        <Text className="auth-tagline">
+          LSM Platform Secure Share
+        </Text>
+      </div>
     </div>
   );
 }

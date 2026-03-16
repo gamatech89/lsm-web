@@ -15,7 +15,9 @@ export const priorityOptions = [
 export const statusOptions = [
   { label: 'Pending', value: 'pending' },
   { label: 'In Progress', value: 'in_progress' },
+  { label: 'In Review', value: 'in_review' },
   { label: 'Completed', value: 'completed' },
+  { label: 'Cancelled', value: 'cancelled' },
 ];
 
 // Consistent control height for form elements

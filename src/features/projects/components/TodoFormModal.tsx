@@ -28,6 +28,8 @@ import { priorityOptions, statusOptions, CONTROL_HEIGHT } from '../constants';
 import type { Todo } from '@lsm/types';
 import type { UploadFile } from 'antd';
 import type { LibraryResource } from '@/lib/library-resources-api';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const { Text } = Typography;
 
@@ -249,7 +251,7 @@ export function TodoFormModal({
       okText={isEditMode ? 'Update' : 'Create'}
       confirmLoading={createMutation.isPending || updateMutation.isPending}
       width={540}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}
@@ -270,7 +272,19 @@ export function TodoFormModal({
         </Form.Item>
 
         <Form.Item name="description" label="Description">
-          <Input.TextArea rows={3} placeholder="Additional details..." />
+          <ReactQuill
+            theme="snow"
+            placeholder="Additional details..."
+            modules={{
+              toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['link'],
+                ['clean'],
+              ],
+            }}
+            style={{ borderRadius: 8 }}
+          />
         </Form.Item>
 
         <Row gutter={16}>

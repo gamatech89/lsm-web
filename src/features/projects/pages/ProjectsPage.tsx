@@ -725,8 +725,8 @@ export function ProjectsPage() {
           rowKey="id"
           loading={isLoading}
           pagination={{
-            current: data?.meta?.current_page || data?.current_page || 1,
-            total: data?.meta?.total || data?.total || 0,
+            current: (data as any)?.meta?.current_page || data?.current_page || 1,
+            total: (data as any)?.meta?.total || data?.total || 0,
             pageSize: filters.per_page,
             onChange: (page, pageSize) => setFilters(f => ({ ...f, page, per_page: pageSize })),
             showSizeChanger: !isMobile,

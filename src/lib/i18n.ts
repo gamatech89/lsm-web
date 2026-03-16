@@ -904,6 +904,71 @@ const resources = {
         },
       },
 
+      // Accessibility Audit
+      accessibility: {
+        title: 'Accessibility Audit',
+        subtitle: 'WCAG 2.1 Level AA compliance check',
+        noUrl: 'No website URL configured',
+        noUrlHint: 'Add a URL to enable accessibility auditing',
+        runAudit: 'Run Audit',
+        rerunAudit: 'Re-run Audit',
+        pdf: 'PDF',
+        saveToReports: 'Save to Reports',
+        reportSaved: 'Report saved successfully',
+        reportSaveError: 'Failed to save report',
+        auditComplete: 'Accessibility audit completed!',
+        auditFailed: 'Failed to run accessibility audit',
+        lastAudit: 'Last audited',
+        running: {
+          title: 'Running Accessibility Audit...',
+          subtitle: 'Scanning for WCAG 2.1 violations — this may take 15-20 seconds',
+        },
+        noAudit: {
+          title: 'No accessibility audit yet',
+          description: 'Run an audit to check this website for WCAG 2.1 Level AA accessibility violations',
+        },
+        score: {
+          accessible: 'Accessible',
+          needsWork: 'Needs Improvement',
+          criticalIssues: 'Critical Issues',
+        },
+        stats: {
+          violations: 'Violations',
+          critical: 'Critical',
+          serious: 'Serious',
+          passed: 'Passed',
+        },
+        badges: {
+          aiEnhanced: 'AI-Enhanced',
+          automatedScan: 'Automated Scan',
+        },
+        ai: {
+          title: 'AI Accessibility Analysis',
+          violations: 'Violations',
+          whatsRight: "What's Done Right",
+          recommendations: 'Recommendations',
+          impact: 'Impact',
+          issue: 'Issue',
+          details: 'Details',
+          wcag: 'WCAG',
+          fix: 'Fix',
+        },
+        sections: {
+          violationsByCategory: 'Violations by Category',
+          customChecks: 'Additional Checks',
+          passed: 'Passed Checks',
+          needsReview: 'Needs Manual Review',
+        },
+        table: {
+          rule: 'Rule',
+          elements: 'Elements',
+          example: 'Example',
+          check: 'Check',
+          details: 'Details',
+          category: 'Category',
+        },
+      },
+
       // Time Tracking
       time: {
         title: 'My Time',
@@ -2121,6 +2186,71 @@ const resources = {
           scannedAt: 'Gescannt',
           duration: 'Dauer',
           seconds: '{{count}}s',
+        },
+      },
+
+      // Barrierefreiheits-Audit
+      accessibility: {
+        title: 'Barrierefreiheits-Audit',
+        subtitle: 'WCAG 2.1 Level AA Konformitätsprüfung',
+        noUrl: 'Keine Website-URL konfiguriert',
+        noUrlHint: 'Fügen Sie eine URL hinzu, um die Barrierefreiheitsprüfung zu aktivieren',
+        runAudit: 'Audit starten',
+        rerunAudit: 'Audit wiederholen',
+        pdf: 'PDF',
+        saveToReports: 'In Berichte speichern',
+        reportSaved: 'Bericht erfolgreich gespeichert',
+        reportSaveError: 'Bericht konnte nicht gespeichert werden',
+        auditComplete: 'Barrierefreiheits-Audit abgeschlossen!',
+        auditFailed: 'Barrierefreiheits-Audit fehlgeschlagen',
+        lastAudit: 'Zuletzt geprüft',
+        running: {
+          title: 'Barrierefreiheits-Audit läuft...',
+          subtitle: 'Prüfung auf WCAG 2.1 Verstöße — dies kann 15-20 Sekunden dauern',
+        },
+        noAudit: {
+          title: 'Noch kein Barrierefreiheits-Audit',
+          description: 'Starten Sie ein Audit, um diese Website auf WCAG 2.1 Level AA Verstöße zu prüfen',
+        },
+        score: {
+          accessible: 'Barrierefrei',
+          needsWork: 'Verbesserungsbedarf',
+          criticalIssues: 'Kritische Probleme',
+        },
+        stats: {
+          violations: 'Verstöße',
+          critical: 'Kritisch',
+          serious: 'Schwerwiegend',
+          passed: 'Bestanden',
+        },
+        badges: {
+          aiEnhanced: 'KI-Erweitert',
+          automatedScan: 'Automatischer Scan',
+        },
+        ai: {
+          title: 'KI-Barrierefreiheitsanalyse',
+          violations: 'Verstöße',
+          whatsRight: 'Was richtig gemacht wird',
+          recommendations: 'Empfehlungen',
+          impact: 'Auswirkung',
+          issue: 'Problem',
+          details: 'Details',
+          wcag: 'WCAG',
+          fix: 'Lösung',
+        },
+        sections: {
+          violationsByCategory: 'Verstöße nach Kategorie',
+          customChecks: 'Zusätzliche Prüfungen',
+          passed: 'Bestandene Prüfungen',
+          needsReview: 'Manuelle Prüfung erforderlich',
+        },
+        table: {
+          rule: 'Regel',
+          elements: 'Elemente',
+          example: 'Beispiel',
+          check: 'Prüfung',
+          details: 'Details',
+          category: 'Kategorie',
         },
       },
 

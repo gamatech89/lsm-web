@@ -58,6 +58,18 @@ export function createTodosApi(client: AxiosInstance) {
      */
     downloadFile: (id: number) =>
       client.get(`/todos/${id}/download`, { responseType: 'blob' }),
+
+    /**
+     * Preview todo attachment inline (returns blob)
+     */
+    previewFile: (id: number) =>
+      client.get(`/todos/${id}/preview`, { responseType: 'blob' }),
+
+    /**
+     * Get todos assigned to the current user
+     */
+    myTasks: () =>
+      client.get<ApiResponse<Todo[]>>('/my-todos'),
   };
 }
 

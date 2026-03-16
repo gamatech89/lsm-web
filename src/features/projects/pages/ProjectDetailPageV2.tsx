@@ -64,6 +64,8 @@ import TodosSection from '../components/sections/TodosSection';
 import ResourcesSection from '../components/sections/ResourcesSection';
 import MaintenanceSection from '../components/sections/MaintenanceSection';
 import CredentialsSection from '../components/sections/CredentialsSection';
+import GdprAuditSection from '../components/sections/GdprAuditSection';
+import AccessibilityAuditSection from '../components/sections/AccessibilityAuditSection';
 
 // Import existing tab components for reuse
 import { TodoFormModal } from '../components/TodoFormModal';
@@ -240,6 +242,10 @@ export function ProjectDetailPageV2() {
         );
       case 'uptime':
         return <UptimeSection project={project} />;
+      case 'gdpr-audit':
+        return <GdprAuditSection project={project} />;
+      case 'accessibility-audit':
+        return <AccessibilityAuditSection project={project} />;
       case 'plugins':
         return <PluginsSection {...commonProps} />;
       case 'themes':

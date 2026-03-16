@@ -232,13 +232,18 @@ export function SettingsPage() {
                 <Select
                   style={{ height: inputHeight }}
                   options={[
-                    { value: 1, label: t('settings.uptime.intervalOptions.min1') },
-                    { value: 2, label: t('settings.uptime.intervalOptions.min2') },
-                    { value: 3, label: t('settings.uptime.intervalOptions.min3') },
-                    { value: 5, label: t('settings.uptime.intervalOptions.min5') },
-                    { value: 10, label: t('settings.uptime.intervalOptions.min10') },
-                    { value: 15, label: t('settings.uptime.intervalOptions.min15') },
-                    { value: 30, label: t('settings.uptime.intervalOptions.min30') },
+                    { value: 1, label: t('settings.uptime.intervalOptions.min1', '1 Minute') },
+                    { value: 2, label: t('settings.uptime.intervalOptions.min2', '2 Minutes') },
+                    { value: 3, label: t('settings.uptime.intervalOptions.min3', '3 Minutes') },
+                    { value: 5, label: t('settings.uptime.intervalOptions.min5', '5 Minutes') },
+                    { value: 10, label: t('settings.uptime.intervalOptions.min10', '10 Minutes') },
+                    { value: 15, label: t('settings.uptime.intervalOptions.min15', '15 Minutes') },
+                    { value: 30, label: t('settings.uptime.intervalOptions.min30', '30 Minutes') },
+                    { value: 60, label: '1 Hour' },
+                    { value: 120, label: '2 Hours' },
+                    { value: 360, label: '6 Hours' },
+                    { value: 720, label: '12 Hours' },
+                    { value: 1440, label: '24 Hours' },
                   ]}
                 />
               </Form.Item>

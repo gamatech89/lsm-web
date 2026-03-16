@@ -27,7 +27,7 @@ export type CredentialType =
 
 export type TodoPriority = 'low' | 'medium' | 'high' | 'critical';
 
-export type TodoStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+export type TodoStatus = 'pending' | 'in_progress' | 'in_review' | 'completed' | 'cancelled';
 
 export type MaintenanceReportType = 'monthly' | 'weekly' | 'ad-hoc';
 
@@ -118,6 +118,8 @@ export interface Project {
   pending_todos_count?: number;
   resources_count?: number;
   maintenance_reports_count?: number;
+  active_plugins?: number;
+  active_theme?: string;
 
   // Computed
   highest_todo_priority?: TodoPriority;

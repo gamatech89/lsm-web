@@ -82,7 +82,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
   // Quick Actions Mutations
   const clearCacheMutation = useMutation({
     mutationFn: () => api.lsm.clearCache(project.id),
-    onSuccess: (response) => {
+    onSuccess: (response: any) => {
       const data = response.data?.data || response.data;
       const clearedList = data?.cleared?.join(', ') || 'all caches';
       message.success(`Cache cleared: ${clearedList}`);

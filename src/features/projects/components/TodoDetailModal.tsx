@@ -14,6 +14,7 @@ import {
   Button,
   Select,
   Divider,
+  Image,
 } from 'antd';
 import {
   EditOutlined,
@@ -27,6 +28,7 @@ import {
   CloseOutlined,
   LinkOutlined,
   GlobalOutlined,
+  EyeOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -35,6 +37,8 @@ import { formatDate } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
 import { statusOptions, priorityOptions } from '../constants';
 import type { Todo } from '@lsm/types';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -129,6 +133,33 @@ export function TodoDetailModal({
     }
   }, [open, todo]);
 
+  // Fetch image preview if attachment is an image
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const isImageAttachment = todo?.file_name && /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(todo.file_name);
+
+  useEffect(() => {
+    if (open && todo?.has_attachment && isImageAttachment) {
+      if (typeof api.todos.previewFile === 'function') {
+        api.todos.previewFile(todo.id)
+          .then((response) => {
+            const contentType = response.headers?.['content-type'] || 'image/jpeg';
+            const blob = new Blob([response.data], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            setPreviewUrl(url);
+          })
+          .catch(() => setPreviewUrl(null));
+      } else {
+        console.warn('api.todos.previewFile is not available. Please rebuild @lsm/api-client.');
+        setPreviewUrl(null);
+      }
+    } else {
+      setPreviewUrl(null);
+    }
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [open, todo?.id, todo?.has_attachment]);
+
   // Update todo mutation
   const updateMutation = useMutation({
     mutationFn: (data: any) => api.todos.update(todo!.id, data),
@@ -202,7 +233,7 @@ export function TodoDetailModal({
   };
 
   const handleAssigneeChange = (value: number | undefined) => {
-    updateMutation.mutate({ assigned_to: value });
+    updateMutation.mutate({ assignee_id: value || null });
   };
 
   const handleDescriptionSave = () => {
@@ -358,14 +389,22 @@ export function TodoDetailModal({
         </div>
         {isEditingDescription ? (
           <div>
-            <TextArea
+            <ReactQuill
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
+              onChange={setDescription}
+              theme="snow"
               placeholder="Add a description..."
-              style={{ marginBottom: 8 }}
+              modules={{
+                toolbar: [
+                  ['bold', 'italic', 'underline', 'strike'],
+                  [{ list: 'ordered' }, { list: 'bullet' }],
+                  ['link'],
+                  ['clean'],
+                ],
+              }}
+              style={{ marginBottom: 8, borderRadius: 8 }}
             />
-            <Space>
+            <Space style={{ marginTop: 8 }}>
               <Button 
                 type="primary" 
                 size="small" 
@@ -397,7 +436,11 @@ export function TodoDetailModal({
             }}
           >
             {todo.description ? (
-              <Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{todo.description}</Paragraph>
+              <div
+                className="todo-description-content"
+                style={{ margin: 0 }}
+                dangerouslySetInnerHTML={{ __html: todo.description }}
+              />
             ) : (
               <Text type="secondary" style={{ fontStyle: 'italic' }}>No description</Text>
             )}
@@ -472,7 +515,6 @@ export function TodoDetailModal({
         )}
       </div>
 
-      {/* Attachments - Show only if there are files */}
       {todo.has_attachment && (
         <>
           <Divider style={{ margin: '16px 0' }} />
@@ -480,6 +522,26 @@ export function TodoDetailModal({
             <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
               Attachment
             </Text>
+            {/* Image Preview */}
+            {isImageAttachment && previewUrl && (
+              <div style={{
+                marginBottom: 8,
+                borderRadius: 8,
+                overflow: 'hidden',
+                border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb',
+              }}>
+                <Image
+                  src={previewUrl}
+                  alt={todo.file_name || 'Attachment'}
+                  style={{ width: '100%', maxHeight: 300, objectFit: 'contain' }}
+                  preview={{ 
+                    mask: <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><EyeOutlined /> Click to enlarge</div>,
+                    src: previewUrl, 
+                  }}
+                />
+              </div>
+            )}
+            {/* File info + download */}
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 

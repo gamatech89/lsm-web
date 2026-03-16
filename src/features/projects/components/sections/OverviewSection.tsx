@@ -400,14 +400,14 @@ export function OverviewSection({
               <Col xs={12} sm={6}>
                 <Statistic 
                   title="Active Plugins" 
-                  value={project.active_plugins || 0}
+                  value={(project as any).active_plugins || 0}
                   valueStyle={{ fontSize: 18 }}
                 />
               </Col>
               <Col xs={12} sm={6}>
                 <Statistic 
                   title="Active Theme" 
-                  value={project.active_theme || 'Unknown'}
+                  value={(project as any).active_theme || 'Unknown'}
                   valueStyle={{ fontSize: 18 }}
                 />
               </Col>
