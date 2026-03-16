@@ -5,7 +5,7 @@
  * Full mode:  4 scenarios — pre-consent, banner UI, accept-all, reject (~45s)
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Card,
   Typography,
@@ -68,6 +68,11 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { t, i18n } = useTranslation();
 
+  // Async polling state
+  const [pendingJobId, setPendingJobId] = useState<string | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const cardStyle = {
     borderRadius: 12,
     background: isDark ? '#1e293b' : '#fff',
@@ -81,16 +86,68 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
     staleTime: 1000 * 60 * 5,
   });
 
+  // Poll for audit status when we have a pending job
+  useEffect(() => {
+    if (!pendingJobId) return;
+
+    setIsPolling(true);
+
+    const poll = async () => {
+      try {
+        const res = await apiClient.get(`/projects/${project.id}/gdpr-audit-status`, {
+          params: { jobId: pendingJobId, locale: i18n.language?.startsWith('de') ? 'de' : 'en' },
+        });
+        const data = res.data;
+
+        if (data.status === 'completed') {
+          // Audit done — clear polling and refresh data
+          setPendingJobId(null);
+          setIsPolling(false);
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+          message.success('GDPR audit completed!');
+          queryClient.invalidateQueries({ queryKey: ['gdpr-audit', project.id] });
+        } else if (data.status === 'failed') {
+          setPendingJobId(null);
+          setIsPolling(false);
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+          message.error(data.message || 'GDPR audit failed');
+        }
+        // else status === 'processing' — keep polling
+      } catch (error: any) {
+        console.error('Polling error:', error);
+        // Don't stop polling on network hiccup, only after many failures
+      }
+    };
+
+    // Poll every 4 seconds
+    pollIntervalRef.current = setInterval(poll, 4000);
+    // Also poll immediately
+    poll();
+
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, [pendingJobId, project.id, i18n.language]);
+
   const runAuditMutation = useMutation({
     mutationFn: (mode: string) => apiClient.post(`/projects/${project.id}/gdpr-audit`, { mode, locale: i18n.language?.startsWith('de') ? 'de' : 'en' }),
-    onSuccess: () => {
-      message.success('GDPR audit completed!');
-      queryClient.invalidateQueries({ queryKey: ['gdpr-audit', project.id] });
+    onSuccess: (response) => {
+      const data = response.data;
+      if (data.status === 'processing' && data.jobId) {
+        // Async mode — start polling
+        setPendingJobId(data.jobId);
+      } else if (data.status === 'completed') {
+        // Sync mode (local dev) — done immediately
+        message.success('GDPR audit completed!');
+        queryClient.invalidateQueries({ queryKey: ['gdpr-audit', project.id] });
+      }
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Failed to run GDPR audit');
     },
   });
+
+  const isAuditRunning = runAuditMutation.isPending || isPolling;
 
   const saveToReportsMutation = useMutation({
     mutationFn: () => apiClient.post(`/projects/${project.id}/gdpr-audit/${latestReport?.id}/save-report`),
@@ -187,8 +244,9 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
               <Button
                 type="primary"
                 icon={<ReloadOutlined />}
-                loading={runAuditMutation.isPending}
+                loading={isAuditRunning}
                 onClick={() => runAuditMutation.mutate(auditMode)}
+                disabled={isAuditRunning}
                 style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', border: 'none' }}
               >
                 {auditData
@@ -215,7 +273,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
       </div>
 
       {/* Running */}
-      {runAuditMutation.isPending && (
+      {isAuditRunning && (
         <Card style={{ ...cardStyle, textAlign: 'center', padding: 40, marginBottom: 16 }}>
           <Spin size="large" />
           <div style={{ marginTop: 16 }}>
@@ -230,7 +288,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
       )}
 
       {/* No audit yet */}
-      {!auditData && !runAuditMutation.isPending && (
+      {!auditData && !isAuditRunning && (
         <Result
           icon={<FileSearchOutlined style={{ color: '#6366f1' }} />}
           title={t('gdpr.noAudit.title')}
@@ -259,7 +317,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
       )}
 
       {/* ─── Results ─────────────────────────────────────────── */}
-      {auditData && !runAuditMutation.isPending && (
+      {auditData && !isAuditRunning && (
         <>
           {/* Mode + AI badge */}
           <div style={{ marginBottom: 16 }}>
