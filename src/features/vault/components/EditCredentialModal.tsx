@@ -177,49 +177,51 @@ export function EditCredentialModal({ open, onClose, credential }: EditCredentia
           }}
         </Form.Item>
 
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item name="username" label={t('vault.form.username')}>
-              <Input autoComplete="off" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              noStyle
-              shouldUpdate={(prev, current) => prev.type !== current.type || prev.key_auth !== current.key_auth}
-            >
-              {({ getFieldValue }) => {
-                const type = getFieldValue('type');
-                const isApiKey = type === 'api';
-                const isSSH = type === 'ssh';
-                const keyAuth = getFieldValue('key_auth');
-                return (
-                  <>
-                    {isSSH && (
-                      <Form.Item name="key_auth" valuePropName="checked" style={{ marginBottom: 8 }}>
-                        <Space>
-                          <Switch size="small" />
-                          <Text type="secondary" style={{ fontSize: 12 }}>Key-based auth (no password)</Text>
-                        </Space>
-                      </Form.Item>
-                    )}
-                    {!(isSSH && keyAuth) && (
-                      <Form.Item
-                        name="password"
-                        label={isApiKey ? t('vault.types.apiKey') : t('vault.form.passwordApiKey')}
-                        extra={<Text type="secondary" style={{ fontSize: 12 }}>{t('vault.form.leaveBlankToKeep')}</Text>}
-                      >
-                        <Input.Password
-                          placeholder={isApiKey ? t('vault.form.apiKeyPlaceholder') : t('vault.form.enterNewPassword')}
-                        />
-                      </Form.Item>
-                    )}
-                  </>
-                );
-              }}
-            </Form.Item>
-          </Col>
-        </Row>
+        <Form.Item
+          noStyle
+          shouldUpdate={(prev, current) => prev.type !== current.type || prev.key_auth !== current.key_auth}
+        >
+          {({ getFieldValue, setFieldValue }) => {
+            const type = getFieldValue('type');
+            const isApiKey = type === 'api';
+            const isSSH = type === 'ssh';
+            const keyAuth = getFieldValue('key_auth');
+            return (
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item name="username" label={t('vault.form.username')}>
+                    <Input autoComplete="off" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  {isSSH && (
+                    <Form.Item name="key_auth" valuePropName="checked" style={{ marginBottom: 8 }}>
+                      <Space>
+                        <Switch size="small" onChange={(checked) => {
+                          if (checked) {
+                            setFieldValue('password', undefined);
+                          }
+                        }} />
+                        <Text type="secondary" style={{ fontSize: 12 }}>Key-based auth (no password)</Text>
+                      </Space>
+                    </Form.Item>
+                  )}
+                  {!(isSSH && keyAuth) && (
+                    <Form.Item
+                      name="password"
+                      label={isApiKey ? t('vault.types.apiKey') : t('vault.form.passwordApiKey')}
+                      extra={<Text type="secondary" style={{ fontSize: 12 }}>{t('vault.form.leaveBlankToKeep')}</Text>}
+                    >
+                      <Input.Password
+                        placeholder={isApiKey ? t('vault.form.apiKeyPlaceholder') : t('vault.form.enterNewPassword')}
+                      />
+                    </Form.Item>
+                  )}
+                </Col>
+              </Row>
+            );
+          }}
+        </Form.Item>
 
         <Form.Item name="url" label={t('vault.form.loginUrl')}>
           <Input placeholder={t('vault.form.urlPlaceholder')} />
