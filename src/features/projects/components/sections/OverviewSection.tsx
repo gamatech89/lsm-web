@@ -642,6 +642,13 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
   const [isAddingDeveloper, setIsAddingDeveloper] = useState(false);
   const [isAddingPM, setIsAddingPM] = useState(false);
 
+  // Fetch availability logs to show absence indicators
+  const { data: availabilityLogs } = useQuery({
+    queryKey: ['availability'],
+    queryFn: () => api.availability.list().then(r => r.data.data),
+    staleTime: 60000,
+  });
+
   // Fetch available developers and managers
   const { data: filterOptions } = useQuery({
     queryKey: ['project-filter-options'],
@@ -710,6 +717,31 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
     updateManagersMutation.mutate(newManagerIds);
   };
 
+  // Helper: get absence info for a given user ID
+  const getAbsenceInfo = (userId: number) => {
+    if (!availabilityLogs) return null;
+    const log = availabilityLogs.find((l: any) => l.user_id === userId);
+    if (!log) return null;
+    // Don't show indicator for non-blocking statuses
+    if (log.status === 'remote' || log.status === 'half_day') return null;
+    return log;
+  };
+
+  const statusLabels: Record<string, string> = {
+    sick: '🤒 Sick Leave',
+    vacation: '🏖️ Vacation',
+    parental: '👶 Parental Leave',
+    other: '📝 Other',
+  };
+
+  const getAbsenceTooltip = (log: any) => {
+    const label = statusLabels[log.status] || log.status;
+    if (log.end_date) {
+      return `${label} until ${new Date(log.end_date).toLocaleDateString()}`;
+    }
+    return `${label} — no end date set`;
+  };
+
   return (
     <>
       <Divider />
@@ -755,20 +787,33 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
             
             {project.managers && project.managers.length > 0 ? (
               <Space wrap>
-                {project.managers.map((m: any) => (
-                  <Tag 
-                    key={m.id} 
-                    color="purple"
-                    closable
-                    onClose={(e) => {
-                      e.preventDefault();
-                      handleRemoveManager(m.id);
-                    }}
-                    style={{ fontSize: 13, padding: '4px 12px' }}
-                  >
-                    {m.name}
-                  </Tag>
-                ))}
+                {project.managers.map((m: any) => {
+                  const absence = getAbsenceInfo(m.id);
+                  return (
+                    <Tooltip key={m.id} title={absence ? getAbsenceTooltip(absence) : undefined}>
+                      <Tag 
+                        color={absence ? undefined : 'purple'}
+                        closable
+                        onClose={(e) => {
+                          e.preventDefault();
+                          handleRemoveManager(m.id);
+                        }}
+                        style={{ 
+                          fontSize: 13, 
+                          padding: '4px 12px',
+                          ...(absence ? {
+                            background: 'rgba(245, 158, 11, 0.12)',
+                            border: '1px solid rgba(245, 158, 11, 0.4)',
+                            color: '#b45309',
+                          } : {}),
+                        }}
+                      >
+                        {absence && <span style={{ marginRight: 4 }}>⚠️</span>}
+                        {m.name}
+                      </Tag>
+                    </Tooltip>
+                  );
+                })}
               </Space>
             ) : (
               <Text type="secondary">No managers assigned</Text>
@@ -811,20 +856,33 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
             
             {project.developers && project.developers.length > 0 ? (
               <Space wrap>
-                {project.developers.map((dev: any) => (
-                  <Tag 
-                    key={dev.id} 
-                    color="cyan"
-                    closable
-                    onClose={(e) => {
-                      e.preventDefault();
-                      handleRemoveDeveloper(dev.id);
-                    }}
-                    style={{ fontSize: 13, padding: '4px 12px' }}
-                  >
-                    {dev.name}
-                  </Tag>
-                ))}
+                {project.developers.map((dev: any) => {
+                  const absence = getAbsenceInfo(dev.id);
+                  return (
+                    <Tooltip key={dev.id} title={absence ? getAbsenceTooltip(absence) : undefined}>
+                      <Tag 
+                        color={absence ? undefined : 'cyan'}
+                        closable
+                        onClose={(e) => {
+                          e.preventDefault();
+                          handleRemoveDeveloper(dev.id);
+                        }}
+                        style={{ 
+                          fontSize: 13, 
+                          padding: '4px 12px',
+                          ...(absence ? {
+                            background: 'rgba(239, 68, 68, 0.12)',
+                            border: '1px solid rgba(239, 68, 68, 0.4)',
+                            color: '#b91c1c',
+                          } : {}),
+                        }}
+                      >
+                        {absence && <span style={{ marginRight: 4 }}>⚠️</span>}
+                        {dev.name}
+                      </Tag>
+                    </Tooltip>
+                  );
+                })}
               </Space>
             ) : (
               <Text type="secondary">No developers assigned</Text>

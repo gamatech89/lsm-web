@@ -2,7 +2,7 @@
  * Team Page
  */
 
-import { useState } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -36,6 +36,7 @@ import {
   MoreOutlined,
   CrownOutlined,
   ThunderboltOutlined,
+  MedicineBoxOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -43,6 +44,8 @@ import { getRoleConfig } from '@lsm/utils';
 import { useIsAdmin } from '@/stores/auth';
 import type { User, CreateUserRequest } from '@lsm/types';
 import type { ColumnsType } from 'antd/es/table';
+
+const SetAvailabilityModal = lazy(() => import('@/features/team/components/SetAvailabilityModal').then(m => ({ default: m.SetAvailabilityModal })));
 
 const { Title, Text } = Typography;
 
@@ -123,6 +126,7 @@ export function TeamPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetUser, setResetUser] = useState<User | null>(null);
+  const [availabilityTarget, setAvailabilityTarget] = useState<User | null>(null);
   const [form] = Form.useForm();
   const [resetForm] = Form.useForm();
 
@@ -133,6 +137,13 @@ export function TeamPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['team', { search, role: roleFilter, tag: tagFilter }],
     queryFn: () => api.team.list({ search, role: roleFilter, tag: tagFilter } as any).then(r => r.data.data),
+  });
+
+  // Fetch availability logs
+  const { data: availabilityLogs } = useQuery({
+    queryKey: ['availability'],
+    queryFn: () => api.availability.list().then(r => r.data.data),
+    staleTime: 60000,
   });
 
   // Fetch tags for filter and form
@@ -363,6 +374,51 @@ export function TeamPage() {
       },
     },
     {
+      title: t('common.status'),
+      key: 'availability',
+      width: 140,
+      render: (_: unknown, record: User) => {
+        const activeLog = availabilityLogs?.find((l: any) => l.user_id === record.id);
+        if (!activeLog) {
+          return (
+            <Tag style={{
+              background: 'rgba(34, 197, 94, 0.1)',
+              color: '#16a34a',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              borderRadius: 20,
+              fontWeight: 500,
+              fontSize: 11,
+            }}>
+              ✅ {t('availability.status.available')}
+            </Tag>
+          );
+        }
+        const statusStyles: Record<string, { bg: string; color: string; border: string }> = {
+          sick: { bg: 'rgba(239, 68, 68, 0.12)', color: '#dc2626', border: 'rgba(239, 68, 68, 0.3)' },
+          vacation: { bg: 'rgba(245, 158, 11, 0.12)', color: '#d97706', border: 'rgba(245, 158, 11, 0.3)' },
+          parental: { bg: 'rgba(139, 92, 246, 0.12)', color: '#7c3aed', border: 'rgba(139, 92, 246, 0.3)' },
+          remote: { bg: 'rgba(59, 130, 246, 0.12)', color: '#2563eb', border: 'rgba(59, 130, 246, 0.3)' },
+          half_day: { bg: 'rgba(14, 165, 233, 0.12)', color: '#0284c7', border: 'rgba(14, 165, 233, 0.3)' },
+        };
+        const s = statusStyles[activeLog.status] || { bg: 'rgba(100, 116, 139, 0.12)', color: '#64748b', border: 'rgba(100, 116, 139, 0.3)' };
+        const statusLabel = t(`availability.status.${activeLog.status}`, activeLog.status);
+        return (
+          <Tooltip title={activeLog.end_date ? `Until ${new Date(activeLog.end_date).toLocaleDateString()}` : 'No end date'}>
+            <Tag style={{
+              background: s.bg,
+              color: s.color,
+              border: `1px solid ${s.border}`,
+              borderRadius: 20,
+              fontWeight: 500,
+              fontSize: 11,
+            }}>
+              {statusLabel}
+            </Tag>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: t('team.table.actions'),
       key: 'actions',
       width: 180,
@@ -381,6 +437,13 @@ export function TeamPage() {
             <Dropdown
               menu={{
                 items: [
+                  {
+                    key: 'set-availability',
+                    label: t('availability.setStatus'),
+                    icon: <MedicineBoxOutlined />,
+                    onClick: () => setAvailabilityTarget(record),
+                  },
+                  { type: 'divider' },
                   {
                     key: 'reset-password',
                     label: t('team.resetPassword'),
@@ -682,6 +745,16 @@ export function TeamPage() {
           </Form>
         )}
       </Modal>
+
+      {/* Set Availability Modal */}
+      <Suspense fallback={null}>
+        <SetAvailabilityModal
+          open={!!availabilityTarget}
+          onClose={() => setAvailabilityTarget(null)}
+          targetUserId={availabilityTarget?.id}
+          targetUserName={availabilityTarget?.name}
+        />
+      </Suspense>
     </div>
   );
 }

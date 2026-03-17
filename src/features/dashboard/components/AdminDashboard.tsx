@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Row, Col, Typography, Card, Space, Tag, Avatar, Table, Radio } from 'antd';
+import { useMemo, useState, Suspense, lazy } from 'react';
+import { Row, Col, Typography, Card, Space, Tag, Avatar, Table, Radio, Button, App } from 'antd';
 import {
   SafetyOutlined,
   AlertOutlined,
@@ -11,14 +11,19 @@ import {
   UnorderedListOutlined,
   CustomerServiceOutlined,
   FolderOutlined,
+  EditOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/auth';
 import { GlassStatCard } from './widgets/GlassStatCard';
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '@/stores/theme';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import type { AvailabilityLog } from '@/lib/availability-api';
+
+const SetAvailabilityModal = lazy(() => import('@/features/team/components/SetAvailabilityModal').then(m => ({ default: m.SetAvailabilityModal })));
 
 const { Title, Text } = Typography;
 
@@ -41,6 +46,9 @@ export function AdminDashboard() {
   const navigate = useNavigate();
   const { resolvedTheme: _resolvedTheme } = useThemeStore();
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [editingLog, setEditingLog] = useState<AvailabilityLog | null>(null);
+  const { message: messageApi, modal } = App.useApp();
+  const queryClient = useQueryClient();
   
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboard'],
@@ -55,6 +63,19 @@ export function AdminDashboard() {
   const { data: allUsers } = useQuery({
     queryKey: ['team'],
     queryFn: () => api.team.list().then(r => r.data.data),
+  });
+
+  // Cancel availability mutation
+  const cancelMutation = useMutation({
+    mutationFn: (id: number) => api.availability.destroy(id),
+    onSuccess: () => {
+      messageApi.success(t('availability.cancelled'));
+      queryClient.invalidateQueries({ queryKey: ['availability'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+    onError: () => {
+      messageApi.error(t('availability.error'));
+    },
   });
 
   const stats = (dashboardData?.stats || { total: 0, online: 0, at_risk: 0, hacked: 0, open_todos: 0, open_tickets: 0 }) as any;
@@ -206,6 +227,42 @@ export function AdminDashboard() {
             <FolderOutlined style={{ marginRight: 4 }} />
             {count} {count === 1 ? t('dashboard.team.project') : t('dashboard.team.projects')}
           </Tag>
+        );
+      },
+    },
+    {
+      title: t('common.actions'),
+      key: 'actions',
+      width: 160,
+      render: (_: unknown, record: any) => {
+        const activeLog = availabilityLogs?.find((l: any) => l.user_id === record.id);
+        if (!activeLog) return null;
+        return (
+          <Space size="small">
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => setEditingLog(activeLog)}
+              style={{ color: '#6366f1' }}
+            />
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              loading={cancelMutation.isPending}
+              onClick={() => {
+                modal.confirm({
+                  title: t('availability.cancelAbsence'),
+                  content: t('availability.confirmCancel'),
+                  okText: t('availability.cancelAbsence'),
+                  okType: 'danger',
+                  onOk: () => cancelMutation.mutate(activeLog.id),
+                });
+              }}
+            />
+          </Space>
         );
       },
     },
@@ -387,6 +444,17 @@ export function AdminDashboard() {
           </Card>
         </Col>
       </Row>
+
+      {/* Edit Availability Modal */}
+      <Suspense fallback={null}>
+        <SetAvailabilityModal
+          open={!!editingLog}
+          onClose={() => setEditingLog(null)}
+          targetUserId={editingLog?.user_id}
+          targetUserName={editingLog?.user?.name}
+          existingLog={editingLog ?? undefined}
+        />
+      </Suspense>
     </div>
   );
 }
