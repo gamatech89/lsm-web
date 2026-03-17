@@ -244,7 +244,7 @@ export function CredentialFormModal({
               noStyle
               shouldUpdate={(prev, current) => prev.type !== current.type || prev.key_auth !== current.key_auth}
             >
-              {({ getFieldValue }) => {
+              {({ getFieldValue, setFieldsValue }) => {
                 const type = getFieldValue('type');
                 const isApiKey = type === 'api';
                 const isSSH = type === 'ssh';
@@ -254,7 +254,11 @@ export function CredentialFormModal({
                     {isSSH && (
                       <Form.Item name="key_auth" valuePropName="checked" style={{ marginBottom: 8 }}>
                         <Space>
-                          <Switch size="small" />
+                          <Switch size="small" onChange={(checked) => {
+                            if (checked) {
+                              setFieldsValue({ password: undefined });
+                            }
+                          }} />
                           <Text type="secondary" style={{ fontSize: 12 }}>Key-based auth (no password)</Text>
                         </Space>
                       </Form.Item>
@@ -265,7 +269,7 @@ export function CredentialFormModal({
                         label={isEditMode
                           ? (isApiKey ? 'New API Key (leave blank)' : 'New Password (leave blank)')
                           : (isApiKey ? 'API Key' : 'Password')}
-                        rules={isEditMode ? [] : (isSSH && keyAuth) ? [] : [{ required: true, message: 'Required' }]}
+                        rules={isEditMode || (isSSH && keyAuth) ? [] : [{ required: true, message: 'Required' }]}
                       >
                         <Input.Password
                           prefix={<LockOutlined />}

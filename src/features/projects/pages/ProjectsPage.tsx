@@ -155,21 +155,37 @@ export function ProjectsPage() {
       width: 260,
       render: (_, record) => {
         const isConnected = !!(record as any).health_check_secret;
+        const hasMaintenance = !!(record as any).maintenance_id;
+        
+        // Ring = plugin connected. Color = green if maintenance, purple otherwise
+        const isGreen = hasMaintenance;
+        const colors = isGreen
+          ? { gradient: 'linear-gradient(135deg, #10b981, #34d399)', bg: 'linear-gradient(135deg, #059669, #10b981)', glow: 'rgba(16, 185, 129, 0.35)', plain: 'rgba(16, 185, 129, 0.15)', plainDark: 'rgba(16, 185, 129, 0.12)', accent: '#10b981' }
+          : { gradient: 'linear-gradient(135deg, #8b5cf6, #a78bfa)', bg: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', glow: 'rgba(139, 92, 246, 0.35)', plain: 'rgba(139, 92, 246, 0.1)', plainDark: 'rgba(139, 92, 246, 0.15)', accent: '#8b5cf6' };
+        
+        const tooltipText = hasMaintenance && isConnected
+          ? 'Maintenance + Plugin connected'
+          : hasMaintenance
+            ? 'Maintenance active'
+            : isConnected
+              ? 'Plugin connected'
+              : 'No plugin';
+
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Tooltip title={isConnected ? 'Plugin connected' : 'No plugin'}>
+            <Tooltip title={tooltipText}>
               <div style={{
                 position: 'relative',
                 flexShrink: 0,
                 borderRadius: '50%',
                 padding: isConnected ? 2 : 0,
-                background: isConnected ? 'linear-gradient(135deg, #8b5cf6, #a78bfa)' : 'transparent',
-                boxShadow: isConnected ? '0 0 10px rgba(139, 92, 246, 0.35)' : 'none',
+                background: isConnected ? colors.gradient : 'transparent',
+                boxShadow: isConnected ? `0 0 10px ${colors.glow}` : 'none',
               }}>
                 <Avatar
                   style={{
-                    background: isConnected ? 'linear-gradient(135deg, #7c3aed, #8b5cf6)' : (isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)'),
-                    color: isConnected ? '#fff' : '#8b5cf6',
+                    background: isConnected ? colors.bg : (isDark ? colors.plainDark : colors.plain),
+                    color: isConnected ? '#fff' : colors.accent,
                     fontSize: 13,
                     fontWeight: 600,
                     border: isConnected ? `2px solid ${isDark ? '#1e293b' : '#fff'}` : 'none',
