@@ -326,8 +326,8 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
         </Row>
       </Card>
 
-      {/* Health Details - Show only if we have plugin health data (not simple_check) */}
-      {healthDetails && !healthDetails.error && !healthDetails.simple_check && (
+      {/* Health Details - Show only if we have plugin health data (not simple_check) and plugin is connected */}
+      {project.health_check_secret && healthDetails && !healthDetails.error && !healthDetails.simple_check && (
         <Card
           title="Health Details"
           style={{
