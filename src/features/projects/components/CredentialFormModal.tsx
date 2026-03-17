@@ -61,6 +61,11 @@ export function CredentialFormModal({
   const [form] = Form.useForm();
   const isEditMode = !!credential;
 
+  const watchedType = Form.useWatch('type', form);
+  const watchedKeyAuth = Form.useWatch('key_auth', form);
+  const isSSH = watchedType === 'ssh';
+  const isApiKey = watchedType === 'api';
+
   // Create mutation - same as Vault
   const createMutation = useMutation({
     mutationFn: (values: any) => {
@@ -201,37 +206,25 @@ export function CredentialFormModal({
         </Row>
 
         {/* Dynamic fields based on type */}
-        <Form.Item
-          noStyle
-          shouldUpdate={(prev, current) => prev.type !== current.type}
-        >
-          {({ getFieldValue }) => {
-            const type = getFieldValue('type');
-            return (
-              <>
-                {(type === 'ssh' || type === 'database' || type === 'ftp') && (
-                  <Row gutter={16}>
-                    <Col span={18}>
-                      <Form.Item name="hostname" label="Hostname / IP">
-                        <Input placeholder="e.g. 192.168.1.1 or db.example.com" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={6}>
-                      <Form.Item name="port" label="Port">
-                        <Input placeholder={type === 'ssh' ? '22' : type === 'ftp' ? '21' : '3306'} />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                )}
-                {type === 'database' && (
-                  <Form.Item name="database_name" label="Database Name">
-                    <Input placeholder="my_app_db" />
-                  </Form.Item>
-                )}
-              </>
-            );
-          }}
-        </Form.Item>
+        {(isSSH || watchedType === 'database' || watchedType === 'ftp') && (
+          <Row gutter={16}>
+            <Col span={18}>
+              <Form.Item name="hostname" label="Hostname / IP">
+                <Input placeholder="e.g. 192.168.1.1 or db.example.com" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="port" label="Port">
+                <Input placeholder={isSSH ? '22' : watchedType === 'ftp' ? '21' : '3306'} />
+              </Form.Item>
+            </Col>
+          </Row>
+        )}
+        {watchedType === 'database' && (
+          <Form.Item name="database_name" label="Database Name">
+            <Input placeholder="my_app_db" />
+          </Form.Item>
+        )}
 
         <Row gutter={16}>
           <Col span={12}>
@@ -240,48 +233,33 @@ export function CredentialFormModal({
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
-              noStyle
-              shouldUpdate={(prev, current) => prev.type !== current.type || prev.key_auth !== current.key_auth}
-            >
-              {({ getFieldValue, setFieldsValue }) => {
-                const type = getFieldValue('type');
-                const isApiKey = type === 'api';
-                const isSSH = type === 'ssh';
-                const keyAuth = getFieldValue('key_auth');
-                return (
-                  <>
-                    {isSSH && (
-                      <Form.Item name="key_auth" valuePropName="checked" style={{ marginBottom: 8 }}>
-                        <Space>
-                          <Switch size="small" onChange={(checked) => {
-                            if (checked) {
-                              setFieldsValue({ password: undefined });
-                            }
-                          }} />
-                          <Text type="secondary" style={{ fontSize: 12 }}>Key-based auth (no password)</Text>
-                        </Space>
-                      </Form.Item>
-                    )}
-                    {!(isSSH && keyAuth) && (
-                      <Form.Item
-                        name="password"
-                        label={isEditMode
-                          ? (isApiKey ? 'New API Key (leave blank)' : 'New Password (leave blank)')
-                          : (isApiKey ? 'API Key' : 'Password')}
-                        rules={isEditMode || (isSSH && keyAuth) ? [] : [{ required: true, message: 'Required' }]}
-                      >
-                        <Input.Password
-                          prefix={<LockOutlined />}
-                          placeholder={isApiKey ? 'Enter API key' : '••••••••'}
-                          autoComplete="new-password"
-                        />
-                      </Form.Item>
-                    )}
-                  </>
-                );
-              }}
-            </Form.Item>
+            {isSSH && (
+              <Form.Item name="key_auth" valuePropName="checked" style={{ marginBottom: 8 }}>
+                <Space>
+                  <Switch size="small" onChange={(checked) => {
+                    if (checked) {
+                      form.setFieldsValue({ password: undefined });
+                    }
+                  }} />
+                  <Text type="secondary" style={{ fontSize: 12 }}>Key-based auth (no password)</Text>
+                </Space>
+              </Form.Item>
+            )}
+            {!(isSSH && watchedKeyAuth) && (
+              <Form.Item
+                name="password"
+                label={isEditMode
+                  ? (isApiKey ? 'New API Key (leave blank)' : 'New Password (leave blank)')
+                  : (isApiKey ? 'API Key' : 'Password')}
+                rules={isEditMode || (isSSH && watchedKeyAuth) ? [] : [{ required: true, message: 'Required' }]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined />}
+                  placeholder={isApiKey ? 'Enter API key' : '••••••••'}
+                  autoComplete="new-password"
+                />
+              </Form.Item>
+            )}
           </Col>
         </Row>
 
