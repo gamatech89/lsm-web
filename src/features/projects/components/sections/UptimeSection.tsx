@@ -40,7 +40,7 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
   const { data: uptimeData, refetch: refetchUptime } = useQuery({
     queryKey: ['uptime-stats', project.id],
     queryFn: () => apiClient.get(`/projects/${project.id}/uptime-stats?days=30`).then(r => r.data?.data),
-    enabled: !!project.health_check_secret,
+    enabled: !!project.url,
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 1,
   });
@@ -80,8 +80,8 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
     },
   });
 
-  // Not connected state - no health_check_secret means plugin not connected
-  if (!project.health_check_secret) {
+  // Not configured state - no URL means nothing to monitor
+  if (!project.url) {
     return (
       <div style={{ padding: '48px 0', textAlign: 'center' }}>
         <Empty
@@ -89,10 +89,10 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
           description={
             <div>
               <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
-                Connect WordPress to enable uptime monitoring
+                Set a project URL to enable uptime monitoring
               </Text>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                Install and configure the LSM plugin on your WordPress site
+                Add your website URL in project settings to start monitoring
               </Text>
             </div>
           }
@@ -326,8 +326,8 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
         </Row>
       </Card>
 
-      {/* Health Details - Show if we have details from last check */}
-      {healthDetails && !healthDetails.error && (
+      {/* Health Details - Show only if we have plugin health data (not simple_check) */}
+      {healthDetails && !healthDetails.error && !healthDetails.simple_check && (
         <Card
           title="Health Details"
           style={{
