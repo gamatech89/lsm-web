@@ -20,11 +20,11 @@ import {
   Tag,
   Space,
 } from 'antd';
-import { UploadOutlined, PaperClipOutlined, ClockCircleOutlined, LinkOutlined, FileTextOutlined } from '@ant-design/icons';
+import { UploadOutlined, PaperClipOutlined, LinkOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
-import { priorityOptions, statusOptions, CONTROL_HEIGHT } from '../constants';
+import { priorityOptions, CONTROL_HEIGHT } from '../constants';
 import type { Todo } from '@lsm/types';
 import type { UploadFile } from 'antd';
 import type { LibraryResource } from '@/lib/library-resources-api';
@@ -128,10 +128,8 @@ export function TodoFormModal({
     title: string;
     description?: string;
     priority: string;
-    status: string;
     due_date?: dayjs.Dayjs;
     assigned_to?: number;
-    estimated_minutes?: number;
   }) => {
     // Append project resource links to description if selected
     const projectResourceUrls: string[] = form.getFieldValue('_project_resource_urls') || [];
@@ -151,14 +149,16 @@ export function TodoFormModal({
       formData.append('title', values.title);
       if (values.description) formData.append('description', values.description);
       formData.append('priority', values.priority);
-      formData.append('status', values.status);
+      formData.append('status', 'pending');
       if (values.due_date) formData.append('due_date', values.due_date.format('YYYY-MM-DD'));
       if (values.assigned_to) formData.append('assignee_id', values.assigned_to.toString());
-      if (values.estimated_minutes) formData.append('estimated_minutes', values.estimated_minutes.toString());
 
-      if (fileList[0].originFileObj) {
-        formData.append('file', fileList[0].originFileObj);
-      }
+      // Append all files as files[] array
+      fileList.forEach(f => {
+        if (f.originFileObj) {
+          formData.append('files[]', f.originFileObj);
+        }
+      });
 
       // Append library resource IDs
       selectedResourceIds.forEach(id => {
@@ -169,6 +169,7 @@ export function TodoFormModal({
     } else {
       data = {
         ...values,
+        status: 'pending',
         due_date: values.due_date?.format('YYYY-MM-DD'),
         assignee_id: values.assigned_to,
         library_resource_ids: selectedResourceIds,
@@ -214,7 +215,13 @@ export function TodoFormModal({
           type: file.type,
         };
 
-        setFileList([uploadFile]);
+        setFileList(prev => {
+          if (prev.length >= 5) {
+            message.warning('Maximum 5 attachments allowed');
+            return prev;
+          }
+          return [...prev, uploadFile];
+        });
         message.success('📋 Image pasted from clipboard');
         break;
       }
@@ -250,7 +257,7 @@ export function TodoFormModal({
       onOk={() => form.submit()}
       okText={isEditMode ? 'Update' : 'Create'}
       confirmLoading={createMutation.isPending || updateMutation.isPending}
-      width={540}
+      width={600}
       destroyOnHidden
     >
       <Form
@@ -259,10 +266,10 @@ export function TodoFormModal({
         onFinish={handleSubmit}
         initialValues={{
           priority: 'medium',
-          status: 'pending',
         }}
         style={{ marginTop: 16 }}
       >
+        {/* Title */}
         <Form.Item
           name="title"
           label="Title"
@@ -271,10 +278,37 @@ export function TodoFormModal({
           <Input placeholder="e.g. Update WordPress plugins" style={controlStyle} />
         </Form.Item>
 
+        {/* Priority / Due Date / Assigned To — single row */}
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item name="priority" label="Priority">
+              <Select options={priorityOptions} style={controlStyle} />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="due_date" label="Due Date">
+              <DatePicker style={{ width: '100%', ...controlStyle }} />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="assigned_to" label="Assigned To">
+              <Select
+                options={userOptions}
+                placeholder="Select assignee"
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                style={controlStyle}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        {/* Description — larger WYSIWYG editor */}
         <Form.Item name="description" label="Description">
           <ReactQuill
             theme="snow"
-            placeholder="Additional details..."
+            placeholder="Additional details, notes, instructions..."
             modules={{
               toolbar: [
                 ['bold', 'italic', 'underline', 'strike'],
@@ -287,124 +321,104 @@ export function TodoFormModal({
           />
         </Form.Item>
 
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item name="priority" label="Priority">
-              <Select options={priorityOptions} style={controlStyle} />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name="status" label="Status">
-              <Select options={statusOptions} style={controlStyle} />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name="due_date" label="Due Date">
-              <DatePicker style={{ width: '100%', ...controlStyle }} />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={14}>
-            <Form.Item name="assigned_to" label="Assigned To">
-              <Select
-                options={userOptions}
-                placeholder="Select assignee"
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                style={controlStyle}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={10}>
-            <Form.Item name="estimated_minutes" label="Est. Time (minutes)">
-              <Input
-                type="number"
-                min={0}
-                placeholder="e.g. 60"
-                suffix={<ClockCircleOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
-                style={controlStyle}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
         {/* File Attachments — Drop / Paste Zone */}
-        <Form.Item label={<><PaperClipOutlined /> Attachments</>}>
-          {fileList.length > 0 ? (
-            /* ── Preview Mode ── */
-            <div style={{
-              position: 'relative',
-              borderRadius: 8,
-              border: '1px solid #d9d9d9',
-              padding: 8,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}>
-              {/* Thumbnail for images, icon for other files */}
-              {fileList[0].originFileObj?.type?.startsWith('image/') ? (
-                <img
-                  src={URL.createObjectURL(fileList[0].originFileObj as Blob)}
-                  alt="preview"
-                  style={{
-                    width: 64,
-                    height: 64,
-                    objectFit: 'cover',
-                    borderRadius: 6,
-                    border: '1px solid #e5e7eb',
-                  }}
-                />
-              ) : (
-                <div style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 6,
-                  background: '#f5f3ff',
+        <Form.Item label={<><PaperClipOutlined /> Attachments {fileList.length > 0 && <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>({fileList.length}/5)</Text>}</>}>
+          {fileList.length > 0 && (
+            /* ── File List ── */
+            <div style={{ marginBottom: fileList.length < 5 ? 8 : 0 }}>
+              {fileList.map((file, index) => (
+                <div key={file.uid} style={{
+                  borderRadius: 8,
+                  border: '1px solid #d9d9d9',
+                  padding: 8,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  gap: 10,
+                  marginBottom: index < fileList.length - 1 ? 6 : 0,
                 }}>
-                  <PaperClipOutlined style={{ fontSize: 24, color: '#a855f7' }} />
+                  {file.originFileObj?.type?.startsWith('image/') ? (
+                    <img
+                      src={URL.createObjectURL(file.originFileObj as Blob)}
+                      alt="preview"
+                      style={{
+                        width: 40,
+                        height: 40,
+                        objectFit: 'cover',
+                        borderRadius: 6,
+                        border: '1px solid #e5e7eb',
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 6,
+                      background: '#f5f3ff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <PaperClipOutlined style={{ fontSize: 18, color: '#a855f7' }} />
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Text strong style={{ display: 'block', fontSize: 12 }} ellipsis>
+                      {file.name}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 10 }}>
+                      {file.size ? `${(file.size / 1024).toFixed(1)} KB` : ''}
+                    </Text>
+                  </div>
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    onClick={() => setFileList(prev => prev.filter(f => f.uid !== file.uid))}
+                    style={{ fontSize: 11 }}
+                  >
+                    ✕
+                  </Button>
                 </div>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Text strong style={{ display: 'block', fontSize: 13 }} ellipsis>
-                  {fileList[0].name}
-                </Text>
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  {fileList[0].size ? `${(fileList[0].size / 1024).toFixed(1)} KB` : ''}
-                </Text>
-              </div>
-              <Button
-                type="text"
-                danger
-                size="small"
-                onClick={() => setFileList([])}
-                style={{ fontSize: 12 }}
-              >
-                Remove
-              </Button>
+              ))}
             </div>
-          ) : (
-            /* ── Empty Drop/Paste Zone ── */
+          )}
+
+          {fileList.length < 5 && (
+            /* ── Drop/Paste Zone ── */
             <Upload.Dragger
-              fileList={fileList}
+              fileList={[]}
               onChange={handleFileChange}
-              beforeUpload={() => false}
-              multiple={false}
-              maxCount={1}
+              beforeUpload={(file) => {
+                setFileList(prev => {
+                  if (prev.length >= 5) {
+                    message.warning('Maximum 5 attachments allowed');
+                    return prev;
+                  }
+                  const uploadFile: UploadFile = {
+                    uid: `upload-${Date.now()}-${Math.random()}`,
+                    name: file.name,
+                    status: 'done',
+                    originFileObj: file as any,
+                    size: file.size,
+                    type: file.type,
+                  };
+                  return [...prev, uploadFile];
+                });
+                return false;
+              }}
+              multiple
               showUploadList={false}
               style={{ padding: '12px 0' }}
             >
               <p style={{ margin: 0, fontSize: 13, color: '#8c8c8c' }}>
                 <UploadOutlined style={{ fontSize: 20, color: '#a855f7', display: 'block', marginBottom: 4 }} />
-                Drop file, <Text style={{ color: '#6366f1', fontWeight: 500 }}>browse</Text>, or <Text style={{ color: '#6366f1', fontWeight: 500 }}>paste (Ctrl+V)</Text>
+                Drop files, <Text style={{ color: '#6366f1', fontWeight: 500 }}>browse</Text>, or{' '}
+                <Text style={{ color: '#6366f1', fontWeight: 500 }}>paste screenshot</Text>
+                <span style={{ opacity: 0.6, fontSize: 11 }}> (Ctrl+V / ⌘V)</span>
               </p>
               <p style={{ margin: 0, fontSize: 11, color: '#bfbfbf', marginTop: 2 }}>
-                Screenshots, documents, or feedback files · Max 10 MB
+                Up to 5 files · Max 10 MB each
               </p>
             </Upload.Dragger>
           )}
@@ -455,7 +469,13 @@ export function TodoFormModal({
           </Form.Item>
         )}
       </Form>
-    </Modal >
+
+      {/* Quill editor height override */}
+      <style>{`
+        .ql-editor {
+          min-height: 160px !important;
+        }
+      `}</style>
+    </Modal>
   );
 }
-

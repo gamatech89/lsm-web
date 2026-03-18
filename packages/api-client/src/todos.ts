@@ -66,6 +66,24 @@ export function createTodosApi(client: AxiosInstance) {
       client.get(`/todos/${id}/preview`, { responseType: 'blob' }),
 
     /**
+     * Delete an attachment
+     */
+    deleteAttachment: (todoId: number, attachmentId: number) =>
+      client.delete<ApiResponse<null>>(`/todos/${todoId}/attachments/${attachmentId}`),
+
+    /**
+     * Download specific attachment
+     */
+    downloadAttachment: (todoId: number, attachmentId: number) =>
+      client.get(`/todos/${todoId}/attachments/${attachmentId}/download`, { responseType: 'blob' }),
+
+    /**
+     * Preview specific attachment
+     */
+    previewAttachment: (todoId: number, attachmentId: number) =>
+      client.get(`/todos/${todoId}/attachments/${attachmentId}/preview`, { responseType: 'blob' }),
+
+    /**
      * Get todos assigned to the current user
      */
     myTasks: () =>

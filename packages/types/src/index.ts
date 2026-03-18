@@ -169,6 +169,15 @@ export interface Todo {
   file_path: string | null;
   file_name: string | null;
   has_attachment: boolean;
+  attachments?: {
+    id: number;
+    todo_id: number;
+    file_path: string;
+    file_name: string;
+    file_size: number | null;
+    mime_type: string | null;
+    created_at: string;
+  }[];
 
   // Time Tracking
   estimated_minutes: number | null;

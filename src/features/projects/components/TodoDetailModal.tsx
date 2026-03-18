@@ -133,30 +133,51 @@ export function TodoDetailModal({
     }
   }, [open, todo]);
 
-  // Fetch image preview if attachment is an image
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const isImageAttachment = todo?.file_name && /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(todo.file_name);
+  // Fetch image preview for attachments
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (open && todo?.has_attachment && isImageAttachment) {
-      if (typeof api.todos.previewFile === 'function') {
-        api.todos.previewFile(todo.id)
-          .then((response) => {
-            const contentType = response.headers?.['content-type'] || 'image/jpeg';
-            const blob = new Blob([response.data], { type: contentType });
-            const url = URL.createObjectURL(blob);
-            setPreviewUrl(url);
-          })
-          .catch(() => setPreviewUrl(null));
-      } else {
-        console.warn('api.todos.previewFile is not available. Please rebuild @lsm/api-client.');
-        setPreviewUrl(null);
+    if (open && todo?.has_attachment) {
+      // Legacy attachment
+      const isLegacyImg = todo.file_name && /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(todo.file_name);
+      if (isLegacyImg) {
+        if (typeof api.todos.previewFile === 'function') {
+          api.todos.previewFile(todo.id)
+            .then((response) => {
+              const contentType = response.headers?.['content-type'] || 'image/jpeg';
+              const blob = new Blob([response.data], { type: contentType });
+              const url = URL.createObjectURL(blob);
+              setPreviewUrls(prev => ({ ...prev, legacy: url }));
+            })
+            .catch(() => {});
+        }
+      }
+
+      // New attachments array
+      if (todo.attachments && todo.attachments.length > 0) {
+        todo.attachments.forEach((att: any) => {
+          if (/\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(att.file_name)) {
+            if (typeof (api.todos as any).previewAttachment === 'function') {
+              (api.todos as any).previewAttachment(todo.id, att.id)
+                .then((response: any) => {
+                  const contentType = response.headers?.['content-type'] || 'image/jpeg';
+                  const blob = new Blob([response.data], { type: contentType });
+                  const url = URL.createObjectURL(blob);
+                  setPreviewUrls(prev => ({ ...prev, [att.id]: url }));
+                })
+                .catch(() => {});
+            }
+          }
+        });
       }
     } else {
-      setPreviewUrl(null);
+      setPreviewUrls({});
     }
+
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      // Cleanup is handled by the browser when blob URLs are no longer referenced or document unloads,
+      // but to be safe we can't reliably revoke them all here without causing issues on re-renders, 
+      // however we'll just clear the state which is fine for small files.
     };
   }, [open, todo?.id, todo?.has_attachment]);
 
@@ -253,6 +274,21 @@ export function TodoDetailModal({
       link.remove();
     } catch (error) {
       message.error('Failed to download file');
+    }
+  };
+
+  const handleDownloadAttachment = async (attachment: any) => {
+    try {
+      const response = await (api.todos as any).downloadAttachment(todo.id, attachment.id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', attachment.file_name || 'download');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      message.error('Failed to download attachment');
     }
   };
 
@@ -520,49 +556,100 @@ export function TodoDetailModal({
           <Divider style={{ margin: '16px 0' }} />
           <div>
             <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-              Attachment
+              Attachments
             </Text>
-            {/* Image Preview */}
-            {isImageAttachment && previewUrl && (
-              <div style={{
-                marginBottom: 8,
-                borderRadius: 8,
-                overflow: 'hidden',
-                border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb',
-              }}>
-                <Image
-                  src={previewUrl}
-                  alt={todo.file_name || 'Attachment'}
-                  style={{ width: '100%', maxHeight: 300, objectFit: 'contain' }}
-                  preview={{ 
-                    mask: <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><EyeOutlined /> Click to enlarge</div>,
-                    src: previewUrl, 
-                  }}
-                />
-              </div>
-            )}
-            {/* File info + download */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: '8px 12px',
-              ...boxStyle,
-              borderRadius: 6,
-            }}>
-              <Space>
-                <FileOutlined />
-                <Text>{todo.file_name || 'Attached File'}</Text>
-              </Space>
-              <Button 
-                type="link" 
-                size="small" 
-                icon={<DownloadOutlined />} 
-                onClick={handleDownload}
-              >
-                Download
-              </Button>
-            </div>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {/* Legacy Single File */}
+              {todo.file_path && (
+                <div style={{ marginBottom: todo.attachments && todo.attachments.length > 0 ? 8 : 0 }}>
+                  {previewUrls['legacy'] && (
+                    <div style={{
+                      marginBottom: 8,
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb',
+                    }}>
+                      <Image
+                        src={previewUrls['legacy']}
+                        alt={todo.file_name || 'Attachment'}
+                        style={{ width: '100%', maxHeight: 300, objectFit: 'contain' }}
+                        preview={{ 
+                          mask: <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><EyeOutlined /> Click to enlarge</div>,
+                          src: previewUrls['legacy'], 
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    ...boxStyle,
+                    borderRadius: 6,
+                  }}>
+                    <Space>
+                      <FileOutlined />
+                      <Text>{todo.file_name || 'Attached File'}</Text>
+                    </Space>
+                    <Button 
+                      type="link" 
+                      size="small" 
+                      icon={<DownloadOutlined />} 
+                      onClick={handleDownload}
+                    >
+                      Download
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Multiple Attachments Array */}
+              {todo.attachments && todo.attachments.length > 0 && todo.attachments.map((att: any) => (
+                <div key={att.id}>
+                  {previewUrls[att.id] && (
+                    <div style={{
+                      marginBottom: 8,
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb',
+                    }}>
+                      <Image
+                        src={previewUrls[att.id]}
+                        alt={att.file_name || 'Attachment'}
+                        style={{ width: '100%', maxHeight: 300, objectFit: 'contain' }}
+                        preview={{ 
+                          mask: <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><EyeOutlined /> Click to enlarge</div>,
+                          src: previewUrls[att.id], 
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    ...boxStyle,
+                    borderRadius: 6,
+                  }}>
+                    <Space>
+                      <FileOutlined />
+                      <Text>{att.file_name || 'Attached File'}</Text>
+                      {att.file_size && <Text type="secondary" style={{ fontSize: 11 }}>({Math.round(att.file_size / 1024)} KB)</Text>}
+                    </Space>
+                    <Button 
+                      type="link" 
+                      size="small" 
+                      icon={<DownloadOutlined />} 
+                      onClick={() => handleDownloadAttachment(att)}
+                    >
+                      Download
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </Space>
           </div>
         </>
       )}

@@ -790,7 +790,7 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
                 {project.managers.map((m: any) => {
                   const absence = getAbsenceInfo(m.id);
                   return (
-                    <Tooltip key={m.id} title={absence ? getAbsenceTooltip(absence) : undefined}>
+                    <Tooltip key={m.id} title={absence ? getAbsenceTooltip(absence) : undefined} color="#1f1a23">
                       <Tag 
                         color={absence ? undefined : 'purple'}
                         closable
@@ -859,7 +859,7 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
                 {project.developers.map((dev: any) => {
                   const absence = getAbsenceInfo(dev.id);
                   return (
-                    <Tooltip key={dev.id} title={absence ? getAbsenceTooltip(absence) : undefined}>
+                    <Tooltip key={dev.id} title={absence ? getAbsenceTooltip(absence) : undefined} color="#1f1a23">
                       <Tag 
                         color={absence ? undefined : 'cyan'}
                         closable

@@ -279,8 +279,8 @@ export default function TodosSection({ project }: TodosSectionProps) {
           {record.description && (
             <div>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {record.description.substring(0, 60)}
-                {record.description.length > 60 ? '...' : ''}
+                {record.description.replace(/<[^>]+>/g, '').substring(0, 60)}
+                {record.description.replace(/<[^>]+>/g, '').length > 60 ? '...' : ''}
               </Text>
             </div>
           )}
