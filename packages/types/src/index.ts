@@ -351,6 +351,8 @@ export interface ProjectFilters {
   manager_id?: number;
   developer_id?: number;
   tag?: string;
+  sort_by?: 'created_at' | 'updated_at' | 'name' | 'pending_todos_count';
+  sort_dir?: 'asc' | 'desc';
 }
 
 export interface CreateProjectRequest {

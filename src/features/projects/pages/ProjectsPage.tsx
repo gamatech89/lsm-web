@@ -10,6 +10,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import {
   Card,
   Table,
@@ -29,6 +31,7 @@ import {
 import {
   PlusOutlined,
   SearchOutlined,
+  CalendarOutlined,
   ReloadOutlined,
   FolderOutlined,
   WarningOutlined,
@@ -52,6 +55,8 @@ import { ProjectFormModal } from '../components/ProjectFormModal';
 import type { Project, ProjectFilters } from '@lsm/types';
 import type { ColumnsType } from 'antd/es/table';
 import { useThemeStore } from '@/stores/theme';
+
+dayjs.extend(relativeTime);
 
 const { Title, Text } = Typography;
 
@@ -200,18 +205,51 @@ export function ProjectsPage() {
               <Text strong style={{ display: 'block', color: isDark ? '#f1f5f9' : '#1e293b', fontSize: 13.5, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {record.name}
               </Text>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
-                {record.url && (
-                  <Text type="secondary" style={{ fontSize: 11.5 }}>
-                    {extractDomain(record.url)}
-                  </Text>
-                )}
-                {(record.project_external_id || (record as any).maintenance_id) && (
-                  <Text type="secondary" style={{ fontSize: 10.5, opacity: 0.6 }}>
-                    {[record.project_external_id, (record as any).maintenance_id].filter(Boolean).join(' · ')}
-                  </Text>
-                )}
-              </div>
+              {record.url && (
+                <Text type="secondary" style={{ fontSize: 11.5, display: 'block', marginTop: 1 }}>
+                  {extractDomain(record.url)}
+                </Text>
+              )}
+              {(record.project_external_id || (record as any).maintenance_id) && (
+                <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                  {record.project_external_id && (
+                    <Tag
+                      style={{
+                        margin: 0,
+                        fontSize: 10,
+                        lineHeight: '16px',
+                        padding: '0 6px',
+                        borderRadius: 4,
+                        background: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+                        color: isDark ? '#93bbfd' : '#2563eb',
+                        border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'}`,
+                        fontWeight: 600,
+                        letterSpacing: '0.3px',
+                      }}
+                    >
+                      LP {record.project_external_id}
+                    </Tag>
+                  )}
+                  {(record as any).maintenance_id && (
+                    <Tag
+                      style={{
+                        margin: 0,
+                        fontSize: 10,
+                        lineHeight: '16px',
+                        padding: '0 6px',
+                        borderRadius: 4,
+                        background: isDark ? 'rgba(20, 184, 166, 0.15)' : 'rgba(20, 184, 166, 0.08)',
+                        color: isDark ? '#5eead4' : '#0d9488',
+                        border: `1px solid ${isDark ? 'rgba(20, 184, 166, 0.3)' : 'rgba(20, 184, 166, 0.2)'}`,
+                        fontWeight: 600,
+                        letterSpacing: '0.3px',
+                      }}
+                    >
+                      M {(record as any).maintenance_id}
+                    </Tag>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -284,6 +322,8 @@ export function ProjectsPage() {
       key: 'todos',
       width: 70,
       align: 'center',
+      sorter: true,
+      sortOrder: filters.sort_by === 'pending_todos_count' ? (filters.sort_dir === 'asc' ? 'ascend' : 'descend') : undefined,
       render: (_, record) => {
         const count = record.pending_todos_count || 0;
         const bg = count === 0
@@ -329,6 +369,23 @@ export function ProjectsPage() {
               </Tooltip>
             )}
           </Space>
+        );
+      },
+    },
+    {
+      title: <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CalendarOutlined style={{ fontSize: 12 }} /> {t('projects.table.created', 'Created')}</span>,
+      key: 'created_at',
+      width: 120,
+      sorter: true,
+      sortOrder: filters.sort_by === 'created_at' ? (filters.sort_dir === 'asc' ? 'ascend' : 'descend') : undefined,
+      render: (_, record) => {
+        if (!record.created_at) return <Text type="secondary" style={{ fontSize: 11, opacity: 0.4 }}>—</Text>;
+        return (
+          <Tooltip title={dayjs(record.created_at).format('DD.MM.YYYY HH:mm')}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {dayjs(record.created_at).fromNow()}
+            </Text>
+          </Tooltip>
         );
       },
     },
@@ -751,11 +808,34 @@ export function ProjectsPage() {
             size: isMobile ? 'small' : 'default',
             style: { padding: '12px 16px', margin: 0 },
           }}
+          onChange={(_pagination, _tableFilters, sorter: any) => {
+            if (sorter && sorter.columnKey) {
+              const sortKeyMap: Record<string, string> = {
+                created_at: 'created_at',
+                todos: 'pending_todos_count',
+              };
+              const sortBy = sortKeyMap[sorter.columnKey] || sorter.columnKey;
+              if (sorter.order) {
+                setFilters(f => ({
+                  ...f,
+                  sort_by: sortBy as any,
+                  sort_dir: sorter.order === 'ascend' ? 'asc' : 'desc',
+                  page: 1,
+                }));
+              } else {
+                // Reset to default sort
+                setFilters(f => {
+                  const { sort_by, sort_dir, ...rest } = f as any;
+                  return { ...rest, page: 1 };
+                });
+              }
+            }
+          }}
           onRow={(record) => ({
             onClick: () => navigate(`/projects/${record.id}`),
             style: { cursor: 'pointer' },
           })}
-          scroll={{ x: 950 }}
+          scroll={{ x: 1070 }}
           size="small"
         />
       </Card>

@@ -83,6 +83,19 @@ export default function ReportsSection({ project }: ReportsSectionProps) {
     }
   };
 
+  // View PDF inline in new tab
+  const handleViewPdf = async (reportId: number) => {
+    try {
+      const response = await apiClient.get(`/maintenance-reports/${reportId}/pdf?view=1`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(url, '_blank');
+    } catch {
+      message.error('Failed to open PDF');
+    }
+  };
+
   // Handle delete
   const handleDelete = (report: MaintenanceReport) => {
     modal.confirm({
@@ -183,6 +196,12 @@ export default function ReportsSection({ project }: ReportsSectionProps) {
             icon: <EditOutlined />,
             label: 'Edit Report',
             onClick: () => setEditingReport(record),
+          },
+          {
+            key: 'view-pdf',
+            icon: <EyeOutlined />,
+            label: 'View PDF',
+            onClick: () => handleViewPdf(record.id),
           },
           {
             key: 'download',
@@ -300,6 +319,13 @@ export default function ReportsSection({ project }: ReportsSectionProps) {
             Edit
           </Button>,
           <Button 
+            key="view-pdf" 
+            icon={<EyeOutlined />} 
+            onClick={() => viewingReport && handleViewPdf(viewingReport.id)}
+          >
+            View PDF
+          </Button>,
+          <Button 
             key="download" 
             type="primary"
             icon={<DownloadOutlined />} 
@@ -335,13 +361,21 @@ export default function ReportsSection({ project }: ReportsSectionProps) {
                     <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
                       This report was uploaded as a PDF file.
                     </Text>
-                    <Button 
-                      type="primary" 
-                      icon={<DownloadOutlined />} 
-                      onClick={() => handleDownloadPdf(viewingReport.id)}
-                    >
-                      Download PDF Report
-                    </Button>
+                    <Space>
+                      <Button 
+                        icon={<EyeOutlined />} 
+                        onClick={() => handleViewPdf(viewingReport.id)}
+                      >
+                        View PDF
+                      </Button>
+                      <Button 
+                        type="primary" 
+                        icon={<DownloadOutlined />} 
+                        onClick={() => handleDownloadPdf(viewingReport.id)}
+                      >
+                        Download PDF Report
+                      </Button>
+                    </Space>
                   </div>
                 </div>
               </>
