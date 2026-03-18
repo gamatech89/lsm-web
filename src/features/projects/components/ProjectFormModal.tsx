@@ -71,8 +71,14 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
       onClose();
       form.resetFields();
     },
-    onError: () => {
-      message.error('Failed to create project');
+    onError: (error: any) => {
+      const validationErrors = error?.response?.data?.errors;
+      if (validationErrors) {
+        const firstError = Object.values(validationErrors).flat()[0] as string;
+        message.error(firstError || 'Failed to create project');
+      } else {
+        message.error(error?.response?.data?.message || 'Failed to create project');
+      }
     },
   });
 
@@ -86,8 +92,14 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
       queryClient.invalidateQueries({ queryKey: ['projects', project!.id] });
       onClose();
     },
-    onError: () => {
-      message.error('Failed to update project');
+    onError: (error: any) => {
+      const validationErrors = error?.response?.data?.errors;
+      if (validationErrors) {
+        const firstError = Object.values(validationErrors).flat()[0] as string;
+        message.error(firstError || 'Failed to update project');
+      } else {
+        message.error(error?.response?.data?.message || 'Failed to update project');
+      }
     },
   });
 
