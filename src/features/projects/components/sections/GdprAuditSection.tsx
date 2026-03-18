@@ -221,6 +221,20 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
     }
   };
 
+  const handleViewPdf = async () => {
+    if (!latestReport?.id) return;
+    try {
+      const response = await apiClient.get(
+        `/projects/${project.id}/gdpr-audit/${latestReport.id}/pdf?view=1`,
+        { responseType: 'blob' }
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(url, '_blank');
+    } catch {
+      message.error('Failed to open PDF');
+    }
+  };
+
   const auditData = latestReport?.audit_data;
 
   // ─── No URL ──────────────────────────────────────────────────────
@@ -303,6 +317,9 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
               </Button>
               {auditData && latestReport?.id && (
                 <>
+                  <Button icon={<EyeOutlined />} onClick={handleViewPdf}>
+                    {t('gdpr.viewPdf')}
+                  </Button>
                   <Button icon={<DownloadOutlined />} onClick={handleDownloadPdf}>
                     {t('gdpr.pdf')}
                   </Button>
