@@ -197,7 +197,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
       label: 'File Editing',
       description: securitySettings?.file_editing_disabled ? 'Plugin/theme file editing is disabled' : 'Plugin/theme file editing is enabled',
       status: securitySettings?.file_editing_disabled ? 'pass' : 'warning',
-      recommendation: !securitySettings?.file_editing_disabled ? 'Add DISALLOW_FILE_EDIT to wp-config.php' : undefined,
+      recommendation: !securitySettings?.file_editing_disabled ? 'Use the Block File Editing toggle in Security Controls below' : undefined,
     },
     {
       key: 'security_plugin',
@@ -500,24 +500,24 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
               />
             </div>
 
-            {/* Block REST API */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
+            {/* Block User Enumeration */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
               padding: '16px 0',
               borderBottom: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
             }}>
               <div style={{ flex: 1 }}>
                 <Space>
-                  <Text strong>Restrict REST API</Text>
-                  <Tooltip title="Restricting REST API prevents anonymous access to usernames and sensitive data. Enable for better privacy." color="#1e293b">
+                  <Text strong>Block User Enumeration</Text>
+                  <Tooltip title="Blocks the REST API /wp/v2/users endpoint and ?author= queries for unauthenticated visitors, preventing attackers from harvesting WordPress usernames." color="#1e293b">
                     <InfoCircleOutlined style={{ color: '#94a3b8', cursor: 'help' }} />
                   </Tooltip>
                 </Space>
                 <div>
                   <Text type="secondary" style={{ fontSize: 13 }}>
-                    Require authentication for REST API access
+                    Hide usernames from public REST API and author queries
                   </Text>
                 </div>
               </div>
@@ -557,30 +557,29 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
             </div>
 
             {/* Debug Logging */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
               padding: '16px 0',
+              borderBottom: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
             }}>
               <div style={{ flex: 1 }}>
                 <Space>
                   <Text strong>Debug Logging</Text>
-                  <Tooltip title="Debug mode logs PHP errors to a file. Useful for troubleshooting but should be disabled in production for security." color="#1e293b">
+                  <Tooltip title="WP_DEBUG is a constant defined in wp-config.php and cannot be toggled remotely. Edit wp-config.php directly to change it." color="#1e293b">
                     <InfoCircleOutlined style={{ color: '#94a3b8', cursor: 'help' }} />
                   </Tooltip>
                 </Space>
-                <div>
+                <div style={{ marginTop: 2 }}>
                   <Text type="secondary" style={{ fontSize: 13 }}>
-                    Enable WP_DEBUG for error logging (temporary use only)
+                    WP_DEBUG status — set in wp-config.php, read-only
                   </Text>
                 </div>
               </div>
-              <Switch
-                checked={securitySettings?.debug_enabled ?? false}
-                loading={updatingSetting === 'debug_enabled'}
-                onChange={(checked) => handleToggleSetting('debug_enabled', checked)}
-              />
+              <Tag color={securitySettings?.debug_enabled ? 'error' : 'success'} style={{ margin: 0 }}>
+                {securitySettings?.debug_enabled ? 'Enabled' : 'Disabled'}
+              </Tag>
             </div>
 
             {/* Enable Security Headers */}
@@ -634,6 +633,15 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
           borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
         }}
       >
+        {securitySettings?.security_headers_enabled && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="PHP header injection is active"
+            description="The LSM plugin is injecting security headers via PHP. If headers still show as missing, trigger a Re-sync or wait for cache to clear."
+          />
+        )}
         {isLoadingHeaders ? (
           <Spin />
         ) : !securityHeaders?.headers ? (
@@ -695,10 +703,12 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
         )}
         <Divider style={{ margin: '12px 0' }} />
         <Space direction="vertical" size={8} style={{ width: '100%' }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            💡 Add these headers via .htaccess (Apache), nginx config, or a security plugin like Wordfence/Sucuri.
-          </Text>
-          <Button 
+          {!securitySettings?.security_headers_enabled && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              💡 Enable the <Text strong style={{ fontSize: 12 }}>Security Headers</Text> toggle above, or add headers manually via .htaccess, nginx config, or Wordfence/Sucuri.
+            </Text>
+          )}
+          <Button
             icon={<CodeOutlined />} 
             type="primary"
             ghost
