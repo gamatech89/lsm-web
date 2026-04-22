@@ -71,7 +71,7 @@ export const lightTheme: ThemeConfig = {
     colorBgContainer: '#FFFFFF',
     colorBgLayout: '#F8F9FC',
     colorBgElevated: '#FFFFFF',
-    colorBgSpotlight: '#F1F5F9',
+    colorBgSpotlight: '#1e293b',
     
     // Text colors
     colorText: '#1F1A23',

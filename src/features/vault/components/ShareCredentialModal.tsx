@@ -100,40 +100,36 @@ export function ShareCredentialModal({ open, onClose, credential }: ShareCredent
           title={t('vault.shareModal.linkCreated')}
           subTitle={`${t('vault.shareModal.linkExpires')} ${new Date(expiresAt!).toLocaleString()}`}
           extra={[
-            <div key="link-box" style={{ 
-              background: '#1e293b', 
-              padding: '12px 16px', 
-              borderRadius: 8, 
-              border: '1px solid #334155',
+            <div key="link-box" style={{
+              padding: '12px 16px',
+              borderRadius: 8,
+              border: '1px solid #e2e8f0',
+              background: '#f8fafc',
               marginBottom: 16,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              gap: 12,
             }}>
-              <Text ellipsis style={{ maxWidth: 320, color: '#94a3b8' }}>
+              <Text ellipsis style={{ maxWidth: 280, fontFamily: 'monospace', fontSize: 12 }}>
                 {generatedLink}
               </Text>
-              <Button 
-                type="primary" 
-                icon={<CopyOutlined />} 
+              <Button
+                type="primary"
+                icon={<CopyOutlined />}
                 onClick={copyToClipboard}
-                style={{ background: '#8b5cf6' }}
+                style={{ background: '#8b5cf6', flexShrink: 0 }}
               >
                 {t('vault.shareModal.copy')}
               </Button>
             </div>,
-             <Alert
+            <Alert
               key="warning"
               message={t('vault.shareModal.securityNote')}
               description={t('vault.shareModal.securityWarning')}
               type="warning"
               showIcon
-              style={{ 
-                textAlign: 'left', 
-                background: '#422006', 
-                border: '1px solid #854d0e',
-                color: '#fef3c7'
-              }}
+              style={{ textAlign: 'left' }}
             />
           ]}
         />
