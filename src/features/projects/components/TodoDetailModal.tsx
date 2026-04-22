@@ -485,20 +485,50 @@ export function TodoDetailModal({
               minHeight: 60,
             }}
           >
-            {todo.description ? (
-              <div
-                className="todo-description-content"
-                style={{ margin: 0 }}
-                dangerouslySetInnerHTML={{ __html: todo.description }}
-              />
-            ) : (
-              <Text type="secondary" style={{ fontStyle: 'italic' }}>No description</Text>
-            )}
+            {(() => {
+              const raw = todo.description || '';
+              const splitIdx = raw.indexOf('\n\n--- Resource Links ---\n');
+              const mainHtml = splitIdx >= 0 ? raw.slice(0, splitIdx) : raw;
+              return mainHtml ? (
+                <div
+                  className="todo-description-content"
+                  style={{ margin: 0 }}
+                  dangerouslySetInnerHTML={{ __html: mainHtml }}
+                />
+              ) : (
+                <Text type="secondary" style={{ fontStyle: 'italic' }}>No description</Text>
+              );
+            })()}
           </div>
         )}
       </div>
 
-      {/* Attachments - Show only if there are files */}
+      {/* Project Resource Links parsed from description */}
+      {(() => {
+        const raw = todo.description || '';
+        const splitIdx = raw.indexOf('\n\n--- Resource Links ---\n');
+        if (splitIdx < 0) return null;
+        const urls = raw.slice(splitIdx + '\n\n--- Resource Links ---\n'.length).trim().split('\n').filter(Boolean);
+        if (urls.length === 0) return null;
+        return (
+          <>
+            <Divider style={{ margin: '16px 0' }} />
+            <div>
+              <Space style={{ marginBottom: 8 }}>
+                <LinkOutlined />
+                <Text type="secondary" style={{ fontSize: 12 }}>Project Resource Links</Text>
+              </Space>
+              {urls.map((url, i) => (
+                <div key={i} style={{ ...boxStyle, borderRadius: 6, padding: '8px 12px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontFamily: 'monospace', fontSize: 12, wordBreak: 'break-all', flex: 1, marginRight: 8 }}>{url}</Text>
+                  <Button type="link" size="small" icon={<GlobalOutlined />} onClick={() => window.open(url, '_blank')}>Open</Button>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      })()}
+
       {/* Time Tracking Section */}
       <Divider style={{ margin: '16px 0' }} />
       <div style={{ marginBottom: 20 }}>

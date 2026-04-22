@@ -444,7 +444,10 @@ export function TodoFormModal({
 
         {/* Project Resource Links */}
         {projectResources.filter((r: any) => r.type === 'link' && r.url).length > 0 && (
-          <Form.Item label={<><LinkOutlined /> Project Resource Links</>}>
+          <Form.Item
+            name="_project_resource_urls"
+            label={<><LinkOutlined /> Project Resource Links</>}
+          >
             <Select
               mode="multiple"
               placeholder="Link resources from this project..."
@@ -452,8 +455,6 @@ export function TodoFormModal({
               allowClear
               showSearch
               style={{ width: '100%' }}
-              value={(form.getFieldValue('_project_resource_urls') || [])}
-              onChange={(val: string[]) => form.setFieldsValue({ _project_resource_urls: val })}
               options={projectResources
                 .filter((r: any) => r.type === 'link' && r.url)
                 .map((r: any) => ({
