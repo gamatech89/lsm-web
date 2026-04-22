@@ -66,6 +66,7 @@ import MaintenanceSection from '../components/sections/MaintenanceSection';
 import CredentialsSection from '../components/sections/CredentialsSection';
 import GdprAuditSection from '../components/sections/GdprAuditSection';
 import AccessibilityAuditSection from '../components/sections/AccessibilityAuditSection';
+import SiteReviewsSection from '../components/sections/SiteReviewsSection';
 
 // Import existing tab components for reuse
 import { TodoFormModal } from '../components/TodoFormModal';
@@ -277,6 +278,8 @@ export function ProjectDetailPageV2() {
         return <SettingsSection {...commonProps} />;
       case 'credentials':
         return <CredentialsSection {...commonProps} />;
+      case 'site-reviews':
+        return <SiteReviewsSection {...commonProps} />;
       default:
         return <OverviewSection {...commonProps} lsmStatus={lsmStatus} recoveryStatus={recoveryStatus} onSsoLogin={handleSsoLogin} ssoLoading={ssoLoading} />;
     }

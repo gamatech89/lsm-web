@@ -30,6 +30,7 @@ import {
   HistoryOutlined,
   LockOutlined,
   EyeOutlined,
+  VideoCameraOutlined,
 } from '@ant-design/icons';
 import { useThemeStore } from '@/stores/theme';
 import { ProjectSelector } from './ProjectSelector';
@@ -163,6 +164,11 @@ export function ProjectSubNav({
           icon: <LockOutlined />,
           label: withBadge('Credentials', counts.credentials),
         }] : []),
+        {
+          key: 'site-reviews',
+          icon: <VideoCameraOutlined />,
+          label: 'Site Reviews',
+        },
       ] : [],
     },
     

@@ -25,6 +25,7 @@ import {
   createResourcesApi,
 } from '@lsm/api-client';
 import { createAvailabilityApi } from './availability-api';
+import { createSiteReviewsApi } from './site-reviews-api';
 import { createLsmApi } from './lsm-api';
 import { createSupportTicketsApi } from './support-tickets-api';
 import { createBackupsApi } from './backups-api';
@@ -68,6 +69,7 @@ export const api = {
   backups: createBackupsApi(client),
   phpErrors: createPhpErrorsApi(client),
   libraryResources: createLibraryResourcesApi(client),
+  siteReviews: createSiteReviewsApi(client),
 };
 
 // Export the raw client for custom requests
