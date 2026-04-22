@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Button, Input, Typography, Space, Tooltip, Badge, Divider,
-  Popover, Tag, App, Spin, Avatar,
+  Tag, App, Spin, Avatar,
 } from 'antd';
 import {
   CloseOutlined, CommentOutlined, CheckCircleOutlined,
@@ -9,7 +9,6 @@ import {
   DeleteOutlined, CheckOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import html2canvas from 'html2canvas';
 import { api } from '@/lib/api';
 import { useThemeStore } from '@/stores/theme';
 import type { SiteReview, SiteReviewAnnotation } from '@/lib/site-reviews-api';
@@ -39,6 +38,7 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
   const [commentMode, setCommentMode] = useState(false);
   const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
   const [pendingComment, setPendingComment] = useState('');
+  const [iframeScrollY, setIframeScrollY] = useState(0);
   const [createTodo, setCreateTodo] = useState(false);
   const [selectedPinId, setSelectedPinId] = useState<number | null>(null);
   const [replyInputs, setReplyInputs] = useState<Record<number, string>>({});
@@ -71,14 +71,6 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
     try { return iframeRef.current?.contentWindow?.scrollY ?? 0; } catch { return 0; }
   };
 
-  const captureScreenshot = async (): Promise<Blob | null> => {
-    if (!iframeRef.current) return null;
-    try {
-      const canvas = await html2canvas(iframeRef.current, { useCORS: true, allowTaint: true, scale: 0.5 });
-      return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    } catch { return null; }
-  };
-
   // ── Add pin ──────────────────────────────────────────────────────────────
   const addPinMutation = useMutation({
     mutationFn: async ({ x, y, comment }: { x: number; y: number; comment: string }) => {
@@ -97,17 +89,7 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
       }
       return api.siteReviews.addAnnotation(review.id, params);
     },
-    onSuccess: async (res) => {
-      const annotation = res.data.data;
-      // Screenshot after pin is created
-      const blob = await captureScreenshot();
-      if (blob) {
-        if (shareToken) {
-          await api.siteReviews.uploadShareScreenshot(shareToken, annotation.id, blob).catch(() => null);
-        } else {
-          await api.siteReviews.uploadScreenshot(annotation.id, blob).catch(() => null);
-        }
-      }
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey });
       setPendingPin(null);
       setPendingComment('');
@@ -174,6 +156,15 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
     return () => window.removeEventListener('keydown', handler);
   }, [pendingPin, commentMode]);
 
+  // Track iframe scroll via postMessage (injected by our server-side proxy)
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.t === 'lsm-scroll') setIframeScrollY(e.data.y as number);
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
   const pinNumber = (pinId: number) => {
     const allPins = pins.filter(p => !p.parent_id);
     return allPins.findIndex(p => p.id === pinId) + 1;
@@ -228,7 +219,7 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
           </Button>
           <Tooltip title="Reload page">
             <Button icon={<ReloadOutlined />} onClick={() => {
-              if (iframeRef.current) { setIframeLoading(true); iframeRef.current.src = review.url; }
+              if (iframeRef.current) { setIframeLoading(true); iframeRef.current.src = `${import.meta.env.VITE_API_URL || '/api/v1'}/site-review-proxy?url=${encodeURIComponent(review.url)}`; }
             }} />
           </Tooltip>
           <Button icon={<CloseOutlined />} onClick={onClose}>Close</Button>
@@ -251,7 +242,7 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
 
           <iframe
             ref={iframeRef}
-            src={review.url}
+            src={`${import.meta.env.VITE_API_URL || '/api/v1'}/site-review-proxy?url=${encodeURIComponent(review.url)}`}
             style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
             onLoad={() => setIframeLoading(false)}
             title="Site Review"
@@ -268,7 +259,7 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
               pointerEvents: commentMode ? 'auto' : 'none',
             }}
           >
-            {/* Render existing pins */}
+            {/* Render existing pins — offset by live iframe scroll */}
             {filteredPins.filter(p => !p.parent_id).map((pin, idx) => (
               <PinMarker
                 key={pin.id}
@@ -276,6 +267,8 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
                 number={idx + 1}
                 selected={selectedPinId === pin.id}
                 isDark={isDark}
+                iframeScrollY={iframeScrollY}
+                overlayHeight={overlayRef.current?.offsetHeight ?? 600}
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedPinId(prev => prev === pin.id ? null : pin.id);
@@ -286,49 +279,62 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
 
             {/* Pending (unsaved) pin */}
             {pendingPin && (
-              <Popover
-                open
-                placement="rightTop"
-                onOpenChange={(open) => { if (!open) { setPendingPin(null); setPendingComment(''); } }}
-                content={
-                  <div style={{ width: 280 }}>
-                    <TextArea
-                      autoFocus
-                      rows={3}
-                      placeholder="Add a comment…"
-                      value={pendingComment}
-                      onChange={e => setPendingComment(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                          if (pendingComment.trim()) addPinMutation.mutate({ ...pendingPin, comment: pendingComment.trim() });
-                        }
-                      }}
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                      {!shareToken && (
-                        <label style={{ fontSize: 12, cursor: 'pointer', display: 'flex', gap: 4, alignItems: 'center' }}>
-                          <input type="checkbox" checked={createTodo} onChange={e => setCreateTodo(e.target.checked)} />
-                          Create Todo
-                        </label>
-                      )}
-                      <Space style={{ marginLeft: 'auto' }}>
-                        <Button size="small" onClick={() => { setPendingPin(null); setPendingComment(''); }}>
-                          Cancel
-                        </Button>
-                        <Button
-                          size="small"
-                          type="primary"
-                          loading={addPinMutation.isPending}
-                          disabled={!pendingComment.trim()}
-                          onClick={() => addPinMutation.mutate({ ...pendingPin, comment: pendingComment.trim() })}
-                        >
-                          Pin
-                        </Button>
-                      </Space>
-                    </div>
+              <>
+                {/* Comment input box — rendered inline to avoid z-index portal issues */}
+                <div
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    position: 'absolute',
+                    left: `${Math.min(pendingPin.x, 72)}%`,
+                    top: `${pendingPin.y}%`,
+                    marginLeft: 20,
+                    width: 280,
+                    background: '#1e293b',
+                    border: '1px solid #475569',
+                    borderRadius: 8,
+                    padding: 12,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                    zIndex: 50,
+                  }}
+                >
+                  <TextArea
+                    autoFocus
+                    rows={3}
+                    placeholder="Add a comment…"
+                    value={pendingComment}
+                    onChange={e => setPendingComment(e.target.value)}
+                    onKeyDown={e => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        if (pendingComment.trim()) addPinMutation.mutate({ ...pendingPin, comment: pendingComment.trim() });
+                      }
+                    }}
+                    style={{ background: '#0f172a', borderColor: '#475569', color: '#f1f5f9', resize: 'none' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                    {!shareToken && (
+                      <label style={{ fontSize: 12, cursor: 'pointer', display: 'flex', gap: 4, alignItems: 'center', color: '#94a3b8' }}>
+                        <input type="checkbox" checked={createTodo} onChange={e => setCreateTodo(e.target.checked)} />
+                        Create Todo
+                      </label>
+                    )}
+                    <Space style={{ marginLeft: 'auto' }}>
+                      <Button size="small" onClick={() => { setPendingPin(null); setPendingComment(''); }}>
+                        Cancel
+                      </Button>
+                      <Button
+                        size="small"
+                        type="primary"
+                        loading={addPinMutation.isPending}
+                        disabled={!pendingComment.trim()}
+                        onClick={() => addPinMutation.mutate({ ...pendingPin, comment: pendingComment.trim() })}
+                      >
+                        Pin
+                      </Button>
+                    </Space>
                   </div>
-                }
-              >
+                </div>
+
                 <div
                   style={{
                     position: 'absolute',
@@ -352,7 +358,7 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
                 >
                   +
                 </div>
-              </Popover>
+              </>
             )}
           </div>
 
@@ -449,15 +455,27 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
 
 // ── Pin marker on the overlay ─────────────────────────────────────────────────
 function PinMarker({
-  pin, number, selected, isDark, onClick,
+  pin, number, selected, isDark, iframeScrollY, overlayHeight, onClick,
 }: {
   pin: SiteReviewAnnotation;
   number: number;
   selected: boolean;
   isDark: boolean;
+  iframeScrollY: number;
+  overlayHeight: number;
   onClick: (e: React.MouseEvent) => void;
 }) {
   if (pin.x_percent == null || pin.y_percent == null) return null;
+
+  // Convert stored viewport-relative % back to document-relative pixels, then
+  // re-project onto current viewport using live scroll position.
+  const pinScrollY = pin.scroll_y ?? 0;
+  const docY = (pin.y_percent / 100) * overlayHeight + pinScrollY;
+  const renderY = ((docY - iframeScrollY) / overlayHeight) * 100;
+
+  // Don't render if scrolled out of view
+  if (renderY < -5 || renderY > 105) return null;
+
   const bg = pin.resolved ? '#22c55e' : selected ? '#f59e0b' : pin.author_type === 'client' ? '#3b82f6' : '#6366f1';
   return (
     <Tooltip title={pin.comment} placement="right">
@@ -466,7 +484,7 @@ function PinMarker({
         style={{
           position: 'absolute',
           left: `${pin.x_percent}%`,
-          top: `${pin.y_percent}%`,
+          top: `${renderY}%`,
           transform: 'translate(-50%, -100%)',
           width: 28,
           height: 28,
@@ -569,15 +587,6 @@ function PinThread({
       {/* Expanded content */}
       {selected && (
         <div style={{ borderTop: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0', padding: '8px 12px' }}>
-          {/* Screenshot */}
-          {pin.screenshot_url && (
-            <img
-              src={pin.screenshot_url}
-              alt="screenshot"
-              style={{ width: '100%', borderRadius: 6, marginBottom: 8, maxHeight: 140, objectFit: 'cover' }}
-            />
-          )}
-
           {/* Replies */}
           {pin.replies?.map(reply => (
             <div key={reply.id} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
