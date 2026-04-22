@@ -7,6 +7,7 @@
  */
 
 import { useState, useMemo, useCallback } from 'react';
+import { useHasRole, useIsAdmin } from '@/stores/auth';
 import {
   Card,
   Typography,
@@ -70,10 +71,16 @@ const statusConfig: Record<string, { color: string; icon: any; label: string; so
 
 type ViewMode = 'table' | 'kanban';
 
+// Statuses developers are allowed to set
+const DEVELOPER_ALLOWED_STATUSES = ['pending', 'in_progress', 'in_review'];
+
 export default function TodosSection({ project }: TodosSectionProps) {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
   const queryClient = useQueryClient();
+  const isDevRole = useHasRole('developer');
+  const isAdmin = useIsAdmin();
+  const isDeveloper = isDevRole && !isAdmin;
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTodo, setEditingTodo] = useState<any>(null);
@@ -83,7 +90,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
   const [filterStatus, setFilterStatus] = useState<string | undefined>(undefined);
   const [filterPriority, setFilterPriority] = useState<string | undefined>(undefined);
   const [filterAssignee, setFilterAssignee] = useState<number | undefined>(undefined);
-  const [hideCompleted, setHideCompleted] = useState(true);
+  const [hideCompleted, setHideCompleted] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
 
@@ -171,7 +178,8 @@ export default function TodosSection({ project }: TodosSectionProps) {
   // Bulk complete mutation
   const bulkCompleteMutation = useMutation({
     mutationFn: async (todoIds: number[]) => {
-      await Promise.all(todoIds.map(id => api.todos.update(id, { status: 'completed' } as any)));
+      const doneStatus = isDeveloper ? 'in_review' : 'completed';
+      await Promise.all(todoIds.map(id => api.todos.update(id, { status: doneStatus } as any)));
     },
     onSuccess: () => {
       message.success(`${selectedRowKeys.length} tasks completed`);
@@ -238,16 +246,27 @@ export default function TodosSection({ project }: TodosSectionProps) {
       title: '',
       key: 'complete',
       width: 40,
-      render: (_: any, record: any) => (
-        <Checkbox
-          checked={record.status === 'completed'}
-          onChange={(e) => {
-            const newStatus = e.target.checked ? 'completed' : 'pending';
-            updateStatusMutation.mutate({ todoId: record.id, status: newStatus });
-          }}
-          disabled={updateStatusMutation.isPending}
-        />
-      ),
+      render: (_: any, record: any) => {
+        const doneStatus = isDeveloper ? 'in_review' : 'completed';
+        const isDone = isDeveloper
+          ? ['in_review', 'completed'].includes(record.status)
+          : record.status === 'completed';
+        const tooltipTitle = isDeveloper
+          ? 'Mark as In Review (done from your side)'
+          : 'Mark as Completed';
+        return (
+          <Tooltip title={tooltipTitle}>
+            <Checkbox
+              checked={isDone}
+              onChange={(e) => {
+                const newStatus = e.target.checked ? doneStatus : 'pending';
+                updateStatusMutation.mutate({ todoId: record.id, status: newStatus });
+              }}
+              disabled={updateStatusMutation.isPending}
+            />
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Task',
@@ -279,8 +298,17 @@ export default function TodosSection({ project }: TodosSectionProps) {
           {record.description && (
             <div>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {record.description.replace(/<[^>]+>/g, '').substring(0, 60)}
-                {record.description.replace(/<[^>]+>/g, '').length > 60 ? '...' : ''}
+                {(() => {
+                  const plain = record.description
+                    .replace(/<[^>]+>/g, '')
+                    .replace(/&nbsp;/g, ' ')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&quot;/g, '"')
+                    .trim();
+                  return plain.length > 60 ? plain.substring(0, 60) + '...' : plain;
+                })()}
               </Text>
             </div>
           )}
@@ -292,7 +320,9 @@ export default function TodosSection({ project }: TodosSectionProps) {
       dataIndex: 'assignee',
       key: 'assignee',
       width: 160,
-      render: (assignee: any, record: any) => (
+      render: (assignee: any, record: any) => isDeveloper ? (
+        <Text style={{ fontSize: 13 }}>{assignee?.name || <span style={{ color: '#94a3b8' }}>Unassigned</span>}</Text>
+      ) : (
         <Select
           size="small"
           style={{ width: '100%', minWidth: 120 }}
@@ -319,29 +349,34 @@ export default function TodosSection({ project }: TodosSectionProps) {
       width: 150,
       sorter: (a: any, b: any) =>
         (statusConfig[a.status]?.sort ?? 99) - (statusConfig[b.status]?.sort ?? 99),
-      render: (status: string, record: any) => (
-        <Select
-          size="small"
-          value={status}
-          style={{ width: '100%', minWidth: 130 }}
-          onChange={(value) => updateStatusMutation.mutate({ todoId: record.id, status: value })}
-          loading={updateStatusMutation.isPending}
-          onClick={(e) => e.stopPropagation()}
-          options={statusOptions.map(opt => {
-            const cfg = statusConfig[opt.value];
-            const Icon = cfg?.icon || ClockCircleOutlined;
-            return {
-              label: (
-                <Space size={4}>
-                  <Icon style={{ fontSize: 12 }} />
-                  {opt.label}
-                </Space>
-              ),
-              value: opt.value,
-            };
-          })}
-        />
-      ),
+      render: (status: string, record: any) => {
+        const allowedOptions = isDeveloper
+          ? statusOptions.filter(opt => DEVELOPER_ALLOWED_STATUSES.includes(opt.value))
+          : statusOptions;
+        return (
+          <Select
+            size="small"
+            value={status}
+            style={{ width: '100%', minWidth: 130 }}
+            onChange={(value) => updateStatusMutation.mutate({ todoId: record.id, status: value })}
+            loading={updateStatusMutation.isPending}
+            onClick={(e) => e.stopPropagation()}
+            options={allowedOptions.map(opt => {
+              const cfg = statusConfig[opt.value];
+              const Icon = cfg?.icon || ClockCircleOutlined;
+              return {
+                label: (
+                  <Space size={4}>
+                    <Icon style={{ fontSize: 12 }} />
+                    {opt.label}
+                  </Space>
+                ),
+                value: opt.value,
+              };
+            })}
+          />
+        );
+      },
     },
     {
       title: 'Priority',
@@ -559,7 +594,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
               onClick={() => bulkCompleteMutation.mutate(selectedRowKeys)}
               loading={bulkCompleteMutation.isPending}
             >
-              Mark Complete
+              {isDeveloper ? 'Mark as In Review' : 'Mark Complete'}
             </Button>
             <Popconfirm
               title={`Delete ${selectedRowKeys.length} tasks?`}

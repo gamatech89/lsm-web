@@ -11,7 +11,8 @@ import {
   Space,
   App,
   Popconfirm,
-  Tooltip
+  Tooltip,
+  Avatar,
 } from 'antd';
 import {
   SearchOutlined,
@@ -22,7 +23,10 @@ import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  TeamOutlined,
+  UserOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -33,6 +37,9 @@ import type { ColumnsType } from 'antd/es/table';
 import { AddCredentialModal } from '../components/AddCredentialModal';
 import { ShareCredentialModal } from '../components/ShareCredentialModal';
 import { EditCredentialModal } from '../components/EditCredentialModal';
+import { ManageCredentialAccessModal } from '@/features/projects/components/ManageCredentialAccessModal';
+import { CredentialViewModal } from '@/features/projects/components/CredentialViewModal';
+import { useHasRole, useIsAdmin } from '@/stores/auth';
 
 const { Title, Text } = Typography;
 
@@ -54,6 +61,10 @@ export function VaultPage() {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 767px)');
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const isDevRole = useHasRole('developer');
+  const isAdmin = useIsAdmin();
+  const isDeveloper = isDevRole && !isAdmin;
+  const canManage = !isDeveloper;
 
   const [filters, setFilters] = useState<VaultFilters>({
     page: 1,
@@ -65,8 +76,10 @@ export function VaultPage() {
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [viewCredential, setViewCredential] = useState<Credential | null>(null);
   const [shareCredential, setShareCredential] = useState<Credential | null>(null);
   const [editCredential, setEditCredential] = useState<Credential | null>(null);
+  const [accessCredential, setAccessCredential] = useState<Credential | null>(null);
 
   /* ── credential type options ─────────────────────── */
   const credentialTypeOptions = [
@@ -192,52 +205,91 @@ export function VaultPage() {
           <Text type="secondary">-</Text>
         ),
     },
+    ...(canManage && !isMobile ? [{
+      title: 'Access',
+      key: 'access',
+      width: 90,
+      render: (_: any, record: Credential) => {
+        const granted = record.granted_user_ids ?? [];
+        return (
+          <Tooltip title={
+            granted.length === 0
+              ? 'No developers have access'
+              : `${granted.length} developer${granted.length > 1 ? 's' : ''} have access`
+          }>
+            <Button
+              type="text"
+              size="small"
+              icon={<TeamOutlined />}
+              onClick={() => setAccessCredential(record)}
+              style={{ color: granted.length > 0 ? '#6366f1' : '#94a3b8' }}
+            >
+              {granted.length > 0 && (
+                <Avatar.Group max={{ count: 2 }} size={16} style={{ marginLeft: 4 }}>
+                  {granted.map(uid => (
+                    <Avatar key={uid} size={16} icon={<UserOutlined />} style={{ background: '#6366f1' }} />
+                  ))}
+                </Avatar.Group>
+              )}
+            </Button>
+          </Tooltip>
+        );
+      },
+    } as any] : []),
     {
       title: t('vault.table.actions'),
       key: 'actions',
-      width: isMobile ? 100 : 180,
-      render: (_, record) => (
+      width: isMobile ? 60 : canManage ? 220 : 60,
+      render: (_: any, record: Credential) => (
         <Space size="small">
-          <Tooltip title={t('vault.share')}>
+          <Tooltip title="View details">
             <Button
               type="text"
               size="small"
-              icon={<ShareAltOutlined />}
-              onClick={() => setShareCredential(record)}
-              style={{ color: '#8b5cf6' }}
-            >
-              {!isMobile && t('vault.share')}
-            </Button>
+              icon={<EyeOutlined />}
+              onClick={() => setViewCredential(record)}
+              style={{ color: '#6366f1' }}
+            />
           </Tooltip>
-          <Tooltip title={t('common.edit')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => setEditCredential(record)}
-              style={{ color: '#64748b' }}
-            >
-              {!isMobile && t('common.edit')}
-            </Button>
-          </Tooltip>
-          <Popconfirm
-            title={t('vault.deleteCredential')}
-            description={t('vault.deleteConfirm')}
-            onConfirm={() => deleteMutation.mutate(record.id)}
-            okText={t('common.yes')}
-            cancelText={t('common.no')}
-          >
-            <Tooltip title={t('common.delete')}>
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
+          {canManage && (
+            <>
+              <Tooltip title={t('vault.share')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<ShareAltOutlined />}
+                  onClick={() => setShareCredential(record)}
+                  style={{ color: '#8b5cf6' }}
+                >
+                  {!isMobile && t('vault.share')}
+                </Button>
+              </Tooltip>
+              <Tooltip title={t('common.edit')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => setEditCredential(record)}
+                  style={{ color: '#64748b' }}
+                >
+                  {!isMobile && t('common.edit')}
+                </Button>
+              </Tooltip>
+              <Popconfirm
+                title={t('vault.deleteCredential')}
+                description={t('vault.deleteConfirm')}
+                onConfirm={() => deleteMutation.mutate(record.id)}
+                okText={t('common.yes')}
+                cancelText={t('common.no')}
               >
-                {!isMobile && t('common.delete')}
-              </Button>
-            </Tooltip>
-          </Popconfirm>
+                <Tooltip title={t('common.delete')}>
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />}>
+                    {!isMobile && t('common.delete')}
+                  </Button>
+                </Tooltip>
+              </Popconfirm>
+            </>
+          )}
         </Space>
       ),
     },
@@ -262,14 +314,16 @@ export function VaultPage() {
             <Text type="secondary">{t('vault.subtitle')}</Text>
           </div>
         </Space>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setIsAddModalOpen(true)}
-          style={isMobile ? { width: '100%' } : undefined}
-        >
-          {t('vault.addCredential')}
-        </Button>
+        {canManage && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setIsAddModalOpen(true)}
+            style={isMobile ? { width: '100%' } : undefined}
+          >
+            {t('vault.addCredential')}
+          </Button>
+        )}
       </div>
 
       {/* Table with integrated filters */}
@@ -373,6 +427,12 @@ export function VaultPage() {
         />
       </Card>
 
+      <CredentialViewModal
+        open={!!viewCredential}
+        onClose={() => setViewCredential(null)}
+        credential={viewCredential}
+      />
+
       <AddCredentialModal
         open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -388,6 +448,13 @@ export function VaultPage() {
         open={!!editCredential}
         credential={editCredential}
         onClose={() => setEditCredential(null)}
+      />
+
+      <ManageCredentialAccessModal
+        open={!!accessCredential}
+        onClose={() => setAccessCredential(null)}
+        credential={accessCredential}
+        projectId={accessCredential?.project_id ?? 0}
       />
     </div>
   );

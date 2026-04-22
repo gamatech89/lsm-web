@@ -35,6 +35,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatDate } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
+import { useHasRole, useIsAdmin } from '@/stores/auth';
 import { statusOptions, priorityOptions } from '../constants';
 import type { Todo } from '@lsm/types';
 import ReactQuill from 'react-quill-new';
@@ -100,6 +101,13 @@ export function TodoDetailModal({
   const queryClient = useQueryClient();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
+  const isDevRole = useHasRole('developer');
+  const isAdmin = useIsAdmin();
+  const isDeveloper = isDevRole && !isAdmin;
+  const developerAllowedStatuses = ['pending', 'in_progress', 'in_review'];
+  const allowedStatusOptions = isDeveloper
+    ? statusOptions.filter(opt => developerAllowedStatuses.includes(opt.value))
+    : statusOptions;
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [description, setDescription] = useState('');
   
@@ -371,7 +379,7 @@ export function TodoDetailModal({
             style={{ width: '100%' }}
             onChange={handleStatusChange}
             loading={updateMutation.isPending}
-            options={statusOptions}
+            options={allowedStatusOptions}
           />
         </div>
 
@@ -393,16 +401,22 @@ export function TodoDetailModal({
           <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
             Assignee
           </Text>
-          <Select
-            size="small"
-            value={todo.assignee?.id}
-            style={{ width: '100%' }}
-            placeholder="Unassigned"
-            allowClear
-            onChange={handleAssigneeChange}
-            loading={updateMutation.isPending}
-            options={teamMembers.map((m: any) => ({ label: m.name, value: m.id }))}
-          />
+          {isDeveloper ? (
+            <Text style={{ fontSize: 13, display: 'block', padding: '4px 0' }}>
+              {todo.assignee?.name || <span style={{ color: '#94a3b8' }}>Unassigned</span>}
+            </Text>
+          ) : (
+            <Select
+              size="small"
+              value={todo.assignee?.id}
+              style={{ width: '100%' }}
+              placeholder="Unassigned"
+              allowClear
+              onChange={handleAssigneeChange}
+              loading={updateMutation.isPending}
+              options={teamMembers.map((m: any) => ({ label: m.name, value: m.id }))}
+            />
+          )}
         </div>
       </div>
 

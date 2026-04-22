@@ -24,6 +24,7 @@ import {
   Popconfirm,
   Tooltip,
   Empty,
+  Avatar,
 } from 'antd';
 import {
   SearchOutlined,
@@ -35,14 +36,20 @@ import {
   DeleteOutlined,
   PlusOutlined,
   ReloadOutlined,
+  TeamOutlined,
+  UserOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
 import type { Credential } from '@lsm/types';
 import type { ColumnsType } from 'antd/es/table';
 import { CredentialFormModal } from '../CredentialFormModal';
+import { CredentialViewModal } from '../CredentialViewModal';
 import { ShareCredentialModal } from '@/features/vault/components/ShareCredentialModal';
+import { ManageCredentialAccessModal } from '../ManageCredentialAccessModal';
 import { useThemeStore } from '@/stores/theme';
+import { useHasRole, useIsAdmin } from '@/stores/auth';
 
 const { Text, Title } = Typography;
 
@@ -56,12 +63,18 @@ export default function CredentialsSection({ project }: CredentialsSectionProps)
   const { t } = useTranslation();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
+  const isDevRole = useHasRole('developer');
+  const isAdmin = useIsAdmin();
+  const isDeveloper = isDevRole && !isAdmin;
+  const canManage = !isDeveloper;
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | undefined>(undefined);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editCredential, setEditCredential] = useState<Credential | null>(null);
+  const [viewCredential, setViewCredential] = useState<Credential | null>(null);
   const [shareCredential, setShareCredential] = useState<Credential | null>(null);
+  const [accessCredential, setAccessCredential] = useState<Credential | null>(null);
 
   /* ── data ─────────────────────────────────────────── */
   const { data: credentials, isLoading, refetch } = useQuery({
@@ -187,41 +200,85 @@ export default function CredentialsSection({ project }: CredentialsSectionProps)
           <Text type="secondary">-</Text>
         ),
     },
+    ...(canManage ? [{
+      title: 'Access',
+      key: 'access',
+      width: 100,
+      render: (_: any, record: Credential) => {
+        const granted = record.granted_user_ids ?? [];
+        return (
+          <Tooltip title={
+            granted.length === 0
+              ? 'No developers have access'
+              : `${granted.length} developer${granted.length > 1 ? 's' : ''} have access`
+          }>
+            <Button
+              type="text"
+              size="small"
+              icon={<TeamOutlined />}
+              onClick={() => setAccessCredential(record)}
+              style={{ color: granted.length > 0 ? '#6366f1' : '#94a3b8' }}
+            >
+              {granted.length > 0 && (
+                <Avatar.Group max={{ count: 3 }} size={18} style={{ marginLeft: 4 }}>
+                  {granted.map(uid => (
+                    <Avatar key={uid} size={18} icon={<UserOutlined />} style={{ background: '#6366f1' }} />
+                  ))}
+                </Avatar.Group>
+              )}
+            </Button>
+          </Tooltip>
+        );
+      },
+    } as any] : []),
     {
       title: t('vault.table.actions'),
       key: 'actions',
-      width: 180,
-      render: (_, record) => (
+      width: canManage ? 180 : 60,
+      render: (_: any, record: Credential) => (
         <Space size="small">
-          <Tooltip title={t('vault.share')}>
+          <Tooltip title="View details">
             <Button
               type="text"
               size="small"
-              icon={<ShareAltOutlined />}
-              onClick={() => setShareCredential(record)}
-              style={{ color: '#8b5cf6' }}
+              icon={<EyeOutlined />}
+              onClick={() => setViewCredential(record)}
+              style={{ color: '#6366f1' }}
             />
           </Tooltip>
-          <Tooltip title={t('common.edit')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => setEditCredential(record)}
-              style={{ color: '#64748b' }}
-            />
-          </Tooltip>
-          <Popconfirm
-            title={t('vault.deleteCredential')}
-            description={t('vault.deleteConfirm')}
-            onConfirm={() => deleteMutation.mutate(record.id)}
-            okText={t('common.yes')}
-            cancelText={t('common.no')}
-          >
-            <Tooltip title={t('common.delete')}>
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
+          {canManage && (
+            <>
+              <Tooltip title={t('vault.share')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<ShareAltOutlined />}
+                  onClick={() => setShareCredential(record)}
+                  style={{ color: '#8b5cf6' }}
+                />
+              </Tooltip>
+              <Tooltip title={t('common.edit')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => setEditCredential(record)}
+                  style={{ color: '#64748b' }}
+                />
+              </Tooltip>
+              <Popconfirm
+                title={t('vault.deleteCredential')}
+                description={t('vault.deleteConfirm')}
+                onConfirm={() => deleteMutation.mutate(record.id)}
+                okText={t('common.yes')}
+                cancelText={t('common.no')}
+              >
+                <Tooltip title={t('common.delete')}>
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            </>
+          )}
         </Space>
       ),
     },
@@ -239,9 +296,11 @@ export default function CredentialsSection({ project }: CredentialsSectionProps)
             <Text type="secondary" style={{ fontSize: 13 }}>Secure credentials for {project.name}</Text>
           </div>
         </Space>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>
-          Add Credential
-        </Button>
+        {canManage && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>
+            Add Credential
+          </Button>
+        )}
       </div>
 
       {/* Table Card */}
@@ -287,17 +346,26 @@ export default function CredentialsSection({ project }: CredentialsSectionProps)
             emptyText: (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="No credentials yet"
+                description={isDeveloper ? 'No credentials available to you' : 'No credentials yet'}
               >
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>
-                  Add First Credential
-                </Button>
+                {canManage && (
+                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>
+                    Add First Credential
+                  </Button>
+                )}
               </Empty>
             ),
           }}
           pagination={filtered.length > 10 ? { pageSize: 10 } : false}
         />
       </Card>
+
+      {/* View Modal */}
+      <CredentialViewModal
+        open={!!viewCredential}
+        onClose={() => setViewCredential(null)}
+        credential={viewCredential}
+      />
 
       {/* Add / Edit Modal */}
       <CredentialFormModal
@@ -316,6 +384,14 @@ export default function CredentialsSection({ project }: CredentialsSectionProps)
         open={!!shareCredential}
         credential={shareCredential}
         onClose={() => setShareCredential(null)}
+      />
+
+      {/* Manage Access Modal */}
+      <ManageCredentialAccessModal
+        open={!!accessCredential}
+        onClose={() => setAccessCredential(null)}
+        credential={accessCredential}
+        projectId={project.id}
       />
     </div>
   );

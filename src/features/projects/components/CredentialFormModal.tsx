@@ -15,6 +15,7 @@ import {
   App,
   Switch,
   Typography,
+  Flex,
 } from 'antd';
 import {
   UserOutlined,
@@ -67,20 +68,20 @@ export function CredentialFormModal({
   const isApiKey = watchedType === 'api';
 
   // Create mutation - same as Vault
+  const buildPayload = (values: any) => {
+    const { hostname, port, database_name, key_auth, url, url_protocol, ...rest } = values;
+    const metadata: any = {};
+    if (hostname) metadata.hostname = hostname;
+    if (port) metadata.port = port;
+    if (database_name) metadata.database_name = database_name;
+    if (key_auth) metadata.key_auth = true;
+    const fullUrl = url ? `${url_protocol ?? 'https://'}${url}` : null;
+    return { ...rest, url: fullUrl, metadata: Object.keys(metadata).length > 0 ? metadata : null };
+  };
+
   const createMutation = useMutation({
     mutationFn: (values: any) => {
-      // Extract metadata fields
-      const { hostname, port, database_name, key_auth, ...rest } = values;
-      const metadata: any = {};
-      if (hostname) metadata.hostname = hostname;
-      if (port) metadata.port = port;
-      if (database_name) metadata.database_name = database_name;
-      if (key_auth) metadata.key_auth = true;
-
-      return apiClient.post(`/projects/${projectId}/credentials`, {
-        ...rest,
-        metadata: Object.keys(metadata).length > 0 ? metadata : null
-      });
+      return apiClient.post(`/projects/${projectId}/credentials`, buildPayload(values));
     },
     onSuccess: () => {
       message.success('Credential created successfully');
@@ -96,22 +97,9 @@ export function CredentialFormModal({
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: (values: any) => {
-      const { hostname, port, database_name, key_auth, ...rest } = values;
-      const metadata: any = {};
-      if (hostname) metadata.hostname = hostname;
-      if (port) metadata.port = port;
-      if (database_name) metadata.database_name = database_name;
-      if (key_auth) metadata.key_auth = true;
-
-      // Don't send empty password on update
-      if (!rest.password) {
-        delete rest.password;
-      }
-
-      return api.credentials.update(credential!.id, {
-        ...rest,
-        metadata: Object.keys(metadata).length > 0 ? metadata : null
-      });
+      const payload = buildPayload(values);
+      if (!payload.password) delete payload.password;
+      return api.credentials.update(credential!.id, payload);
     },
     onSuccess: () => {
       message.success('Credential updated successfully');
@@ -133,11 +121,15 @@ export function CredentialFormModal({
   useEffect(() => {
     if (credential && open) {
       const metadata = credential.metadata || {};
+      const rawUrl = credential.url ?? '';
+      const protocol = rawUrl.startsWith('http://') ? 'http://' : 'https://';
+      const urlPath = rawUrl.replace(/^https?:\/\//, '');
       form.setFieldsValue({
         title: credential.title,
         type: credential.type,
         username: credential.username,
-        url: credential.url,
+        url: urlPath || undefined,
+        url_protocol: protocol,
         note: credential.note,
         hostname: metadata.hostname,
         port: metadata.port,
@@ -234,15 +226,15 @@ export function CredentialFormModal({
           </Col>
           <Col span={12}>
             {isSSH && (
-              <Form.Item name="key_auth" valuePropName="checked" style={{ marginBottom: 8 }}>
-                <Space>
-                  <Switch size="small" onChange={(checked) => {
-                    if (checked) {
-                      form.setFieldsValue({ password: undefined });
-                    }
-                  }} />
+              <Form.Item style={{ marginBottom: 8 }}>
+                <Flex align="center" gap={8}>
+                  <Form.Item name="key_auth" valuePropName="checked" noStyle>
+                    <Switch size="small" onChange={(checked) => {
+                      if (checked) form.setFieldsValue({ password: undefined });
+                    }} />
+                  </Form.Item>
                   <Text type="secondary" style={{ fontSize: 12 }}>Key-based auth (no password)</Text>
-                </Space>
+                </Flex>
               </Form.Item>
             )}
             {!(isSSH && watchedKeyAuth) && (
@@ -263,8 +255,18 @@ export function CredentialFormModal({
           </Col>
         </Row>
 
-        <Form.Item name="url" label="Login URL (Optional)">
-          <Input prefix={<LinkOutlined />} placeholder="https://example.com/wp-admin" />
+        <Form.Item label="Login URL (Optional)" style={{ marginBottom: 16 }}>
+          <Input.Group compact>
+            <Form.Item name="url_protocol" noStyle initialValue="https://">
+              <Select style={{ width: 100 }}>
+                <Select.Option value="https://">https://</Select.Option>
+                <Select.Option value="http://">http://</Select.Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="url" noStyle>
+              <Input style={{ width: 'calc(100% - 100px)' }} placeholder="example.com/wp-admin" />
+            </Form.Item>
+          </Input.Group>
         </Form.Item>
 
         <Form.Item name="note" label="Notes">

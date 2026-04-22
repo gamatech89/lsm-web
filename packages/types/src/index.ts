@@ -143,6 +143,9 @@ export interface Credential {
   has_password: boolean;
   password?: string; // Only present when revealed
 
+  // Access grants (which developer user IDs have been granted access)
+  granted_user_ids?: number[];
+
   // Relationships
   project?: Project;
 
