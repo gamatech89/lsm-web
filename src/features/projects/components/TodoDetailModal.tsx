@@ -35,6 +35,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatDate } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
+import { useHasRole, useIsAdmin } from '@/stores/auth';
 import { statusOptions, priorityOptions } from '../constants';
 import type { Todo } from '@lsm/types';
 import ReactQuill from 'react-quill-new';
@@ -100,6 +101,13 @@ export function TodoDetailModal({
   const queryClient = useQueryClient();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
+  const isDevRole = useHasRole('developer');
+  const isAdmin = useIsAdmin();
+  const isDeveloper = isDevRole && !isAdmin;
+  const developerAllowedStatuses = ['pending', 'in_progress', 'in_review'];
+  const allowedStatusOptions = isDeveloper
+    ? statusOptions.filter(opt => developerAllowedStatuses.includes(opt.value))
+    : statusOptions;
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [description, setDescription] = useState('');
   
@@ -371,7 +379,7 @@ export function TodoDetailModal({
             style={{ width: '100%' }}
             onChange={handleStatusChange}
             loading={updateMutation.isPending}
-            options={statusOptions}
+            options={allowedStatusOptions}
           />
         </div>
 
@@ -393,16 +401,22 @@ export function TodoDetailModal({
           <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
             Assignee
           </Text>
-          <Select
-            size="small"
-            value={todo.assignee?.id}
-            style={{ width: '100%' }}
-            placeholder="Unassigned"
-            allowClear
-            onChange={handleAssigneeChange}
-            loading={updateMutation.isPending}
-            options={teamMembers.map((m: any) => ({ label: m.name, value: m.id }))}
-          />
+          {isDeveloper ? (
+            <Text style={{ fontSize: 13, display: 'block', padding: '4px 0' }}>
+              {todo.assignee?.name || <span style={{ color: '#94a3b8' }}>Unassigned</span>}
+            </Text>
+          ) : (
+            <Select
+              size="small"
+              value={todo.assignee?.id}
+              style={{ width: '100%' }}
+              placeholder="Unassigned"
+              allowClear
+              onChange={handleAssigneeChange}
+              loading={updateMutation.isPending}
+              options={teamMembers.map((m: any) => ({ label: m.name, value: m.id }))}
+            />
+          )}
         </div>
       </div>
 
@@ -471,20 +485,50 @@ export function TodoDetailModal({
               minHeight: 60,
             }}
           >
-            {todo.description ? (
-              <div
-                className="todo-description-content"
-                style={{ margin: 0 }}
-                dangerouslySetInnerHTML={{ __html: todo.description }}
-              />
-            ) : (
-              <Text type="secondary" style={{ fontStyle: 'italic' }}>No description</Text>
-            )}
+            {(() => {
+              const raw = todo.description || '';
+              const splitIdx = raw.indexOf('\n\n--- Resource Links ---\n');
+              const mainHtml = splitIdx >= 0 ? raw.slice(0, splitIdx) : raw;
+              return mainHtml ? (
+                <div
+                  className="todo-description-content"
+                  style={{ margin: 0 }}
+                  dangerouslySetInnerHTML={{ __html: mainHtml }}
+                />
+              ) : (
+                <Text type="secondary" style={{ fontStyle: 'italic' }}>No description</Text>
+              );
+            })()}
           </div>
         )}
       </div>
 
-      {/* Attachments - Show only if there are files */}
+      {/* Project Resource Links parsed from description */}
+      {(() => {
+        const raw = todo.description || '';
+        const splitIdx = raw.indexOf('\n\n--- Resource Links ---\n');
+        if (splitIdx < 0) return null;
+        const urls = raw.slice(splitIdx + '\n\n--- Resource Links ---\n'.length).trim().split('\n').filter(Boolean);
+        if (urls.length === 0) return null;
+        return (
+          <>
+            <Divider style={{ margin: '16px 0' }} />
+            <div>
+              <Space style={{ marginBottom: 8 }}>
+                <LinkOutlined />
+                <Text type="secondary" style={{ fontSize: 12 }}>Project Resource Links</Text>
+              </Space>
+              {urls.map((url, i) => (
+                <div key={i} style={{ ...boxStyle, borderRadius: 6, padding: '8px 12px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontFamily: 'monospace', fontSize: 12, wordBreak: 'break-all', flex: 1, marginRight: 8 }}>{url}</Text>
+                  <Button type="link" size="small" icon={<GlobalOutlined />} onClick={() => window.open(url, '_blank')}>Open</Button>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      })()}
+
       {/* Time Tracking Section */}
       <Divider style={{ margin: '16px 0' }} />
       <div style={{ marginBottom: 20 }}>

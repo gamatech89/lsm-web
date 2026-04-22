@@ -212,7 +212,8 @@ export function ProjectDetailPageV2() {
   // Permission checks
   const canEdit = isAdmin || (currentUser?.role === 'manager' && (project.manager_id === currentUser?.id || project.managers?.some(m => m.id === currentUser?.id)));
   const canDelete = isAdmin; // Only admins can delete
-  const canManageCredentials = isAdmin || currentUser?.role === 'manager';
+  // Developers can view the tab (they only see credentials they've been granted access to)
+  const canManageCredentials = isAdmin || currentUser?.role === 'manager' || currentUser?.role === 'developer';
 
   const healthConfig = getHealthStatusConfig(project.health_status);
   const securityConfig = getSecurityStatusConfig(project.security_status);

@@ -507,6 +507,16 @@ export function createLsmApi(client: AxiosInstance) {
       client.post<{ success: boolean; message: string }>(
         `${basePath(projectId)}/sync-wp-accounts`
       ),
+
+    // =========================================================================
+    // MEDIA
+    // =========================================================================
+
+    getUnusedMedia: (projectId: number) =>
+      client.get(`${basePath(projectId)}/unused-media`),
+
+    deleteMedia: (projectId: number, ids: number[]) =>
+      client.post(`${basePath(projectId)}/delete-media`, { ids }),
   };
 }
 
