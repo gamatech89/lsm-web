@@ -12,11 +12,14 @@ export interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  
+  pendingTwoFactor: { token: string } | null;
+
   // Actions
   setAuth: (user: User, token: string) => void;
   setUser: (user: User) => void;
   updateUser: (user: Partial<User>) => void;
+  setPendingTwoFactor: (token: string) => void;
+  clearPendingTwoFactor: () => void;
   logout: () => void;
 }
 
@@ -26,27 +29,36 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      
+      pendingTwoFactor: null,
+
       setAuth: (user, token) =>
         set({
           user,
           token,
           isAuthenticated: true,
+          pendingTwoFactor: null,
         }),
-      
+
       setUser: (user) =>
         set({ user }),
-      
+
       updateUser: (updates) =>
         set((state) => ({
           user: state.user ? { ...state.user, ...updates } : null,
         })),
-      
+
+      setPendingTwoFactor: (token) =>
+        set({ pendingTwoFactor: { token } }),
+
+      clearPendingTwoFactor: () =>
+        set({ pendingTwoFactor: null }),
+
       logout: () =>
         set({
           user: null,
           token: null,
           isAuthenticated: false,
+          pendingTwoFactor: null,
         }),
     }),
     {
@@ -56,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
+        pendingTwoFactor: state.pendingTwoFactor,
       }),
     }
   )

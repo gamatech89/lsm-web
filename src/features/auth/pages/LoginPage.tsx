@@ -10,21 +10,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Form, Input, Button, Typography, App, Switch, Dropdown } from 'antd';
-import { 
-  LockOutlined, 
-  MailOutlined, 
-  MoonOutlined, 
+import {
+  LockOutlined,
+  MailOutlined,
+  MoonOutlined,
   SunOutlined,
   GlobalOutlined,
   SafetyOutlined,
   DashboardOutlined,
   TeamOutlined,
+  ArrowLeftOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/auth';
 import { useThemeStore } from '@/stores/theme';
 import { api } from '@/lib/api';
-import type { LoginRequest } from '@lsm/types';
+import type { LoginRequest, TwoFactorPendingResponse } from '@lsm/types';
 
 const { Title, Text } = Typography;
 
@@ -387,6 +388,12 @@ function injectStyles() {
 
 export function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [twoFactorStep, setTwoFactorStep] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState('');
+  const [twoFactorMethod, setTwoFactorMethod] = useState<'totp' | 'email'>('totp');
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
+  const [emailCodeSent, setEmailCodeSent] = useState(false);
+  const [sendingEmailCode, setSendingEmailCode] = useState(false);
   const navigate = useNavigate();
   const { message } = App.useApp();
   const { isAuthenticated, setAuth } = useAuthStore();
@@ -406,6 +413,55 @@ export function LoginPage() {
       const response = await api.auth.login({
         email: values.email,
         password: values.password,
+        device_name: 'web-browser',
+      });
+
+      if (response.data.success && response.data.data) {
+        const data = response.data.data;
+
+        if ('two_factor_required' in data) {
+          const pending = data as TwoFactorPendingResponse;
+          setTwoFactorToken(pending.two_factor_token);
+          setTwoFactorMethod(pending.method);
+          setEmailCodeSent(pending.method === 'email');
+          setTwoFactorStep(true);
+          return;
+        }
+
+        setAuth(data.user, data.token);
+        message.success(`${t('login.welcome')}, ${data.user.name}!`);
+        navigate('/dashboard');
+      } else {
+        message.error(response.data.message || t('login.errors.loginFailed'));
+      }
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      message.error(err.message || t('login.errors.invalidCredentials'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendEmailCode = async () => {
+    setSendingEmailCode(true);
+    try {
+      await api.auth.twoFactorSendEmailCode(twoFactorToken);
+      setEmailCodeSent(true);
+      setUseRecoveryCode(false);
+      message.success('Code sent to your email');
+    } catch {
+      message.error('Failed to send code');
+    } finally {
+      setSendingEmailCode(false);
+    }
+  };
+
+  const handleTwoFactorSubmit = async (values: { code: string }) => {
+    setLoading(true);
+    try {
+      const response = await api.auth.twoFactorVerify({
+        two_factor_token: twoFactorToken,
+        code: values.code,
         device_name: 'web-browser',
       });
 
@@ -521,73 +577,176 @@ export function LoginPage() {
             background: isDark ? '#1F1A23' : '#FFFFFF',
           }}
         >
-          <Title level={2} className="auth-form-title" style={{ color: isDark ? '#F8FAFC' : '#1F1A23' }}>
-            {t('login.title')}
-          </Title>
-          <Text className="auth-form-subtitle" style={{ color: isDark ? '#94A3B8' : '#64748B' }}>
-            {t('login.subtitle')}
-          </Text>
+          {!twoFactorStep ? (
+            <>
+              <Title level={2} className="auth-form-title" style={{ color: isDark ? '#F8FAFC' : '#1F1A23' }}>
+                {t('login.title')}
+              </Title>
+              <Text className="auth-form-subtitle" style={{ color: isDark ? '#94A3B8' : '#64748B' }}>
+                {t('login.subtitle')}
+              </Text>
 
-          <Form
-            name="login"
-            onFinish={handleSubmit}
-            layout="vertical"
-            size="large"
-            requiredMark={false}
-          >
-            <Form.Item
-              name="email"
-              label={<span style={{ color: isDark ? '#E2E8F0' : '#334155', fontWeight: 500, fontSize: 14 }}>{t('login.email')}</span>}
-              rules={[
-                { required: true, message: t('login.errors.emailRequired') },
-                { type: 'email', message: t('login.errors.emailInvalid') },
-              ]}
-            >
-              <Input
-                prefix={<MailOutlined style={{ color: '#94A3B8' }} />}
-                placeholder={t('login.emailPlaceholder')}
-                autoComplete="email"
-                className="auth-input"
-                style={{
-                  background: isDark ? '#2D2735' : '#F8F9FC',
-                  border: isDark ? '1px solid #3D3347' : '1px solid #E2E8F0',
-                }}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="password"
-              label={<span style={{ color: isDark ? '#E2E8F0' : '#334155', fontWeight: 500, fontSize: 14 }}>{t('login.password')}</span>}
-              rules={[{ required: true, message: t('login.errors.passwordRequired') }]}
-            >
-              <Input.Password
-                prefix={<LockOutlined style={{ color: '#94A3B8' }} />}
-                placeholder={t('login.passwordPlaceholder')}
-                autoComplete="current-password"
-                className="auth-input"
-                style={{
-                  background: isDark ? '#2D2735' : '#F8F9FC',
-                  border: isDark ? '1px solid #3D3347' : '1px solid #E2E8F0',
-                }}
-              />
-            </Form.Item>
-
-            <Form.Item style={{ marginBottom: 0, marginTop: 28 }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                block
-                className="auth-submit-btn"
+              <Form
+                name="login"
+                onFinish={handleSubmit}
+                layout="vertical"
+                size="large"
+                requiredMark={false}
               >
-                {loading ? t('login.signingIn') : t('login.signIn')}
-              </Button>
-            </Form.Item>
-          </Form>
+                <Form.Item
+                  name="email"
+                  label={<span style={{ color: isDark ? '#E2E8F0' : '#334155', fontWeight: 500, fontSize: 14 }}>{t('login.email')}</span>}
+                  rules={[
+                    { required: true, message: t('login.errors.emailRequired') },
+                    { type: 'email', message: t('login.errors.emailInvalid') },
+                  ]}
+                >
+                  <Input
+                    prefix={<MailOutlined style={{ color: '#94A3B8' }} />}
+                    placeholder={t('login.emailPlaceholder')}
+                    autoComplete="email"
+                    className="auth-input"
+                    style={{
+                      background: isDark ? '#2D2735' : '#F8F9FC',
+                      border: isDark ? '1px solid #3D3347' : '1px solid #E2E8F0',
+                    }}
+                  />
+                </Form.Item>
 
-          <Text className="auth-footer" style={{ color: isDark ? '#64748B' : '#94A3B8' }}>
-            {t('login.contactAdmin')}
-          </Text>
+                <Form.Item
+                  name="password"
+                  label={<span style={{ color: isDark ? '#E2E8F0' : '#334155', fontWeight: 500, fontSize: 14 }}>{t('login.password')}</span>}
+                  rules={[{ required: true, message: t('login.errors.passwordRequired') }]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined style={{ color: '#94A3B8' }} />}
+                    placeholder={t('login.passwordPlaceholder')}
+                    autoComplete="current-password"
+                    className="auth-input"
+                    style={{
+                      background: isDark ? '#2D2735' : '#F8F9FC',
+                      border: isDark ? '1px solid #3D3347' : '1px solid #E2E8F0',
+                    }}
+                  />
+                </Form.Item>
+
+                <Form.Item style={{ marginBottom: 0, marginTop: 28 }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={loading}
+                    block
+                    className="auth-submit-btn"
+                  >
+                    {loading ? t('login.signingIn') : t('login.signIn')}
+                  </Button>
+                </Form.Item>
+              </Form>
+
+              <Text className="auth-footer" style={{ color: isDark ? '#64748B' : '#94A3B8' }}>
+                {t('login.contactAdmin')}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Button
+                type="text"
+                icon={<ArrowLeftOutlined />}
+                onClick={() => { setTwoFactorStep(false); setUseRecoveryCode(false); setEmailCodeSent(false); }}
+                style={{ color: isDark ? '#94A3B8' : '#64748B', padding: 0, marginBottom: 16 }}
+              >
+                Back
+              </Button>
+              <Title level={2} className="auth-form-title" style={{ color: isDark ? '#F8FAFC' : '#1F1A23' }}>
+                Two-Factor Authentication
+              </Title>
+              <Text className="auth-form-subtitle" style={{ color: isDark ? '#94A3B8' : '#64748B' }}>
+                {useRecoveryCode
+                  ? 'Enter one of your recovery codes.'
+                  : emailCodeSent
+                    ? 'Enter the code we sent to your email.'
+                    : twoFactorMethod === 'email'
+                      ? 'A login code was sent to your email.'
+                      : 'Enter the 6-digit code from your authenticator app.'}
+              </Text>
+
+              <Form
+                name="two-factor"
+                onFinish={handleTwoFactorSubmit}
+                layout="vertical"
+                size="large"
+                requiredMark={false}
+              >
+                <Form.Item
+                  name="code"
+                  label={
+                    <span style={{ color: isDark ? '#E2E8F0' : '#334155', fontWeight: 500, fontSize: 14 }}>
+                      {useRecoveryCode ? 'Recovery Code' : 'Authentication Code'}
+                    </span>
+                  }
+                  rules={[{ required: true, message: 'Please enter the code' }]}
+                >
+                  <Input
+                    prefix={<SafetyOutlined style={{ color: '#94A3B8' }} />}
+                    placeholder={useRecoveryCode ? 'xxxx-xxxx' : '000000'}
+                    autoComplete="one-time-code"
+                    autoFocus
+                    maxLength={useRecoveryCode ? 9 : 6}
+                    className="auth-input"
+                    style={{
+                      background: isDark ? '#2D2735' : '#F8F9FC',
+                      border: isDark ? '1px solid #3D3347' : '1px solid #E2E8F0',
+                      letterSpacing: useRecoveryCode ? 'normal' : '0.3em',
+                    }}
+                  />
+                </Form.Item>
+
+                <Form.Item style={{ marginBottom: 0, marginTop: 28 }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={loading}
+                    block
+                    className="auth-submit-btn"
+                  >
+                    {loading ? 'Verifying...' : 'Verify'}
+                  </Button>
+                </Form.Item>
+              </Form>
+
+              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                {!useRecoveryCode && twoFactorMethod === 'totp' && (
+                  <Button
+                    type="link"
+                    loading={sendingEmailCode}
+                    onClick={handleSendEmailCode}
+                    style={{ color: isDark ? '#94A3B8' : '#64748B' }}
+                  >
+                    {emailCodeSent ? 'Resend code to email' : 'Send code to my email instead'}
+                  </Button>
+                )}
+                {!useRecoveryCode && twoFactorMethod === 'email' && (
+                  <Button
+                    type="link"
+                    loading={sendingEmailCode}
+                    onClick={handleSendEmailCode}
+                    style={{ color: isDark ? '#94A3B8' : '#64748B' }}
+                  >
+                    Resend code
+                  </Button>
+                )}
+                {twoFactorMethod === 'totp' && (
+                  <Button
+                    type="link"
+                    onClick={() => { setUseRecoveryCode(!useRecoveryCode); setEmailCodeSent(false); }}
+                    style={{ color: isDark ? '#64748B' : '#94A3B8', fontSize: 12 }}
+                  >
+                    {useRecoveryCode ? 'Use authenticator app instead' : 'Use a recovery code'}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

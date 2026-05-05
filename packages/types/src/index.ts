@@ -41,6 +41,8 @@ export interface User {
   email: string;
   role: UserRole;
   is_admin: boolean;
+  two_factor_enabled?: boolean;
+  two_factor_email_enabled?: boolean;
   hourly_rate?: number;
   billing_company_name?: string | null;
   billing_address?: string | null;
@@ -309,6 +311,31 @@ export interface AuthResponse {
   user: User;
   token: string;
   token_type: 'Bearer';
+}
+
+export interface TwoFactorPendingResponse {
+  two_factor_required: true;
+  two_factor_token: string;
+  method: 'totp' | 'email';
+}
+
+export interface TwoFactorVerifyRequest {
+  two_factor_token: string;
+  code: string;
+  device_name?: string;
+}
+
+export interface TwoFactorEnableResponse {
+  secret: string;
+  qr_code_url: string;
+}
+
+export interface TwoFactorConfirmRequest {
+  code: string;
+}
+
+export interface TwoFactorRecoveryCodesResponse {
+  recovery_codes: string[];
 }
 
 export interface DashboardStats {
