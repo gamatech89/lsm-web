@@ -59,6 +59,7 @@ export function TodoFormModal({
   const isEditMode = !!todo;
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([]);
+  const [selectedProjectResourceIds, setSelectedProjectResourceIds] = useState<number[]>([]);
 
   // Fetch library resources for linking
   const { data: libraryResources = [] } = useQuery({
@@ -97,6 +98,7 @@ export function TodoFormModal({
     form.resetFields();
     setFileList([]);
     setSelectedResourceIds([]);
+    setSelectedProjectResourceIds([]);
     onClose();
   };
 
@@ -112,15 +114,14 @@ export function TodoFormModal({
         assigned_to: todo.assignee?.id,
         estimated_minutes: todo.estimated_minutes,
       });
-      // Load existing library resources if any
-      setSelectedResourceIds(
-        (todo as any).library_resources?.map((r: any) => r.id) || []
-      );
+      setSelectedResourceIds((todo as any).library_resources?.map((r: any) => r.id) || []);
+      setSelectedProjectResourceIds((todo as any).resources?.map((r: any) => r.id) || []);
       setFileList([]);
     } else if (!todo && open) {
       form.resetFields();
       setFileList([]);
       setSelectedResourceIds([]);
+      setSelectedProjectResourceIds([]);
     }
   }, [todo, open, form]);
 
@@ -131,17 +132,6 @@ export function TodoFormModal({
     due_date?: dayjs.Dayjs;
     assigned_to?: number;
   }) => {
-    // Append project resource links to description if selected
-    const projectResourceUrls: string[] = form.getFieldValue('_project_resource_urls') || [];
-    let description = values.description || '';
-    if (projectResourceUrls.length > 0) {
-      const linksSection = '\n\n--- Resource Links ---\n' + projectResourceUrls.join('\n');
-      // Remove any previously appended resource links section before re-adding
-      description = description.replace(/\n\n--- Resource Links ---\n[\s\S]*$/, '');
-      description += linksSection;
-    }
-    values.description = description || undefined;
-
     let data: any;
 
     if (fileList.length > 0) {
@@ -153,16 +143,18 @@ export function TodoFormModal({
       if (values.due_date) formData.append('due_date', values.due_date.format('YYYY-MM-DD'));
       if (values.assigned_to) formData.append('assignee_id', values.assigned_to.toString());
 
-      // Append all files as files[] array
       fileList.forEach(f => {
         if (f.originFileObj) {
           formData.append('files[]', f.originFileObj);
         }
       });
 
-      // Append library resource IDs
       selectedResourceIds.forEach(id => {
         formData.append('library_resource_ids[]', id.toString());
+      });
+
+      selectedProjectResourceIds.forEach(id => {
+        formData.append('resource_ids[]', id.toString());
       });
 
       data = formData;
@@ -173,6 +165,7 @@ export function TodoFormModal({
         due_date: values.due_date?.format('YYYY-MM-DD'),
         assignee_id: values.assigned_to,
         library_resource_ids: selectedResourceIds,
+        resource_ids: selectedProjectResourceIds,
       };
       delete data.assigned_to;
     }
@@ -444,13 +437,12 @@ export function TodoFormModal({
 
         {/* Project Resource Links */}
         {projectResources.filter((r: any) => r.type === 'link' && r.url).length > 0 && (
-          <Form.Item
-            name="_project_resource_urls"
-            label={<><LinkOutlined /> Project Resource Links</>}
-          >
+          <Form.Item label={<><LinkOutlined /> Project Resource Links</>}>
             <Select
               mode="multiple"
               placeholder="Link resources from this project..."
+              value={selectedProjectResourceIds}
+              onChange={setSelectedProjectResourceIds}
               optionFilterProp="searchLabel"
               allowClear
               showSearch
@@ -459,13 +451,13 @@ export function TodoFormModal({
                 .filter((r: any) => r.type === 'link' && r.url)
                 .map((r: any) => ({
                   label: `🔗 ${r.title}`,
-                  value: r.url,
+                  value: r.id,
                   searchLabel: r.title,
                 }))
               }
             />
             <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-              Include project resource links in the todo description
+              Link project resource URLs to this todo
             </Text>
           </Form.Item>
         )}

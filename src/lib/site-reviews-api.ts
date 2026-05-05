@@ -127,6 +127,16 @@ export function createSiteReviewsApi(client: AxiosInstance) {
       form.append('screenshot', blob, 'screenshot.png');
       return client.post(`/review-share/${token}/annotations/${annotationId}/screenshot`, form);
     },
+
+    createTodoFromAnnotation: (annotationId: number, data: { title?: string; priority?: string; screenshot?: File }) => {
+      const form = new FormData();
+      if (data.title) form.append('title', data.title);
+      if (data.priority) form.append('priority', data.priority);
+      if (data.screenshot) form.append('screenshot', data.screenshot, data.screenshot.name);
+      return client.post<{ data: { todo_id: number; todo_title: string } }>(
+        `/site-review-annotations/${annotationId}/todo`, form,
+      );
+    },
   };
 }
 
