@@ -164,11 +164,12 @@ export function ProjectSubNav({
           icon: <LockOutlined />,
           label: withBadge('Credentials', counts.credentials),
         }] : []),
-        {
-          key: 'site-reviews',
-          icon: <VideoCameraOutlined />,
-          label: 'Site Reviews',
-        },
+        // TEMPORARILY HIDDEN
+        // {
+        //   key: 'site-reviews',
+        //   icon: <VideoCameraOutlined />,
+        //   label: 'Site Reviews',
+        // },
       ] : [],
     },
     
