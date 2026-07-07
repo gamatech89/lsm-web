@@ -36,6 +36,7 @@ import {
   CustomerServiceOutlined,
   FolderOpenOutlined,
   SettingOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import type { ItemType } from 'antd/es/menu/interface';
 import type { MenuProps } from 'antd';
@@ -63,6 +64,7 @@ function useMediaQuery(query: string): boolean {
 
 const FloatingTimerWidget = lazy(() => import('@/features/time/components/FloatingTimerWidget').then(m => ({ default: m.FloatingTimerWidget })));
 const SetAvailabilityModal = lazy(() => import('@/features/team/components/SetAvailabilityModal').then(m => ({ default: m.SetAvailabilityModal })));
+const SendSecretModal = lazy(() => import('@/features/secrets/SendSecretModal').then(m => ({ default: m.SendSecretModal })));
 const NotificationsPopover = lazy(() => import('@/components/common/NotificationsPopover').then(m => ({ default: m.NotificationsPopover })));
 const AiChatPanel = lazy(() => import('@/components/chat/AiChatPanel').then(m => ({ default: m.AiChatPanel })));
 
@@ -213,6 +215,7 @@ export function AuthenticatedLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
+  const [secretModalOpen, setSecretModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
@@ -488,6 +491,18 @@ export function AuthenticatedLayout() {
               {!isMobile && t('availability.setStatus')}
             </Button>
 
+            {/* Send a one-time secret */}
+            <Tooltip title={t('secrets.sendTooltip', 'Send a one-time secret')}>
+              <Button
+                type="text"
+                icon={<SafetyCertificateOutlined />}
+                onClick={() => setSecretModalOpen(true)}
+                style={{ borderRadius: 10, color: textSecondary }}
+              >
+                {!isMobile && t('secrets.send', 'Send a secret')}
+              </Button>
+            </Tooltip>
+
             {/* Notifications */}
             <NotificationsPopover />
 
@@ -604,6 +619,10 @@ export function AuthenticatedLayout() {
         <SetAvailabilityModal
           open={isAvailabilityModalOpen}
           onClose={() => setIsAvailabilityModalOpen(false)}
+        />
+        <SendSecretModal
+          open={secretModalOpen}
+          onClose={() => setSecretModalOpen(false)}
         />
         {(user?.role === 'admin' || user?.is_admin) && <AiChatPanel />}
       </Suspense>
