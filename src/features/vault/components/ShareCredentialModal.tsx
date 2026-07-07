@@ -22,7 +22,6 @@ import {
   SafetyCertificateOutlined,
   CheckCircleOutlined,
   LockOutlined,
-  UnlockOutlined,
   EyeOutlined,
   ClockCircleOutlined,
   MailOutlined
@@ -53,7 +52,7 @@ export function ShareCredentialModal({ open, onClose, credential }: ShareCredent
       return apiClient.post(`/credentials/${credential?.id}/share`, {
         expires_in_minutes: values.expires_in,
         max_views: actualMaxViews,
-        access_password: values.has_password ? values.password : null,
+        access_password: values.password,
         recipient_email: values.recipient_email,
         note: values.note
       });
@@ -168,7 +167,6 @@ export function ShareCredentialModal({ open, onClose, credential }: ShareCredent
         initialValues={{
           expires_in: 60,
           max_views: 1,
-          has_password: false
         }}
         onFinish={(values) => shareMutation.mutate(values)}
       >
@@ -180,9 +178,8 @@ export function ShareCredentialModal({ open, onClose, credential }: ShareCredent
         >
           <Select>
             <Select.Option value={60}>{t('vault.shareModal.hour1')}</Select.Option>
+            <Select.Option value={480}>{t('vault.shareModal.hours8', '8 hours')}</Select.Option>
             <Select.Option value={1440}>{t('vault.shareModal.hours24')}</Select.Option>
-            <Select.Option value={4320}>{t('vault.shareModal.days3')}</Select.Option>
-            <Select.Option value={10080}>{t('vault.shareModal.days7')}</Select.Option>
           </Select>
         </Form.Item>
 
@@ -218,37 +215,17 @@ export function ShareCredentialModal({ open, onClose, credential }: ShareCredent
 
         <Divider style={{ margin: '16px 0' }} />
 
-        {/* Password protection */}
-        <Form.Item 
+        {/* Password protection — mandatory */}
+        <Form.Item
           label={<Space><LockOutlined />{t('vault.shareModal.accessPassword')}</Space>}
-          name="has_password" 
-          style={{ marginBottom: 12 }}
+          name="password"
+          help={t('vault.shareModal.accessPasswordHelp')}
+          rules={[
+            { required: true, message: t('vault.shareModal.passwordRequired') },
+            { min: 8, message: t('vault.shareModal.passwordMin8', 'At least 8 characters') },
+          ]}
         >
-          <Radio.Group optionType="button" buttonStyle="solid">
-            <Radio.Button value={false}>
-              <Space size={4}><UnlockOutlined />{t('vault.shareModal.noPasswordToggle')}</Space>
-            </Radio.Button>
-            <Radio.Button value={true}>
-              <Space size={4}><LockOutlined />{t('vault.shareModal.passwordProtected')}</Space>
-            </Radio.Button>
-          </Radio.Group>
-        </Form.Item>
-
-        <Form.Item 
-           shouldUpdate={(prev, curr) => prev.has_password !== curr.has_password}
-           noStyle
-        >
-           {({ getFieldValue }) => 
-              getFieldValue('has_password') && (
-                 <Form.Item 
-                    name="password" 
-                    help={t('vault.shareModal.accessPasswordHelp')}
-                    rules={[{ required: true, message: t('vault.shareModal.passwordRequired') }]}
-                 >
-                    <Input.Password placeholder={t('vault.shareModal.setPassword')} />
-                 </Form.Item>
-              )
-           }
+          <Input.Password placeholder={t('vault.shareModal.setPassword')} />
         </Form.Item>
 
         <Form.Item name="recipient_email" label={<Space><MailOutlined />{t('vault.shareModal.recipientEmail')}</Space>} style={{ marginTop: 16 }}>
