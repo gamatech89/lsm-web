@@ -44,6 +44,7 @@ import { useAuthStore, useIsAdmin, useCanManageProjects } from '@/stores/auth';
 import { useThemeStore } from '@/stores/theme';
 import { api, apiClient } from '@/lib/api';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
+import { TwoFactorSetupGate } from '@/features/auth/components/TwoFactorSetupGate';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -373,6 +374,11 @@ export function AuthenticatedLayout() {
 
   // Calculate sidebar width for desktop/tablet
   const siderWidth = isMobile ? 0 : (collapsed ? 80 : 260);
+
+  // Force-enrollment gate: block the app until the user sets up required 2FA.
+  if (user?.requires_two_factor_setup) {
+    return <TwoFactorSetupGate />;
+  }
 
   return (
     <Layout style={{ minHeight: '100vh', background: contentBg }}>

@@ -43,6 +43,7 @@ export interface User {
   is_admin: boolean;
   two_factor_enabled?: boolean;
   two_factor_email_enabled?: boolean;
+  requires_two_factor_setup?: boolean;
   hourly_rate?: number;
   billing_company_name?: string | null;
   billing_address?: string | null;
