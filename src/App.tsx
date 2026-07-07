@@ -10,6 +10,7 @@ import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage';
 // Public Pages
 import { PublicSharePage } from './features/share/pages/PublicSharePage';
 import { SiteReviewSharePage } from './features/share/pages/SiteReviewSharePage';
+import { EphemeralSecretRevealPage } from './features/share/pages/EphemeralSecretRevealPage';
 
 // Protected Pages
 import { DashboardPage } from './features/dashboard/pages/DashboardPage';
@@ -67,6 +68,7 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/share/:token" element={<PublicSharePage />} />
+      <Route path="/s/:token" element={<EphemeralSecretRevealPage />} />
       <Route path="/review/share/:token" element={<SiteReviewSharePage />} />
 
       {/* Protected Routes */}
