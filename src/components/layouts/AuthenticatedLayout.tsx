@@ -43,6 +43,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore, useIsAdmin, useCanManageProjects } from '@/stores/auth';
 import { useThemeStore } from '@/stores/theme';
 import { api, apiClient } from '@/lib/api';
+import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -220,6 +221,9 @@ export function AuthenticatedLayout() {
   const { t, i18n } = useTranslation();
   const menuItems = useMenuItems(collapsed);
   const isDark = resolvedTheme === 'dark';
+
+  // Silently refresh the access token before its 8h server-side expiry.
+  useTokenRefresh();
 
   // Auto-collapse on tablet
   useEffect(() => {
