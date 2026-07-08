@@ -497,3 +497,27 @@ export interface UpdateBillingRequest {
   billing_tax_id?: string | null;
   invoice_prefix?: string | null;
 }
+
+// ── Ephemeral Secret Send ──────────────────────────────────────────────
+export interface EphemeralSecretInput {
+  title?: string;
+  username?: string;
+  password?: string;
+  url?: string;
+  note?: string;
+  expires_in_minutes: number;
+  access_password?: string | null;
+}
+
+export interface EphemeralSecretMeta {
+  available: boolean;
+  reason?: 'not_found' | 'expired' | 'viewed';
+  title?: string;
+  has_password?: boolean;
+  expires_at?: string;
+}
+
+export interface EphemeralSecretReveal {
+  data: { title?: string; username?: string; password?: string; url?: string; note?: string };
+  revealed_once: boolean;
+}
