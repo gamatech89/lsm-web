@@ -110,7 +110,7 @@ export function ShareCredentialModal({ open, onClose, credential }: ShareCredent
               justifyContent: 'space-between',
               gap: 12,
             }}>
-              <Text ellipsis style={{ maxWidth: 280, fontFamily: 'monospace', fontSize: 12 }}>
+              <Text ellipsis style={{ maxWidth: 280, fontFamily: 'monospace', fontSize: 12, color: '#1e293b' }}>
                 {generatedLink}
               </Text>
               <Button

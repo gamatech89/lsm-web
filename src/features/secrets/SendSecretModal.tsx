@@ -102,7 +102,7 @@ export function SendSecretModal({ open, onClose }: Props) {
                 marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
               }}
             >
-              <Text ellipsis style={{ maxWidth: 280, fontFamily: 'monospace', fontSize: 12 }}>{link}</Text>
+              <Text ellipsis style={{ maxWidth: 280, fontFamily: 'monospace', fontSize: 12, color: '#1e293b' }}>{link}</Text>
               <Button type="primary" icon={<CopyOutlined />} onClick={copy} style={{ background: ACCENT, flexShrink: 0 }}>
                 {t('vault.shareModal.copy')}
               </Button>
