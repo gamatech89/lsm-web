@@ -35,6 +35,8 @@ import type { Credential } from '@lsm/types';
 import type { VaultFilters } from '@lsm/api-client';
 import type { ColumnsType } from 'antd/es/table';
 import { AddCredentialModal } from '../components/AddCredentialModal';
+import { SendSecretModal } from '@/features/secrets/SendSecretModal';
+import { SafetyCertificateOutlined } from '@ant-design/icons';
 import { ShareCredentialModal } from '../components/ShareCredentialModal';
 import { EditCredentialModal } from '../components/EditCredentialModal';
 import { ManageCredentialAccessModal } from '@/features/projects/components/ManageCredentialAccessModal';
@@ -76,6 +78,7 @@ export function VaultPage() {
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [sendSecretOpen, setSendSecretOpen] = useState(false);
   const [viewCredential, setViewCredential] = useState<Credential | null>(null);
   const [shareCredential, setShareCredential] = useState<Credential | null>(null);
   const [editCredential, setEditCredential] = useState<Credential | null>(null);
@@ -314,16 +317,25 @@ export function VaultPage() {
             <Text type="secondary">{t('vault.subtitle')}</Text>
           </div>
         </Space>
-        {canManage && (
+        <Space wrap style={isMobile ? { width: '100%' } : undefined}>
           <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setIsAddModalOpen(true)}
+            icon={<SafetyCertificateOutlined />}
+            onClick={() => setSendSecretOpen(true)}
             style={isMobile ? { width: '100%' } : undefined}
           >
-            {t('vault.addCredential')}
+            {t('vault.sendSecret', 'Send a secret')}
           </Button>
-        )}
+          {canManage && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setIsAddModalOpen(true)}
+              style={isMobile ? { width: '100%' } : undefined}
+            >
+              {t('vault.addCredential')}
+            </Button>
+          )}
+        </Space>
       </div>
 
       {/* Table with integrated filters */}
@@ -436,6 +448,11 @@ export function VaultPage() {
       <AddCredentialModal
         open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
+      />
+
+      <SendSecretModal
+        open={sendSecretOpen}
+        onClose={() => setSendSecretOpen(false)}
       />
 
       <ShareCredentialModal

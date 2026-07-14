@@ -501,9 +501,13 @@ export interface UpdateBillingRequest {
 // ── Ephemeral Secret Send ──────────────────────────────────────────────
 export interface EphemeralSecretInput {
   title?: string;
+  type?: string;
   username?: string;
   password?: string;
   url?: string;
+  hostname?: string;
+  port?: string;
+  database_name?: string;
   note?: string;
   expires_in_minutes: number;
   access_password?: string | null;
@@ -518,6 +522,16 @@ export interface EphemeralSecretMeta {
 }
 
 export interface EphemeralSecretReveal {
-  data: { title?: string; username?: string; password?: string; url?: string; note?: string };
+  data: {
+    title?: string;
+    type?: string;
+    username?: string;
+    password?: string;
+    url?: string;
+    hostname?: string;
+    port?: string;
+    database_name?: string;
+    note?: string;
+  };
   revealed_once: boolean;
 }

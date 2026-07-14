@@ -634,7 +634,8 @@ export function AuthenticatedLayout() {
           open={secretModalOpen}
           onClose={() => setSecretModalOpen(false)}
         />
-        {(user?.role === 'admin' || user?.is_admin) && <AiChatPanel />}
+        {/* AI chatbot hidden for now */}
+        {false && (user?.role === 'admin' || user?.is_admin) && <AiChatPanel />}
       </Suspense>
 
       {/* Sidebar Styles */}

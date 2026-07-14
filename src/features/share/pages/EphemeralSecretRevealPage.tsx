@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, Input, Button, Typography, Result, Spin, Space, App, message as staticMessage } from 'antd';
+import { Card, Input, Button, Typography, Result, Spin, Space, Tag, App, message as staticMessage } from 'antd';
 import { CopyOutlined, EyeOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import type { EphemeralSecretMeta, EphemeralSecretReveal } from '@lsm/types';
@@ -63,15 +63,18 @@ export function EphemeralSecretRevealPage() {
   }
 
   if (secret) {
-    const fields: Array<keyof RevealData> = ['username', 'password', 'url', 'note'];
+    const fields: Array<keyof RevealData> = ['username', 'password', 'hostname', 'port', 'database_name', 'url', 'note'];
+    const labels: Record<string, string> = { database_name: 'Database', url: 'URL', hostname: 'Host', port: 'Port' };
+    const labelFor = (k: string) => labels[k] ?? (k.charAt(0).toUpperCase() + k.slice(1));
     return (
       <div style={{ maxWidth: 480, margin: '40px auto' }}>
         <Card title={secret.title || 'Shared secret'}>
+          {secret.type && <Tag color="purple" style={{ marginBottom: 12, textTransform: 'uppercase' }}>{secret.type}</Tag>}
           <Paragraph type="danger">This was the only view — the secret has now been deleted.</Paragraph>
           {fields.map((k) =>
             secret[k] ? (
               <div key={k} style={{ marginBottom: 12 }}>
-                <Text type="secondary" style={{ textTransform: 'capitalize' }}>{k}</Text>
+                <Text type="secondary">{labelFor(k)}</Text>
                 <Space.Compact style={{ width: '100%' }}>
                   <Input value={secret[k]} readOnly />
                   <Button icon={<CopyOutlined />} onClick={() => copy(secret[k])} />
