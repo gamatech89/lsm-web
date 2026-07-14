@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import {
   Modal, Form, Input, InputNumber, Button, Switch, Select, Typography, Space, Row, Col,
-  App, message as staticMessage,
+  Result, Alert, App, message as staticMessage,
 } from 'antd';
 import {
   CopyOutlined, SafetyCertificateOutlined, LockOutlined, GlobalOutlined,
-  DatabaseOutlined, CloudServerOutlined, UserOutlined, KeyOutlined,
+  DatabaseOutlined, CloudServerOutlined, UserOutlined, KeyOutlined, CheckCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { EphemeralSecretInput } from '@lsm/types';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
+const ACCENT = '#8b5cf6';
 const { TextArea } = Input;
 
 interface Props {
@@ -28,6 +29,7 @@ export function SendSecretModal({ open, onClose }: Props) {
   const [form] = Form.useForm();
   const { t } = useTranslation();
   const [link, setLink] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [hasPassword, setHasPassword] = useState(false);
   const { message } = App.useApp ? App.useApp() : { message: staticMessage };
 
@@ -55,13 +57,15 @@ export function SendSecretModal({ open, onClose }: Props) {
     },
     onSuccess: (res) => {
       setLink(res.data.data.link);
-      message.success('One-time link created');
+      setExpiresAt(res.data.data.expires_at);
+      message.success(t('vault.shareModal.success'));
     },
     onError: () => message.error('Could not create the link'),
   });
 
   const close = () => {
     setLink(null);
+    setExpiresAt(null);
     setHasPassword(false);
     form.resetFields();
     onClose();
@@ -70,7 +74,7 @@ export function SendSecretModal({ open, onClose }: Props) {
   const copy = () => {
     if (link) {
       navigator.clipboard.writeText(link);
-      message.success('Link copied');
+      message.success(t('vault.shareModal.linkCopied'));
     }
   };
 
@@ -78,21 +82,41 @@ export function SendSecretModal({ open, onClose }: Props) {
     <Modal
       open={open}
       onCancel={close}
-      title={<Space><SafetyCertificateOutlined /> Send a secret (one-time)</Space>}
-      footer={null}
+      title={link ? null : <Space><SafetyCertificateOutlined style={{ color: ACCENT }} /> Send a secret (one-time)</Space>}
+      footer={link ? [<Button key="close" onClick={close}>{t('vault.shareModal.close')}</Button>] : null}
       destroyOnClose
-      width={600}
+      width={link ? 480 : 600}
       centered
     >
       {link ? (
-        <div>
-          <Paragraph>Share this one-time link. It expires and is deleted after the first view.</Paragraph>
-          <Space.Compact style={{ width: '100%' }}>
-            <Input value={link} readOnly />
-            <Button icon={<CopyOutlined />} onClick={copy} />
-          </Space.Compact>
-          <Button style={{ marginTop: 16 }} onClick={close} block>Done</Button>
-        </div>
+        <Result
+          status="success"
+          icon={<CheckCircleOutlined style={{ color: ACCENT }} />}
+          title={t('vault.shareModal.linkCreated')}
+          subTitle={expiresAt ? `${t('vault.shareModal.linkExpires')} ${new Date(expiresAt).toLocaleString()}` : undefined}
+          extra={[
+            <div
+              key="link-box"
+              style={{
+                padding: '12px 16px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc',
+                marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              }}
+            >
+              <Text ellipsis style={{ maxWidth: 280, fontFamily: 'monospace', fontSize: 12 }}>{link}</Text>
+              <Button type="primary" icon={<CopyOutlined />} onClick={copy} style={{ background: ACCENT, flexShrink: 0 }}>
+                {t('vault.shareModal.copy')}
+              </Button>
+            </div>,
+            <Alert
+              key="warning"
+              message={t('vault.shareModal.securityNote')}
+              description={t('vault.shareModal.securityWarning')}
+              type="warning"
+              showIcon
+              style={{ textAlign: 'left' }}
+            />,
+          ]}
+        />
       ) : (
         <Form form={form} layout="vertical" initialValues={{ expires_in_minutes: 1440 }} onFinish={(v) => mutation.mutate(v)}>
           <Row gutter={16}>
