@@ -22,6 +22,9 @@ import {
   message,
   Descriptions,
   Divider,
+  Input,
+  Upload,
+  Avatar,
 } from 'antd';
 import {
   CustomerServiceOutlined,
@@ -33,10 +36,15 @@ import {
   LinkOutlined,
   MailOutlined,
   GlobalOutlined,
+  SendOutlined,
+  PaperClipOutlined,
+  UserOutlined,
+  CustomerServiceFilled,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { SupportTicket } from '@/lib/support-tickets-api';
+import type { SupportTicket, SupportTicketAttachment, SupportTicketMessage } from '@/lib/support-tickets-api';
 import {
   TICKET_TYPE_LABELS,
   TICKET_STATUS_LABELS,
@@ -68,6 +76,32 @@ export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
 
   // Extract tickets from response (handle nested data)
   const tickets = (ticketsResponse?.data as any)?.data || ticketsResponse?.data || [];
+
+  // Full ticket (incl. thread) for the detail modal
+  const { data: detailResponse, isLoading: detailLoading } = useQuery({
+    queryKey: ['support-ticket-detail', selectedTicket?.id],
+    queryFn: () => api.supportTickets.get(selectedTicket!.id),
+    enabled: detailModalOpen && !!selectedTicket,
+  });
+  const ticketDetail: SupportTicket | null =
+    ((detailResponse?.data as any)?.data as SupportTicket) ?? (detailResponse?.data as SupportTicket) ?? null;
+
+  const [replyText, setReplyText] = useState('');
+  const [replyFiles, setReplyFiles] = useState<File[]>([]);
+
+  const replyMutation = useMutation({
+    mutationFn: () => api.supportTickets.postMessage(selectedTicket!.id, replyText, replyFiles),
+    onSuccess: () => {
+      setReplyText('');
+      setReplyFiles([]);
+      queryClient.invalidateQueries({ queryKey: ['support-ticket-detail', selectedTicket?.id] });
+      queryClient.invalidateQueries({ queryKey: ['support-tickets', project.id] });
+      message.success('Reply sent to client');
+    },
+    onError: () => {
+      message.error('Failed to send reply');
+    },
+  });
 
   // Update ticket mutation
   const updateMutation = useMutation({
@@ -103,6 +137,12 @@ export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
     if (!ticket.is_read) {
       api.supportTickets.markAsRead(ticket.id);
     }
+  };
+
+  const closeDetail = () => {
+    setDetailModalOpen(false);
+    setReplyText('');
+    setReplyFiles([]);
   };
 
   // Table columns
@@ -198,6 +238,57 @@ export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
   const inProgressCount = tickets.filter((t: SupportTicket) => t.status === 'in_progress').length;
   const unreadCount = tickets.filter((t: SupportTicket) => !t.is_read).length;
 
+  const renderAttachments = (attachments?: SupportTicketAttachment[]) =>
+    attachments && attachments.length > 0 ? (
+      <Space wrap style={{ marginTop: 8 }}>
+        {attachments.map((a) => (
+          <Button
+            key={a.id}
+            size="small"
+            icon={<DownloadOutlined />}
+            onClick={() => api.supportTickets.downloadAttachment(a)}
+          >
+            {a.filename} ({Math.round(a.size / 1024)} KB)
+          </Button>
+        ))}
+      </Space>
+    ) : null;
+
+  const renderMessage = (msg: SupportTicketMessage) => {
+    const isStaff = msg.author_type === 'staff';
+    return (
+      <div
+        key={msg.id}
+        style={{
+          display: 'flex',
+          flexDirection: isStaff ? 'row-reverse' : 'row',
+          gap: 8,
+          marginBottom: 12,
+        }}
+      >
+        <Avatar
+          size="small"
+          icon={isStaff ? <CustomerServiceFilled /> : <UserOutlined />}
+          style={{ backgroundColor: isStaff ? '#1890ff' : '#bfbfbf', flexShrink: 0 }}
+        />
+        <div
+          style={{
+            background: isStaff ? '#e6f7ff' : '#f5f5f5',
+            borderRadius: 8,
+            padding: '8px 12px',
+            maxWidth: '80%',
+          }}
+        >
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            {msg.author_name} · {dayjs(msg.created_at).format('YYYY-MM-DD HH:mm')}
+          </Text>
+          <Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.message}</Paragraph>
+          {renderAttachments(msg.attachments)}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <Card
@@ -258,10 +349,10 @@ export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
           </Space>
         }
         open={detailModalOpen}
-        onCancel={() => setDetailModalOpen(false)}
+        onCancel={closeDetail}
         width={700}
         footer={[
-          <Button key="close" onClick={() => setDetailModalOpen(false)}>
+          <Button key="close" onClick={closeDetail}>
             Close
           </Button>,
           !selectedTicket?.todo_id && (
@@ -363,6 +454,61 @@ export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
               }}
             >
               <Paragraph style={{ margin: 0 }}>{selectedTicket.message}</Paragraph>
+            </div>
+
+            {renderAttachments(ticketDetail?.attachments)}
+
+            <Divider>Conversation</Divider>
+
+            {detailLoading ? (
+              <div style={{ textAlign: 'center', padding: 16 }}>
+                <Spin />
+              </div>
+            ) : (ticketDetail?.messages?.length ?? 0) === 0 ? (
+              <Text type="secondary">No replies yet.</Text>
+            ) : (
+              <div style={{ maxHeight: 320, overflowY: 'auto', paddingRight: 4 }}>
+                {ticketDetail!.messages!.map(renderMessage)}
+              </div>
+            )}
+
+            <div style={{ marginTop: 16 }}>
+              <Input.TextArea
+                rows={3}
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Reply to the client… (they will receive it by email)"
+              />
+              <Space style={{ marginTop: 8, width: '100%', justifyContent: 'space-between' }}>
+                <Upload
+                  multiple
+                  maxCount={5}
+                  accept=".png,.jpg,.jpeg,.webp,.gif,.pdf"
+                  beforeUpload={(file) => {
+                    if (file.size > 5 * 1024 * 1024) {
+                      message.error(`${file.name} is larger than 5 MB`);
+                      return Upload.LIST_IGNORE;
+                    }
+                    setReplyFiles((prev) => [...prev, file as unknown as File].slice(0, 5));
+                    return false; // manual upload via postMessage
+                  }}
+                  onRemove={(file) => {
+                    setReplyFiles((prev) => prev.filter((f) => f.name !== file.name));
+                  }}
+                  fileList={replyFiles.map((f, i) => ({ uid: String(i), name: f.name }))}
+                >
+                  <Button icon={<PaperClipOutlined />}>Attach</Button>
+                </Upload>
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  disabled={!replyText.trim()}
+                  loading={replyMutation.isPending}
+                  onClick={() => replyMutation.mutate()}
+                >
+                  Send Reply
+                </Button>
+              </Space>
             </div>
 
             {selectedTicket.resolved_at && (
