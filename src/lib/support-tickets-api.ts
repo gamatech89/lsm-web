@@ -4,6 +4,23 @@
 
 import type { AxiosInstance } from 'axios';
 
+export interface SupportTicketAttachment {
+  id: number;
+  filename: string;
+  mime: string;
+  size: number;
+}
+
+export interface SupportTicketMessage {
+  id: number;
+  author_type: 'client' | 'staff';
+  author_name: string;
+  user_id: number | null;
+  message: string;
+  created_at: string;
+  attachments?: SupportTicketAttachment[];
+}
+
 export interface SupportTicket {
   id: number;
   ticket_number: string;
@@ -29,6 +46,8 @@ export interface SupportTicket {
     title: string;
     status: string;
   } | null;
+  messages?: SupportTicketMessage[];
+  attachments?: SupportTicketAttachment[];
   project?: {
     id: number;
     name: string;
@@ -102,8 +121,37 @@ export function createSupportTicketsApi(client: AxiosInstance) {
     getAllGlobal: (params?: {
       status?: string;
       search?: string;
-    }) => 
+    }) =>
       client.get<SupportTicket[]>('/support-tickets', { params }),
+
+    /**
+     * Add a staff reply (optionally with attachments) to a ticket thread
+     */
+    postMessage: (ticketId: number, message: string, files?: File[]) => {
+      const form = new FormData();
+      form.append('message', message);
+      (files ?? []).slice(0, 5).forEach((f) => form.append('attachments[]', f, f.name));
+      return client.post<SupportTicketMessage>(`/support-tickets/${ticketId}/messages`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+
+    /**
+     * Download a ticket attachment (authenticated blob → browser download)
+     */
+    downloadAttachment: async (attachment: SupportTicketAttachment) => {
+      const response = await client.get<Blob>(`/support-tickets/attachments/${attachment.id}`, {
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = attachment.filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    },
   };
 }
 
