@@ -6,7 +6,7 @@
  * Used by the per-project Support tab and the global Support page.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Tag,
   Button,
@@ -21,6 +21,8 @@ import {
   Input,
   Upload,
   Avatar,
+  Image,
+  Tooltip,
   theme,
 } from 'antd';
 import {
@@ -46,6 +48,65 @@ import {
 import dayjs from 'dayjs';
 
 const { Text, Paragraph, Title } = Typography;
+
+/**
+ * One attachment: images render as an inline thumbnail with a zoomable
+ * preview (fetched through the authenticated client), everything else —
+ * and the explicit download icon — falls back to a download button.
+ */
+function AttachmentChip({ attachment }: { attachment: SupportTicketAttachment }) {
+  const isImage = attachment.mime.startsWith('image/');
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isImage) return;
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    api.supportTickets
+      .fetchAttachmentBlob(attachment.id)
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setUrl(objectUrl);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [attachment.id, isImage]);
+
+  const download = () =>
+    api.supportTickets.downloadAttachment(attachment).catch(() => message.error('Failed to download attachment'));
+
+  if (isImage && url) {
+    return (
+      <Space direction="vertical" size={2} align="center">
+        <Image
+          src={url}
+          width={110}
+          height={80}
+          style={{ objectFit: 'cover', borderRadius: 6 }}
+          preview={{ mask: 'View' }}
+          alt={attachment.filename}
+        />
+        <Tooltip title={`${attachment.filename} (${Math.round(attachment.size / 1024)} KB)`}>
+          <Button size="small" type="text" icon={<DownloadOutlined />} onClick={download}>
+            <Text type="secondary" style={{ fontSize: 11, maxWidth: 90 }} ellipsis>
+              {attachment.filename}
+            </Text>
+          </Button>
+        </Tooltip>
+      </Space>
+    );
+  }
+
+  return (
+    <Button size="small" icon={<DownloadOutlined />} onClick={download}>
+      {attachment.filename} ({Math.round(attachment.size / 1024)} KB)
+    </Button>
+  );
+}
 
 interface TicketDetailModalProps {
   ticket: SupportTicket | null;
@@ -120,18 +181,9 @@ export function TicketDetailModal({ ticket, open, onClose, invalidateKeys = [] }
 
   const renderAttachments = (attachments?: SupportTicketAttachment[]) =>
     attachments && attachments.length > 0 ? (
-      <Space wrap style={{ marginTop: 8 }}>
+      <Space wrap style={{ marginTop: 8 }} align="start">
         {attachments.map((a) => (
-          <Button
-            key={a.id}
-            size="small"
-            icon={<DownloadOutlined />}
-            onClick={() =>
-              api.supportTickets.downloadAttachment(a).catch(() => message.error('Failed to download attachment'))
-            }
-          >
-            {a.filename} ({Math.round(a.size / 1024)} KB)
-          </Button>
+          <AttachmentChip key={a.id} attachment={a} />
         ))}
       </Space>
     ) : null;

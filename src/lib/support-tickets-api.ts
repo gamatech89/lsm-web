@@ -137,6 +137,16 @@ export function createSupportTicketsApi(client: AxiosInstance) {
     },
 
     /**
+     * Fetch a ticket attachment as a Blob (authenticated)
+     */
+    fetchAttachmentBlob: async (attachmentId: number) => {
+      const response = await client.get<Blob>(`/support-tickets/attachments/${attachmentId}`, {
+        responseType: 'blob',
+      });
+      return response.data;
+    },
+
+    /**
      * Download a ticket attachment (authenticated blob → browser download)
      */
     downloadAttachment: async (attachment: SupportTicketAttachment) => {
