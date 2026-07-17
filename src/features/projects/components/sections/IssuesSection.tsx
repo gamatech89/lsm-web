@@ -57,7 +57,7 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { message, modal } = App.useApp();
   const queryClient = useQueryClient();
-  const hasLsmConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.has_health_check_secret;
   
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | undefined>(undefined);

@@ -67,14 +67,14 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
   const { data: lsmStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
     queryKey: ['lsm-status', project.id],
     queryFn: () => api.lsm.getStatus(project.id).then(r => r.data),
-    enabled: open && !!project.health_check_secret,
+    enabled: open && !!project.has_health_check_secret,
   });
 
   // Get health data
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
     queryKey: ['lsm-health', project.id],
     queryFn: () => api.lsm.getHealth(project.id).then(r => r.data),
-    enabled: open && !!project.health_check_secret && lsmStatus?.connected,
+    enabled: open && !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 30000,
   });
 
@@ -82,7 +82,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
   const { data: updates, isLoading: updatesLoading, refetch: refetchUpdates } = useQuery({
     queryKey: ['lsm-updates', project.id],
     queryFn: () => api.lsm.getUpdates(project.id).then(r => r.data),
-    enabled: open && !!project.health_check_secret && lsmStatus?.connected,
+    enabled: open && !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
   });
 
@@ -566,7 +566,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
         </Button>
       }
     >
-      {!project.health_check_secret ? (
+      {!project.has_health_check_secret ? (
         notConfiguredContent
       ) : statusLoading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>

@@ -116,7 +116,6 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
         manager_ids: project.managers?.map(m => m.id) || [],
         developer_ids: project.developers?.map(d => d.id) || [],
         tag_ids: project.tags?.map(t => t.id) || [],
-        health_check_secret: project.health_check_secret,
         project_external_id: project.project_external_id,
         maintenance_id: project.maintenance_id,
       });

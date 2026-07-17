@@ -61,7 +61,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
     optimize_tables: true,
   });
   // Check if WordPress is connected
-  const hasLsmConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.has_health_check_secret;
 
   // Fetch recovery status (includes maintenance mode)
   const { data: recoveryStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({

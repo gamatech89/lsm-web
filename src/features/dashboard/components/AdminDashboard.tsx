@@ -1,5 +1,5 @@
 import { useMemo, useState, Suspense, lazy } from 'react';
-import { Row, Col, Typography, Card, Space, Tag, Avatar, Table, Radio, Button, App } from 'antd';
+import { Row, Col, Typography, Card, Space, Tag, Avatar, Table, Radio, Button, App, Alert } from 'antd';
 import {
   SafetyOutlined,
   AlertOutlined,
@@ -50,9 +50,10 @@ export function AdminDashboard() {
   const { message: messageApi, modal } = App.useApp();
   const queryClient = useQueryClient();
   
-  const { data: dashboardData } = useQuery({
+  const { data: dashboardData, isError: isDashboardError } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => api.dashboard.get().then(r => r.data.data),
+    refetchInterval: 60000,
   });
 
   const { data: availabilityLogs } = useQuery({
@@ -78,7 +79,7 @@ export function AdminDashboard() {
     },
   });
 
-  const stats = (dashboardData?.stats || { total: 0, online: 0, at_risk: 0, hacked: 0, open_todos: 0, open_tickets: 0 }) as any;
+  const stats = (dashboardData?.stats || { total: 0, online: 0, offline: 0, at_risk: 0, hacked: 0, open_todos: 0, open_tickets: 0 }) as any;
 
   // Merge team data with availability
   const teamData = useMemo(() => {
@@ -330,6 +331,15 @@ export function AdminDashboard() {
 
       {/* Quick Stats */}
       <Title level={5} style={{ marginBottom: 16 }}>{t('dashboard.overview')}</Title>
+      {isDashboardError && (
+        <Alert
+          type="error"
+          showIcon
+          message={t('dashboard.error')}
+          style={{ marginBottom: 24, borderRadius: 8 }}
+        />
+      )}
+      {!isDashboardError && (
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={12} md={12} lg={6}>
           <GlassStatCard
@@ -364,14 +374,15 @@ export function AdminDashboard() {
         <Col xs={12} sm={12} md={12} lg={6}>
           <GlassStatCard
             title={t('dashboard.stats.hackedDown')}
-            value={(stats.hacked || 0) + (stats.down || 0)}
+            value={(stats.hacked || 0) + (stats.offline || 0)}
             icon={<SafetyOutlined />}
             color="#ef4444"
-            trend={stats.hacked > 0 ? 'down' : 'neutral'}
-            trendValue={stats.hacked > 0 ? t('dashboard.suffixes.criticalAlert') : t('dashboard.suffixes.allClear')}
+            trend={(stats.hacked || 0) + (stats.offline || 0) > 0 ? 'down' : 'neutral'}
+            trendValue={(stats.hacked || 0) + (stats.offline || 0) > 0 ? t('dashboard.suffixes.criticalAlert') : t('dashboard.suffixes.allClear')}
           />
         </Col>
       </Row>
+      )}
 
       <Row gutter={[20, 20]}>
         {/* Team Availability Risk Monitor */}

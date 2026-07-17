@@ -21,6 +21,7 @@ import {
   LinkOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { useThemeStore } from '@/stores/theme';
 
@@ -32,11 +33,13 @@ interface ConnectWordPressCardProps {
 }
 
 export function ConnectWordPressCard({ project, compact = false }: ConnectWordPressCardProps) {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
-  
+
+  // Write-only: the API never returns the secret, only whether one is configured
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [savingApiKey, setSavingApiKey] = useState(false);
   const [downloadingPlugin, setDownloadingPlugin] = useState(false);
@@ -51,6 +54,7 @@ export function ConnectWordPressCard({ project, compact = false }: ConnectWordPr
     try {
       await api.projects.update(project.id, { health_check_secret: apiKeyInput });
       message.success('API key saved successfully! Connection established.');
+      setApiKeyInput('');
       // Invalidate and refetch to update UI
       await queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
       await queryClient.invalidateQueries({ queryKey: ['lsm-status', project.id] });
@@ -94,7 +98,9 @@ export function ConnectWordPressCard({ project, compact = false }: ConnectWordPr
         <div>
           <Text strong style={{ display: 'block', marginBottom: 8 }}>API Key</Text>
           <Input.Password
-            placeholder="Paste API key from WordPress plugin..."
+            placeholder={project.has_health_check_secret
+              ? t('projects.uptime.apiKeyConfiguredPlaceholder')
+              : 'Paste API key from WordPress plugin...'}
             value={apiKeyInput}
             onChange={(e) => setApiKeyInput(e.target.value)}
             onPressEnter={handleSaveApiKey}
@@ -161,7 +167,9 @@ export function ConnectWordPressCard({ project, compact = false }: ConnectWordPr
           <Text strong style={{ display: 'block', marginBottom: 8 }}>API Key</Text>
           <Input.Password
             size="large"
-            placeholder="Paste API key from Landeseiten Maintenance plugin..."
+            placeholder={project.has_health_check_secret
+              ? t('projects.uptime.apiKeyConfiguredPlaceholder')
+              : 'Paste API key from Landeseiten Maintenance plugin...'}
             value={apiKeyInput}
             onChange={(e) => setApiKeyInput(e.target.value)}
             onPressEnter={handleSaveApiKey}

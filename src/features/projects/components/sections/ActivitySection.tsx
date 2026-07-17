@@ -61,7 +61,7 @@ interface ActivityEntry {
 export default function ActivitySection({ project }: ActivitySectionProps) {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
-  const hasLsmConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.has_health_check_secret;
   
   const [actionFilter, setActionFilter] = useState<string | undefined>(undefined);
 

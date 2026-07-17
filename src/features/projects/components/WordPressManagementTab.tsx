@@ -45,6 +45,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 
 const { Title, Text, Paragraph } = Typography;
@@ -54,18 +55,24 @@ interface WordPressManagementTabProps {
 }
 
 export function WordPressManagementTab({ project }: WordPressManagementTabProps) {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [ssoLoading, setSsoLoading] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState(project.health_check_secret || '');
+  // Write-only: the API never returns the secret, only whether one is configured
+  const [apiKeyInput, setApiKeyInput] = useState('');
   const [savingApiKey, setSavingApiKey] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+
+  const apiKeyPlaceholder = project.has_health_check_secret
+    ? t('projects.uptime.apiKeyConfiguredPlaceholder')
+    : 'Paste API key from Landeseiten Maintenance plugin...';
 
   // Check LSM status
   const { data: lsmStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
     queryKey: ['lsm-status', project.id],
     queryFn: () => api.lsm.getStatus(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project.health_check_secret,
+    enabled: !!project.has_health_check_secret,
     staleTime: 30000,
   });
 
@@ -73,7 +80,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
     queryKey: ['lsm-health', project.id],
     queryFn: () => api.lsm.getHealth(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project.health_check_secret && lsmStatus?.connected,
+    enabled: !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 30000,
   });
 
@@ -81,7 +88,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   const { data: updates, isLoading: updatesLoading, refetch: refetchUpdates } = useQuery({
     queryKey: ['lsm-updates', project.id],
     queryFn: () => api.lsm.getUpdates(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project.health_check_secret && lsmStatus?.connected,
+    enabled: !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
   });
 
@@ -89,7 +96,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   const { data: recoveryStatus, refetch: refetchRecoveryStatus } = useQuery({
     queryKey: ['lsm-recovery-status', project.id],
     queryFn: () => api.lsm.getRecoveryStatus(project.id).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project.health_check_secret && lsmStatus?.connected,
+    enabled: !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 10000,
   });
 
@@ -218,6 +225,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
     try {
       await api.projects.update(project.id, { health_check_secret: apiKeyInput });
       message.success('API key saved successfully');
+      setApiKeyInput('');
       setShowApiKeyModal(false);
       // Invalidate and refetch to ensure UI updates
       await queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
@@ -260,7 +268,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
   };
 
   // Not configured state - show API key input
-  if (!project.health_check_secret) {
+  if (!project.has_health_check_secret) {
     return (
       <div style={{ padding: '40px 24px' }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -357,7 +365,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
           </div>
           <Input.Password
             size="large"
-            placeholder="Paste new API key from WordPress..."
+            placeholder={apiKeyPlaceholder}
             value={apiKeyInput}
             onChange={(e) => setApiKeyInput(e.target.value)}
           />
@@ -372,7 +380,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
             <Button 
               size="small" 
               onClick={() => {
-                setApiKeyInput(project.health_check_secret || '');
+                setApiKeyInput('');
                 setShowApiKeyModal(true);
               }}
             >
@@ -408,7 +416,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
         </div>
         <Input.Password
           size="large"
-          placeholder="Paste new API key from WordPress..."
+          placeholder={apiKeyPlaceholder}
           value={apiKeyInput}
           onChange={(e) => setApiKeyInput(e.target.value)}
         />
@@ -433,7 +441,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
                   size="small"
                   icon={<SettingOutlined style={{ color: 'rgba(255,255,255,0.8)' }} />}
                   onClick={() => {
-                    setApiKeyInput(project.health_check_secret || '');
+                    setApiKeyInput('');
                     setShowApiKeyModal(true);
                   }}
                   style={{ marginLeft: 8 }}

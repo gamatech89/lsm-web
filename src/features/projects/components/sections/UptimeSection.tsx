@@ -20,10 +20,11 @@ import {
   DesktopOutlined,
   ThunderboltOutlined,
   WarningOutlined,
-  SwapOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '@/stores/theme';
+import { useAuthStore } from '@/stores/auth';
 import { api, apiClient } from '@/lib/api';
 
 interface UptimeSectionProps {
@@ -31,26 +32,31 @@ interface UptimeSectionProps {
 }
 
 export default function UptimeSection({ project }: UptimeSectionProps) {
+  const { t } = useTranslation();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
   const queryClient = useQueryClient();
   const { message } = App.useApp();
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.role === 'admin';
 
   // Fetch real uptime stats from historical data
-  const { data: uptimeData, refetch: refetchUptime } = useQuery({
+  const { data: uptimeData, isError: isUptimeStatsError, refetch: refetchUptime } = useQuery({
     queryKey: ['uptime-stats', project.id],
     queryFn: () => apiClient.get(`/projects/${project.id}/uptime-stats?days=30`).then(r => r.data?.data),
     enabled: !!project.url,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchInterval: 60000,
     retry: 1,
   });
 
-  // Fetch global monitoring settings to show schedule info
+  // Fetch global monitoring settings to show schedule info (admin-only endpoint)
   const { data: globalSettings } = useQuery({
     queryKey: ['settings'],
     queryFn: () => apiClient.get('/settings').then(r => r.data?.data || r.data),
     staleTime: 1000 * 60 * 10, // 10 minutes
-    retry: false, // Don't retry if user is not admin
+    enabled: isAdmin, // Endpoint returns 403 for non-admins
+    retry: false,
   });
 
   // Check now mutation - this triggers a real health check and stores results
@@ -114,11 +120,13 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
   const isDown = healthStatus === 'down_error' || healthStatus === 'down';
   const hasNeverChecked = !lastCheckedAt;
 
-  // Use real uptime percentage from stats
-  const uptimePercentage = uptimeData?.uptime_percentage ?? (hasNeverChecked ? 0 : (isOnline ? 99.9 : 0));
-  const avgResponseTime = uptimeData?.avg_response_time || responseTime;
+  // Use real uptime percentage from stats.
+  // The API returns null when there are no checks yet — show a neutral
+  // "no data" state instead of inventing a number.
   const totalChecks = uptimeData?.total_checks || 0;
-  const redirectCount = uptimeData?.redirect_count || 0;
+  const uptimePercentage: number | null =
+    totalChecks > 0 && uptimeData?.uptime_percentage != null ? uptimeData.uptime_percentage : null;
+  const avgResponseTime = uptimeData?.avg_response_time || responseTime;
 
   // Format last checked time
   const formatLastChecked = () => {
@@ -173,15 +181,20 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
                 Uptime Monitoring
               </Title>
               <Text type="secondary" style={{ fontSize: 13 }}>
-                {globalSettings?.uptime?.enabled !== false ? (
-                  <>
-                    <CheckCircleOutlined style={{ color: '#22c55e', marginRight: 6 }} />
-                    Auto-checked every {globalSettings?.uptime?.interval || 5} minutes
-                  </>
-                ) : (
+                {globalSettings?.uptime?.enabled === false ? (
                   <>
                     <ClockCircleOutlined style={{ color: '#94a3b8', marginRight: 6 }} />
                     Automatic monitoring disabled
+                  </>
+                ) : globalSettings?.uptime?.interval ? (
+                  <>
+                    <CheckCircleOutlined style={{ color: '#22c55e', marginRight: 6 }} />
+                    Auto-checked every {globalSettings.uptime.interval} minutes
+                  </>
+                ) : (
+                  <>
+                    <CheckCircleOutlined style={{ color: '#22c55e', marginRight: 6 }} />
+                    {t('projects.uptime.checkedAutomatically')}
                   </>
                 )}
               </Text>
@@ -189,6 +202,16 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
           </Col>
         </Row>
       </div>
+
+      {/* Uptime stats failed to load */}
+      {isUptimeStatsError && (
+        <Alert
+          type="warning"
+          style={{ marginBottom: 16, borderRadius: 8 }}
+          message={t('projects.uptime.statsError')}
+          showIcon
+        />
+      )}
 
       {/* Status Cards */}
       <Row gutter={[16, 16]}>
@@ -243,19 +266,33 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
               textAlign: 'center',
             }}
           >
-            <Progress
-              type="circle"
-              percent={uptimePercentage}
-              size={80}
-              strokeColor={uptimePercentage >= 99 ? '#22c55e' : uptimePercentage >= 95 ? '#f59e0b' : '#ef4444'}
-              format={(percent) => `${percent}%`}
-            />
+            {uptimePercentage != null ? (
+              <Progress
+                type="circle"
+                percent={uptimePercentage}
+                size={80}
+                strokeColor={uptimePercentage >= 99 ? '#22c55e' : uptimePercentage >= 95 ? '#f59e0b' : '#ef4444'}
+                format={(percent) => `${percent}%`}
+              />
+            ) : (
+              <Progress
+                type="circle"
+                percent={0}
+                size={80}
+                strokeColor="#cbd5e1"
+                format={() => <span style={{ color: '#94a3b8' }}>—</span>}
+              />
+            )}
             <div style={{ marginTop: 12 }}>
               <Text type="secondary">
                 Uptime (30 days)
-                {totalChecks > 0 && (
+                {uptimePercentage != null && totalChecks > 0 ? (
                   <span style={{ display: 'block', fontSize: 11 }}>
                     Based on {totalChecks} check{totalChecks === 1 ? '' : 's'}
+                  </span>
+                ) : (
+                  <span style={{ display: 'block', fontSize: 11 }}>
+                    {t('projects.uptime.noDataYet')} — {t('projects.uptime.noDataHint')}
                   </span>
                 )}
               </Text>
@@ -263,18 +300,6 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
           </Card>
         </Col>
       </Row>
-
-      {/* Redirect Warning */}
-      {redirectCount > 0 && (
-        <Alert
-          type="warning"
-          style={{ marginTop: 16, borderRadius: 8 }}
-          message={`${redirectCount} redirect${redirectCount === 1 ? '' : 's'} detected`}
-          description="Your site is redirecting requests. This may indicate a configuration issue or forced HTTPS/WWW redirect."
-          showIcon
-          icon={<SwapOutlined />}
-        />
-      )}
 
       {/* Last Check Info & Actions */}
       <Card
@@ -327,7 +352,7 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
       </Card>
 
       {/* Health Details - Show only if we have plugin health data (not simple_check) and plugin is connected */}
-      {project.health_check_secret && healthDetails && !healthDetails.error && !healthDetails.simple_check && (
+      {project.has_health_check_secret && healthDetails && !healthDetails.error && !healthDetails.simple_check && (
         <Card
           title="Health Details"
           style={{

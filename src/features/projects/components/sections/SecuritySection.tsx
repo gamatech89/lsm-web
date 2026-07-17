@@ -83,7 +83,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const hasLsmConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.has_health_check_secret;
   const [updatingSetting, setUpdatingSetting] = useState<string | null>(null);
   const [scanDetailsOpen, setScanDetailsOpen] = useState(false);
   const [selectedScan, setSelectedScan] = useState<any>(null);

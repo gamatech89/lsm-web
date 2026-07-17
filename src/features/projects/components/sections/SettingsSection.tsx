@@ -195,7 +195,7 @@ export default function SettingsSection({ project }: SettingsSectionProps) {
     }));
   };
 
-  const isConnected = !!project.health_check_secret;
+  const isConnected = !!project.has_health_check_secret;
   const lastCheck = project.last_health_check_at 
     ? new Date(project.last_health_check_at).toLocaleString()
     : null;

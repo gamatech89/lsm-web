@@ -77,7 +77,7 @@ export default function MediaSection({ project }: MediaSectionProps) {
   const [hasScanned, setHasScanned] = useState(false);
 
   // Check if WordPress is connected
-  const hasLsmConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.has_health_check_secret;
 
   // Scan mutation
   const scanMutation = useMutation({

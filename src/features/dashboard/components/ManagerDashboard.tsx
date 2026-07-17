@@ -62,11 +62,11 @@ export function ManagerDashboard() {
      const list: { id: string | number; name: string; issue: string; type: string; tag: string }[] = [];
      
      // 1. Hacked / Down Sites
-     if ((stats.hacked || 0) + (stats.down || 0) > 0) {
+     if ((stats.hacked || 0) + (stats.offline || 0) > 0) {
         list.push({
             id: 'security-alert',
             name: t('dashboard.criticalInfrastructure'),
-            issue: t('dashboard.sitesHackedDown', { count: (stats.hacked || 0) + (stats.down || 0) }),
+            issue: t('dashboard.sitesHackedDown', { count: (stats.hacked || 0) + (stats.offline || 0) }),
             type: 'security',
             tag: 'CRITICAL'
         });
@@ -144,7 +144,7 @@ export function ManagerDashboard() {
          <Col xs={12} lg={6}>
            <GlassStatCard
             title={t('dashboard.stats.hackedDown')}
-            value={(stats.hacked || 0) + (stats.down || 0)}
+            value={(stats.hacked || 0) + (stats.offline || 0)}
             icon={<SafetyOutlined />}
             color="#ef4444"
             trend="down"

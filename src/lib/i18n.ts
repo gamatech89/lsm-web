@@ -311,6 +311,13 @@ const resources = {
           maintenance: 'Maintenance',
           unknown: 'Unknown',
         },
+        uptime: {
+          noDataYet: 'No data yet',
+          noDataHint: 'Statistics will appear after the first automatic checks',
+          checkedAutomatically: 'Checked automatically',
+          statsError: 'Could not load uptime statistics',
+          apiKeyConfiguredPlaceholder: '••••••••  (configured — enter a new key to replace)',
+        },
         security: {
           secure: 'Secure',
           monitoring: 'Monitoring',
@@ -1615,6 +1622,13 @@ const resources = {
           confirming_down: 'Wird geprüft...',
           maintenance: 'Wartung',
           unknown: 'Unbekannt',
+        },
+        uptime: {
+          noDataYet: 'Noch keine Daten',
+          noDataHint: 'Statistiken erscheinen nach den ersten automatischen Prüfungen',
+          checkedAutomatically: 'Wird automatisch geprüft',
+          statsError: 'Uptime-Statistiken konnten nicht geladen werden',
+          apiKeyConfiguredPlaceholder: '••••••••  (konfiguriert — neuen Schlüssel eingeben, um zu ersetzen)',
         },
         security: {
           secure: 'Sicher',
