@@ -25,6 +25,7 @@ import {
   Input,
   Upload,
   Avatar,
+  theme,
 } from 'antd';
 import {
   CustomerServiceOutlined,
@@ -63,6 +64,7 @@ interface SupportTicketsTabProps {
 }
 
 export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
+  const { token } = theme.useToken();
   const queryClient = useQueryClient();
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -273,7 +275,9 @@ export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
         />
         <div
           style={{
-            background: isStaff ? '#e6f7ff' : '#f5f5f5',
+            // colorPrimary + alpha instead of colorPrimaryBg: the app's dark theme
+            // overrides tokens by hand (no darkAlgorithm), so derived *Bg stays light
+            background: isStaff ? `${token.colorPrimary}1F` : token.colorFillTertiary,
             borderRadius: 8,
             padding: '8px 12px',
             maxWidth: '80%',
@@ -447,7 +451,7 @@ export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
 
             <div
               style={{
-                background: '#f5f5f5',
+                background: token.colorFillTertiary,
                 padding: 16,
                 borderRadius: 8,
                 whiteSpace: 'pre-wrap',
