@@ -124,7 +124,14 @@ export function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.message || t('settings.saveError'));
+      const response = error.response;
+      if (response?.status === 422 && response.data?.errors) {
+        // Surface the first validation message from the Laravel 422 response
+        const firstValidationError = Object.values(response.data.errors as Record<string, string[]>).flat()[0];
+        message.error(firstValidationError || response.data?.message || t('settings.saveError'));
+      } else {
+        message.error(response?.data?.message || t('settings.saveError'));
+      }
     },
   });
 
@@ -239,11 +246,6 @@ export function SettingsPage() {
                     { value: 10, label: t('settings.uptime.intervalOptions.min10', '10 Minutes') },
                     { value: 15, label: t('settings.uptime.intervalOptions.min15', '15 Minutes') },
                     { value: 30, label: t('settings.uptime.intervalOptions.min30', '30 Minutes') },
-                    { value: 60, label: '1 Hour' },
-                    { value: 120, label: '2 Hours' },
-                    { value: 360, label: '6 Hours' },
-                    { value: 720, label: '12 Hours' },
-                    { value: 1440, label: '24 Hours' },
                   ]}
                 />
               </Form.Item>

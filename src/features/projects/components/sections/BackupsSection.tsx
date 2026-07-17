@@ -53,7 +53,7 @@ export default function BackupsSection({ project }: BackupsSectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { message, modal } = App.useApp();
   const queryClient = useQueryClient();
-  const hasLsmConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.has_health_check_secret;
 
   // Fetch backups from API
   const { data: backupsData, isLoading, refetch } = useQuery({

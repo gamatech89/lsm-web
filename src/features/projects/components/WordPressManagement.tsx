@@ -59,14 +59,14 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
   const { data: lsmStatus, isLoading: statusLoading } = useQuery({
     queryKey: ['lsm-status', project.id],
     queryFn: () => api.lsm.getStatus(project.id).then(r => r.data),
-    enabled: !!project.health_check_secret,
+    enabled: !!project.has_health_check_secret,
   });
 
   // Get available updates
   const { data: updates, isLoading: updatesLoading, refetch: refetchUpdates } = useQuery({
     queryKey: ['lsm-updates', project.id],
     queryFn: () => api.lsm.getUpdates(project.id).then(r => r.data),
-    enabled: !!project.health_check_secret && lsmStatus?.connected,
+    enabled: !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
   });
 
@@ -186,7 +186,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
   };
 
   // Not configured state
-  if (!project.health_check_secret) {
+  if (!project.has_health_check_secret) {
     return (
       <div style={{ padding: '24px 0' }}>
         <Alert

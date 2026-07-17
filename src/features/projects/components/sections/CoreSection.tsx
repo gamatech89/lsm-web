@@ -48,7 +48,7 @@ export default function CoreSection({ project }: CoreSectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const hasLsmConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.has_health_check_secret;
 
   // Fetch health data
   const { data: healthData, isLoading: isLoadingHealth, refetch: refetchHealth } = useQuery({

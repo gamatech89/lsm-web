@@ -10,6 +10,7 @@ import { Row, Col, Card, Typography, Tag, Space, Statistic, Progress, Divider, B
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
+  ExclamationCircleOutlined,
   GlobalOutlined,
   SafetyCertificateOutlined,
   CalendarOutlined,
@@ -136,7 +137,7 @@ export function OverviewSection({
   const sslDisplay = getSslDisplay();
 
   // Check if plugin is connected
-  const isPluginConnected = !!project.health_check_secret;
+  const isPluginConnected = !!project.has_health_check_secret;
 
   // Fetch real uptime stats from historical data
   const { data: uptimeStats } = useQuery({
@@ -144,6 +145,7 @@ export function OverviewSection({
     queryFn: () => apiClient.get(`/projects/${project.id}/uptime-stats?days=30`).then(r => r.data?.data),
     enabled: isPluginConnected,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchInterval: 60000,
     retry: 1,
   });
 
@@ -252,13 +254,19 @@ export function OverviewSection({
                 width: 40,
                 height: 40,
                 borderRadius: 8,
-                background: project.health_status === 'online' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                background: project.health_status === 'online'
+                  ? 'rgba(34, 197, 94, 0.1)'
+                  : project.health_status === 'updating' || project.health_status === 'confirming_down'
+                    ? 'rgba(245, 158, 11, 0.1)'
+                    : 'rgba(239, 68, 68, 0.1)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
                 {project.health_status === 'online' ? (
                   <CheckCircleOutlined style={{ fontSize: 20, color: '#22c55e' }} />
+                ) : project.health_status === 'updating' || project.health_status === 'confirming_down' ? (
+                  <ExclamationCircleOutlined style={{ fontSize: 20, color: '#f59e0b' }} />
                 ) : (
                   <CloseCircleOutlined style={{ fontSize: 20, color: '#ef4444' }} />
                 )}

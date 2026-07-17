@@ -115,7 +115,7 @@ export function ProjectDetailPageV2() {
   const { data: lsmStatus } = useQuery({
     queryKey: ['lsm-status', projectId],
     queryFn: () => api.lsm.getStatus(projectId).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project?.health_check_secret,
+    enabled: !!project?.has_health_check_secret,
     staleTime: 30000,
   });
 
@@ -123,7 +123,7 @@ export function ProjectDetailPageV2() {
   const { data: recoveryStatus, refetch: refetchRecoveryStatus } = useQuery({
     queryKey: ['lsm-recovery-status', projectId],
     queryFn: () => api.lsm.getRecoveryStatus(projectId).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project?.health_check_secret && lsmStatus?.connected,
+    enabled: !!project?.has_health_check_secret && lsmStatus?.connected,
     staleTime: 10000,
   });
 
@@ -131,7 +131,7 @@ export function ProjectDetailPageV2() {
   const { data: navUpdates } = useQuery({
     queryKey: ['lsm-updates', projectId],
     queryFn: () => api.lsm.getUpdates(projectId).then(r => (r.data as any)?.data || r.data),
-    enabled: !!project?.health_check_secret && lsmStatus?.connected,
+    enabled: !!project?.has_health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
   });
 
@@ -411,7 +411,7 @@ export function ProjectDetailPageV2() {
               themes: themeUpdateCount,
               core: coreUpdateCount,
             }}
-            hasLsmConnection={!!project.health_check_secret && lsmStatus?.connected}
+            hasLsmConnection={!!project.has_health_check_secret && lsmStatus?.connected}
             canManageCredentials={canManageCredentials}
           />
         </div>
@@ -490,7 +490,7 @@ export function ProjectDetailPageV2() {
             themes: themeUpdateCount,
             core: coreUpdateCount,
           }}
-          hasLsmConnection={!!project.health_check_secret && lsmStatus?.connected}
+          hasLsmConnection={!!project.has_health_check_secret && lsmStatus?.connected}
         />
       </Modal>
     </div>

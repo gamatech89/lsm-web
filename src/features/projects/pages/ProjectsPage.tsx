@@ -143,6 +143,8 @@ export function ProjectsPage() {
     { label: `● ${t('projects.health.online')}`, value: 'online', color: '#10b981' },
     { label: `● ${t('projects.health.down_error')}`, value: 'down_error', color: '#ef4444' },
     { label: `● ${t('projects.health.maintenance')}`, value: 'updating', color: '#f59e0b' },
+    // Transient state set by the uptime monitor — shown for display, not manually selectable
+    { label: `● ${t('projects.health.confirming_down')}`, value: 'confirming_down', color: '#f59e0b', disabled: true },
   ];
 
   const securityOptions = [
@@ -159,7 +161,7 @@ export function ProjectsPage() {
       key: 'name',
       width: 260,
       render: (_, record) => {
-        const isConnected = !!(record as any).health_check_secret;
+        const isConnected = !!(record as any).has_health_check_secret;
         const hasMaintenance = !!(record as any).maintenance_id;
         
         // Ring = plugin connected. Color = green if maintenance, purple otherwise
@@ -407,6 +409,7 @@ export function ProjectsPage() {
           options={healthOptions.map(o => ({
             label: <span style={{ color: o.color, fontSize: 12.5 }}>{o.label}</span>,
             value: o.value,
+            disabled: (o as { disabled?: boolean }).disabled,
           }))}
           dropdownStyle={{ minWidth: 120 }}
         />

@@ -66,7 +66,7 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
   const isDark = resolvedTheme === 'dark';
   const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const hasLsmConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.has_health_check_secret;
 
   // Fetch all themes
   const { data: themesData, isLoading, refetch } = useQuery({

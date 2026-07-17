@@ -73,7 +73,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   // Check if WordPress is connected
-  const hasLsmConnection = !!project.health_check_secret;
+  const hasLsmConnection = !!project.has_health_check_secret;
 
   // Fetch all plugins
   const { data: pluginsData, isLoading: pluginsLoading, refetch } = useQuery({

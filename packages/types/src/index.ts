@@ -88,7 +88,8 @@ export interface Project {
   php_version: string | null;
   outdated_plugins_count: number | null;
   last_health_details: Record<string, unknown> | null;
-  health_check_secret: string | null;
+  /** Whether a health check secret (WP plugin API key) is configured. The secret itself is never returned by the API. */
+  has_health_check_secret?: boolean;
 
   // Monitoring toggles
   uptime_monitoring_enabled: boolean | null;
