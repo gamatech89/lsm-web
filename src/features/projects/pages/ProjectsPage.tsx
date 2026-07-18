@@ -84,7 +84,7 @@ export function ProjectsPage() {
 
   // Fetch projects
   const { data, isLoading, refetch } = useQuery({
-    queryKey: queryKeys.projects.list(filters as Record<string, unknown>),
+    queryKey: queryKeys.projects.list(filters),
     queryFn: () => api.projects.list(filters).then(r => r.data),
   });
 

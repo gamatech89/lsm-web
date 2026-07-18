@@ -9,7 +9,10 @@
 // Never hand-write a key literal outside this file.
 
 type Id = number | string;
-type Filters = Record<string, unknown> | undefined;
+// Any object shape is a valid filter bag. Deliberately `object` rather than
+// Record<string, unknown>: a concrete interface without an index signature
+// does not satisfy Record, which would force a cast at every call site.
+type Filters = object | undefined;
 
 const n = (id: Id) => Number(id);
 
