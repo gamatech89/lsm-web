@@ -31,7 +31,7 @@ export function DeveloperDashboard() {
 
   // Fetch Assigned Tasks (limit 20 from backend)
   const { data: myTodos } = useQuery({
-    queryKey: ['todos', 'my-tasks'],
+    queryKey: queryKeys.todos.myTasks(),
     queryFn: () => apiClient.get('/my-todos').then(r => r.data.data),
   });
 

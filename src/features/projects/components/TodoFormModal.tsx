@@ -21,10 +21,11 @@ import {
   Space,
 } from 'antd';
 import { UploadOutlined, PaperClipOutlined, LinkOutlined, FileTextOutlined } from '@ant-design/icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
 import { priorityOptions, CONTROL_HEIGHT } from '../constants';
+import { useInvalidateTodos } from '../hooks/useInvalidateTodos';
 import type { Todo } from '@lsm/types';
 import type { UploadFile } from 'antd';
 import type { LibraryResource } from '@/lib/library-resources-api';
@@ -54,7 +55,7 @@ export function TodoFormModal({
   projectResources = [],
 }: TodoFormModalProps) {
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
+  const invalidateTodos = useInvalidateTodos();
   const [form] = Form.useForm();
   const isEditMode = !!todo;
   const [fileList, setFileList] = useState<UploadFile[]>([]);
@@ -73,7 +74,7 @@ export function TodoFormModal({
     mutationFn: (data: any) => api.todos.create(projectId, data),
     onSuccess: () => {
       message.success('Todo created successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+      invalidateTodos(projectId);
       handleClose();
     },
     onError: () => {
@@ -86,7 +87,7 @@ export function TodoFormModal({
     mutationFn: (data: any) => api.todos.update(todo!.id, data),
     onSuccess: () => {
       message.success('Todo updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+      invalidateTodos(projectId);
       handleClose();
     },
     onError: () => {

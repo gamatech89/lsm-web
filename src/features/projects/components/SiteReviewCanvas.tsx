@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useThemeStore } from '@/stores/theme';
 import type { SiteReview, SiteReviewAnnotation } from '@/lib/site-reviews-api';
 
@@ -200,6 +201,8 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
       api.siteReviews.createTodoFromAnnotation(annotationId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(review.project_id) });
       message.success('Todo created!');
     },
     onError: () => message.error('Failed to create Todo'),

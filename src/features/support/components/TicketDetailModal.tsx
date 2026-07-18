@@ -39,6 +39,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { SupportTicket, SupportTicketAttachment, SupportTicketMessage } from '@/lib/support-tickets-api';
 import {
   TICKET_TYPE_LABELS,
@@ -165,6 +166,10 @@ export function TicketDetailModal({ ticket, open, onClose, invalidateKeys = [] }
     mutationFn: (ticketId: number) => api.supportTickets.createTodo(ticketId),
     onSuccess: () => {
       invalidateAll();
+      queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
+      if (ticket?.project_id) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(ticket.project_id) });
+      }
       message.success('Todo created from ticket!');
       handleClose();
     },

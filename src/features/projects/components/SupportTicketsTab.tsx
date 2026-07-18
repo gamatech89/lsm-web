@@ -27,6 +27,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { SupportTicket } from '@/lib/support-tickets-api';
 import {
   TICKET_TYPE_LABELS,
@@ -217,7 +218,7 @@ export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
         ticket={selectedTicket}
         open={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
-        invalidateKeys={[listKey, ['todos', project.id]]}
+        invalidateKeys={[listKey, queryKeys.todos.all(), queryKeys.projects.detail(project.id)]}
       />
 
       <style>{`

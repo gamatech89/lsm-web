@@ -37,6 +37,8 @@ import { formatDate } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
 import { useHasRole, useIsAdmin } from '@/stores/auth';
 import { statusOptions, priorityOptions } from '../constants';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidateTodos } from '../hooks/useInvalidateTodos';
 import type { Todo } from '@lsm/types';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -99,6 +101,7 @@ export function TodoDetailModal({
 }: TodoDetailModalProps) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const invalidateTodos = useInvalidateTodos();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
   const isDevRole = useHasRole('developer');
@@ -123,8 +126,8 @@ export function TodoDetailModal({
   const [logTimeDescription, setLogTimeDescription] = useState('');
 
   // Fetch linked time entries
-  const { data: timeEntries, refetch: refetchTimeEntries } = useQuery({
-    queryKey: ['time-entries', 'todo', todo?.id],
+  const { data: timeEntries } = useQuery({
+    queryKey: queryKeys.time.forTodo(todo?.id),
     queryFn: () => api.timeEntries.list({ todo_id: todo?.id }).then(r => r.data.data),
     enabled: !!todo?.id,
   });
@@ -193,7 +196,7 @@ export function TodoDetailModal({
   const updateMutation = useMutation({
     mutationFn: (data: any) => api.todos.update(todo!.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+      invalidateTodos(projectId);
     },
     onError: () => message.error('Failed to update todo'),
   });
@@ -203,7 +206,7 @@ export function TodoDetailModal({
     mutationFn: () => api.todos.delete(todo!.id),
     onSuccess: () => {
       message.success('Todo deleted');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+      invalidateTodos(projectId);
       onClose();
     },
     onError: () => message.error('Failed to delete todo'),
@@ -217,7 +220,11 @@ export function TodoDetailModal({
       setIsLoggingTime(false);
       setLogTimeMinutes('');
       setLogTimeDescription('');
-      refetchTimeEntries();
+      queryClient.invalidateQueries({ queryKey: queryKeys.time.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.timer.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.analytics.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all() });
     },
     onError: () => message.error('Failed to log time'),
   });
@@ -227,7 +234,11 @@ export function TodoDetailModal({
     mutationFn: (id: number) => api.timeEntries.delete(id),
     onSuccess: () => {
       message.success('Time entry deleted');
-      refetchTimeEntries();
+      queryClient.invalidateQueries({ queryKey: queryKeys.time.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.timer.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.analytics.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all() });
     },
   });
 
