@@ -121,7 +121,7 @@ export const queryKeys = {
     list: (filters?: Filters) => ['projects', 'list', filters ?? {}] as const,
     stats: () => ['projects', 'stats'] as const,
     filterOptions: () => ['projects', 'filter-options'] as const,
-    active: (userId?: Id) => ['projects', 'active', userId ?? null] as const,
+    active: (userId?: Id) => ['projects', 'active', userId == null ? null : n(userId)] as const,
 
     detail: (id: Id) => ['projects', n(id)] as const,
 
@@ -590,14 +590,23 @@ Do **not** delete the existing narrower invalidations where they also touch a *d
 
 `PluginsSection.tsx:228` — `toggleAutoUpdateMutation` has no `mutationFn` calling the API; it resolves `{ success: false }` and the toggle silently does nothing.
 
-First check whether the endpoint exists:
+**Already investigated — do not re-check.** `grep -rniE "auto.?update" ../lsm-api/routes/api.php` returns nothing: no auto-update endpoint exists on the server. The feature is unimplemented backend-side.
 
-```bash
-grep -rn "auto.update\|autoUpdate\|auto_update" ../lsm-api/routes/api.php
+**Decision (confirmed with the product owner 2026-07-19): disable the toggle, keep it visible.** Do not delete the control — the feature is wanted later. Do not fake it either.
+
+Render the toggle `disabled` and wrap it in a tooltip explaining why:
+
+```tsx
+<Tooltip title="Auto-update management is not available yet">
+  <Switch
+    checked={plugin.auto_update}
+    disabled
+    // no onChange — the mutation is removed
+  />
+</Tooltip>
 ```
 
-- **If an endpoint exists:** wire the mutation to it, following the shape of `toggleActiveMutation` immediately above it in the same file, with the project-detail invalidation from Step 2.
-- **If no endpoint exists:** the feature is not implemented on the server. Do not fake it — remove the toggle from the UI (or render it `disabled` with a tooltip saying auto-update management is not available yet) and note it in the commit message. A control that reports success while doing nothing is worse than no control.
+Delete `toggleAutoUpdateMutation` entirely, along with any `onChange` handler that called it. A control that reports success while doing nothing is worse than no control; a visibly disabled one is honest.
 
 - [ ] **Step 4: #88 — remove the debug logging**
 
@@ -1135,6 +1144,148 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 ---
 
+### Task 10b: lsm-api — self-service change-password endpoint
+
+**Different repository.** This task runs in `/Users/bmarkovic/Documents/Projects/LSMPlatform/lsm-api`, not `lsm-web`. It must be completed **before Task 11 Step 4**, which wires the frontend form to it.
+
+Added 2026-07-19 after the audit found `ProfilePage.tsx:74` faking a successful password change. `lsm-api` has only the public token-based `POST /reset-password` and the admin `POST /team/{user}/reset-password` — no authenticated user can change their own password. The product owner chose to build the endpoint rather than remove the form.
+
+**Files:**
+- Modify: `app/Http/Controllers/Api/V1/AuthController.php`
+- Modify: `routes/api.php` (near line 119, beside the existing `PUT /user/profile`)
+- Create: `tests/Feature/Auth/ChangePasswordTest.php`
+
+**Interfaces:**
+- Produces: `PUT /api/v1/user/password`, auth:sanctum. Body `{ current_password, password, password_confirmation }`. Returns 200 `{ success: true }`; 422 on validation failure or wrong current password.
+
+**Constraints for this repo:**
+- Branch: create `fix/change-password-endpoint` from `main`.
+- **This repo has a real test harness — use TDD.** `./vendor/bin/pest`. Tests run on SQLite `:memory:`, which behaves differently from production MySQL on enum columns; this task touches no enums, so it is not a concern here.
+- Follow the shape of the neighbouring `updateProfile` method in the same controller.
+
+- [ ] **Step 1: Write the failing test**
+
+```php
+<?php
+// tests/Feature/Auth/ChangePasswordTest.php
+
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
+it('changes the password when the current password is correct', function () {
+    $user = User::factory()->create(['password' => Hash::make('old-password-123')]);
+
+    $response = $this->actingAs($user)->putJson('/api/v1/user/password', [
+        'current_password' => 'old-password-123',
+        'password' => 'new-password-456',
+        'password_confirmation' => 'new-password-456',
+    ]);
+
+    $response->assertOk()->assertJson(['success' => true]);
+    expect(Hash::check('new-password-456', $user->fresh()->password))->toBeTrue();
+});
+
+it('rejects a wrong current password and leaves the password unchanged', function () {
+    $user = User::factory()->create(['password' => Hash::make('old-password-123')]);
+
+    $response = $this->actingAs($user)->putJson('/api/v1/user/password', [
+        'current_password' => 'wrong-password',
+        'password' => 'new-password-456',
+        'password_confirmation' => 'new-password-456',
+    ]);
+
+    $response->assertStatus(422)->assertJsonValidationErrors('current_password');
+    expect(Hash::check('old-password-123', $user->fresh()->password))->toBeTrue();
+});
+
+it('rejects a confirmation mismatch', function () {
+    $user = User::factory()->create(['password' => Hash::make('old-password-123')]);
+
+    $response = $this->actingAs($user)->putJson('/api/v1/user/password', [
+        'current_password' => 'old-password-123',
+        'password' => 'new-password-456',
+        'password_confirmation' => 'different-456',
+    ]);
+
+    $response->assertStatus(422)->assertJsonValidationErrors('password');
+});
+
+it('requires authentication', function () {
+    $this->putJson('/api/v1/user/password', [
+        'current_password' => 'old-password-123',
+        'password' => 'new-password-456',
+        'password_confirmation' => 'new-password-456',
+    ])->assertUnauthorized();
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `./vendor/bin/pest tests/Feature/Auth/ChangePasswordTest.php`
+Expected: FAIL — the route does not exist, so the requests 404 rather than matching the assertions.
+
+- [ ] **Step 3: Add the controller method**
+
+In `app/Http/Controllers/Api/V1/AuthController.php`, beside `updateProfile`:
+
+```php
+public function changePassword(Request $request)
+{
+    $validated = $request->validate([
+        'current_password' => ['required', 'string'],
+        'password' => ['required', 'string', Password::defaults(), 'confirmed'],
+    ]);
+
+    $user = $request->user();
+
+    if (! Hash::check($validated['current_password'], $user->password)) {
+        throw ValidationException::withMessages([
+            'current_password' => __('The provided password does not match your current password.'),
+        ]);
+    }
+
+    $user->update(['password' => Hash::make($validated['password'])]);
+
+    return response()->json(['success' => true]);
+}
+```
+
+Add the imports the file does not already have: `Illuminate\Support\Facades\Hash`, `Illuminate\Validation\ValidationException`, `Illuminate\Validation\Rules\Password`.
+
+- [ ] **Step 4: Register the route**
+
+In `routes/api.php`, immediately after the existing `PUT /user/profile` line (~119):
+
+```php
+Route::put('/user/password', [V1\AuthController::class, 'changePassword'])->name('user.change-password');
+```
+
+- [ ] **Step 5: Run the tests to verify they pass**
+
+Run: `./vendor/bin/pest tests/Feature/Auth/ChangePasswordTest.php`
+Expected: 4 passed.
+
+Then the full suite, to confirm nothing regressed:
+
+Run: `./vendor/bin/pest`
+Expected: no new failures relative to the pre-change baseline. Record the before/after counts in the report.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add app/Http/Controllers/Api/V1/AuthController.php routes/api.php tests/Feature/Auth/ChangePasswordTest.php
+git commit -m "feat: self-service change-password endpoint
+
+The web profile page had a change-password form wired to a stub that
+resolved successfully without calling any API, so users believed they had
+changed passwords they had not. No authenticated self-service endpoint
+existed — only the public reset flow and the admin reset.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
 ### Task 11: Settings, notifications, activity, profile
 
 Spec findings #23, #26, #44, #51, #71, #76.
@@ -1192,13 +1343,29 @@ Add to the `onSuccess` of `ProfilePage.tsx:58` (updateProfile) and `:93` (update
 queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
 ```
 
-`:74` `changePasswordMutation` is **`Promise.resolve({ success: true })`** — it shows a success toast without calling any API, so a user who changes their password there has not changed it. Find the real endpoint:
+`:74` `changePasswordMutation` is **`Promise.resolve({ success: true })`** — it shows a success toast without calling any API, so a user who "changed" their password there did not.
 
-```bash
-grep -rn "password" ../lsm-api/routes/api.php
+**Already investigated — do not re-check.** `lsm-api` has only `POST /reset-password` (public, token-based forgot-password flow) and `POST /team/{user}/reset-password` (admin resetting someone else's). **No authenticated self-service change-password endpoint exists.**
+
+**Decision (confirmed with the product owner 2026-07-19): build the endpoint.** It is covered by **Task 14 of this plan**, in the `lsm-api` repo. Task 14 runs *before* this step.
+
+In this step, wire the existing form to the endpoint Task 14 creates:
+
+```tsx
+const changePasswordMutation = useMutation({
+  mutationFn: (values: { current_password: string; password: string; password_confirmation: string }) =>
+    apiClient.post('/profile/change-password', values),
+  onSuccess: () => {
+    message.success('Password changed');
+    passwordForm.resetFields();
+  },
+  onError: (error: any) => {
+    message.error(error?.response?.data?.message ?? 'Could not change password');
+  },
+});
 ```
 
-Wire the mutation to it. **If no endpoint exists**, remove the form and open a separate issue — do not leave a control that reports a password change it did not make. Call this out explicitly in the commit message either way.
+The form must send `current_password` — verify the form has that field and add it if not. Do **not** ship this step until Task 14 is merged and the endpoint responds.
 
 The remaining 2FA mutations (`:117,127,141,152,163,172`) have no dependent query today (#45); leave them, they are covered when Phase 3 introduces the `auth.me` query.
 

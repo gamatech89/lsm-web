@@ -19,7 +19,7 @@ export const queryKeys = {
     list: (filters?: Filters) => ['projects', 'list', filters ?? {}] as const,
     stats: () => ['projects', 'stats'] as const,
     filterOptions: () => ['projects', 'filter-options'] as const,
-    active: (userId?: Id) => ['projects', 'active', userId ?? null] as const,
+    active: (userId?: Id) => ['projects', 'active', userId == null ? null : n(userId)] as const,
 
     detail: (id: Id) => ['projects', n(id)] as const,
 
