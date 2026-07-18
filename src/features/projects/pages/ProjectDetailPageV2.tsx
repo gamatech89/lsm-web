@@ -43,6 +43,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
 import { useAuthStore, useIsAdmin, useCurrentUser } from '@/stores/auth';
@@ -106,7 +107,7 @@ export function ProjectDetailPageV2() {
 
   // Fetch project
   const { data: project, isLoading, error } = useQuery({
-    queryKey: ['projects', projectId],
+    queryKey: queryKeys.projects.detail(projectId),
     queryFn: () => api.projects.get(projectId).then(r => r.data.data),
     enabled: !!projectId,
   });
@@ -181,7 +182,7 @@ export function ProjectDetailPageV2() {
     mutationFn: () => apiClient.post(`/projects/${projectId}/check-health`),
     onSuccess: () => {
       message.success('Project synced successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
       queryClient.invalidateQueries({ queryKey: ['lsm-status', projectId] });
       queryClient.invalidateQueries({ queryKey: ['lsm-health', projectId] });
     },
@@ -192,6 +193,8 @@ export function ProjectDetailPageV2() {
   const deleteMutation = useMutation({
     mutationFn: () => api.projects.delete(projectId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
       message.success('Project deleted');
       navigate('/projects');
     },

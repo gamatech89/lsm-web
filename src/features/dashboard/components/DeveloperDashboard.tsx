@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/auth';
 import { ActiveTimerWidget } from './widgets/ActiveTimerWidget';
 import { GlassStatCard } from './widgets/GlassStatCard';
@@ -36,7 +37,7 @@ export function DeveloperDashboard() {
 
   // Fetch Active Projects
   const { data: activeProjects } = useQuery({
-    queryKey: ['projects', 'active', user?.id],
+    queryKey: queryKeys.projects.active(user?.id),
     queryFn: () => api.projects.list({ developer_id: user?.id, health: 'all' }).then(r => r.data.data),
     enabled: !!user?.id,
   });

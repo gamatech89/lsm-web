@@ -34,6 +34,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '@/stores/theme';
 import { formatDate, formatRelativeTime, getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { api, apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Project } from '@lsm/types';
 
 const { Text, Title } = Typography;
@@ -62,7 +63,7 @@ export function OverviewSection({
     mutationFn: () => apiClient.post(`/projects/${project.id}/check-health`),
     onSuccess: () => {
       message.success('Project synced successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
       queryClient.invalidateQueries({ queryKey: ['lsm-health', project.id] });
     },
     onError: () => message.error('Failed to sync project'),
@@ -659,7 +660,7 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
 
   // Fetch available developers and managers
   const { data: filterOptions } = useQuery({
-    queryKey: ['project-filter-options'],
+    queryKey: queryKeys.projects.filterOptions(),
     queryFn: () => api.projects.getFilterOptions().then(r => r.data.data),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -670,7 +671,7 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
       api.projects.update(project.id, { developer_ids: developerIds } as any),
     onSuccess: () => {
       message.success('Team updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
       setIsAddingDeveloper(false);
     },
     onError: () => {
@@ -684,7 +685,7 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
       api.projects.update(project.id, { manager_ids: managerIds } as any),
     onSuccess: () => {
       message.success('Managers updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
       setIsAddingPM(false);
     },
     onError: () => {

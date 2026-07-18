@@ -13,6 +13,7 @@ import { ApprovalsWidget } from './widgets/ApprovalsWidget';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Title, Text } = Typography;
 
@@ -38,7 +39,7 @@ export function ManagerDashboard() {
   });
 
   const { data: projects } = useQuery({
-    queryKey: ['projects'],
+    queryKey: queryKeys.projects.all(),
     queryFn: () => api.projects.list().then(r => r.data.data),
   });
 

@@ -20,6 +20,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Project, CreateProjectRequest } from '@lsm/types';
 
 interface ProjectFormModalProps {
@@ -66,8 +67,8 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
     mutationFn: (data: CreateProjectRequest) => api.projects.create(data),
     onSuccess: () => {
       message.success('Project created successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
       onClose();
       form.resetFields();
     },
@@ -88,8 +89,8 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
       api.projects.update(project!.id, data),
     onSuccess: () => {
       message.success('Project updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['projects', project!.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
       onClose();
     },
     onError: (error: any) => {
