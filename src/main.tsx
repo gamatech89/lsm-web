@@ -12,9 +12,15 @@ import './lib/i18n';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      // 30s: long enough to dedupe a burst of mounts, short enough that
+      // returning to a screen shows current data.
+      staleTime: 1000 * 30,
       retry: 1,
-      refetchOnWindowFocus: false,
+      // Focus + reconnect refetching is the safety net that heals the cache
+      // when a mutation forgets to invalidate. Do not disable globally again;
+      // opt individual noisy queries out instead.
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   },
 });
