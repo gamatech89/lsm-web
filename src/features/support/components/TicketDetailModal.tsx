@@ -126,15 +126,16 @@ export function TicketDetailModal({ ticket, open, onClose, invalidateKeys = [] }
 
   // Full ticket (incl. thread) — the list rows don't carry messages/attachments
   const { data: detailResponse, isLoading: detailLoading } = useQuery({
-    queryKey: ['support-ticket-detail', ticket?.id],
+    queryKey: queryKeys.supportTickets.detail(ticket?.id),
     queryFn: () => api.supportTickets.get(ticket!.id),
     enabled: open && !!ticket,
+    refetchInterval: open ? 10_000 : false,
   });
   const ticketDetail: SupportTicket | null =
     ((detailResponse?.data as any)?.data as SupportTicket) ?? (detailResponse?.data as SupportTicket) ?? null;
 
   const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['support-ticket-detail', ticket?.id] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.supportTickets.detail(ticket?.id) });
     invalidateKeys.forEach((key) => queryClient.invalidateQueries({ queryKey: [...key] }));
   };
 
