@@ -55,6 +55,10 @@ export const queryKeys = {
     backupsStats: (id: Id) => ['projects', n(id), 'backups', 'stats'] as const,
     gdprAudit: (id: Id) => ['projects', n(id), 'gdpr-audit'] as const,
     siteReviews: (id: Id) => ['projects', n(id), 'site-reviews'] as const,
+    // Per-review canvas data (pins/annotations for one review), distinct
+    // from the project's site-reviews list above.
+    siteReviewPins: (id: Id, reviewId: Id) =>
+      ['projects', n(id), 'site-reviews', n(reviewId), 'pins'] as const,
     reports: (id: Id) => ['projects', n(id), 'reports'] as const,
     credentials: (id: Id) => ['projects', n(id), 'credentials'] as const,
     activityLog: (id: Id, filters?: Filters) =>
@@ -164,5 +168,8 @@ export const queryKeys = {
 
   share: {
     reviewInfo: (token: string) => ['share', 'review-info', token] as const,
+    // Post-access pins payload (accessShare), distinct from reviewInfo above
+    // which is the pre-password-gate info call (getShare).
+    reviewPins: (token: string) => ['share', 'review-pins', token] as const,
   },
 } as const;

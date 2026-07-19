@@ -31,7 +31,7 @@ import {
   EyeOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatDate } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
@@ -39,6 +39,7 @@ import { useHasRole, useIsAdmin } from '@/stores/auth';
 import { statusOptions, priorityOptions } from '../constants';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidateTodos } from '../hooks/useInvalidateTodos';
+import { useInvalidateTimeData } from '@/features/time/hooks/useInvalidateTimeData';
 import type { Todo } from '@lsm/types';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -100,8 +101,8 @@ export function TodoDetailModal({
   onEdit,
 }: TodoDetailModalProps) {
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
   const invalidateTodos = useInvalidateTodos();
+  const invalidateTimeData = useInvalidateTimeData();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
   const isDevRole = useHasRole('developer');
@@ -220,11 +221,7 @@ export function TodoDetailModal({
       setIsLoggingTime(false);
       setLogTimeMinutes('');
       setLogTimeDescription('');
-      queryClient.invalidateQueries({ queryKey: queryKeys.time.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.timer.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.analytics.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all() });
+      invalidateTimeData();
     },
     onError: () => message.error('Failed to log time'),
   });
@@ -234,11 +231,7 @@ export function TodoDetailModal({
     mutationFn: (id: number) => api.timeEntries.delete(id),
     onSuccess: () => {
       message.success('Time entry deleted');
-      queryClient.invalidateQueries({ queryKey: queryKeys.time.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.timer.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.analytics.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all() });
+      invalidateTimeData();
     },
   });
 

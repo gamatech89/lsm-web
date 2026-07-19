@@ -69,6 +69,35 @@ export default [
           selector: "Property[key.name='queryKey'] > ArrayExpression",
           message: 'Use queryKeys.* from src/lib/queryKeys.ts, not a raw array literal.',
         },
+        {
+          // Catches the same anti-pattern one hop removed: a raw array
+          // literal assigned straight to a `queryKey`-named local and then
+          // passed through (directly or via shorthand), e.g.
+          //   const queryKey = ['site-review', id];
+          //   useQuery({ queryKey, ... });
+          // This is deliberately anchored to the *declaration* site (the
+          // local is literally named `queryKey` and initialized with an
+          // array literal, optionally through a ternary), not the property
+          // *usage* site. A usage-site selector like
+          // `Property[key.name='queryKey'] > Identifier` was tried first and
+          // rejected: esquery has no data-flow/scope analysis, so it cannot
+          // tell a factory-derived identifier (`queryKey: listKey`, or
+          // `invalidateKeys.forEach(key => ... queryKey: key)`) apart from a
+          // raw-literal one — it flagged ~10 genuinely correct call sites
+          // across the app (including this branch's own
+          // useInvalidateTimeData.ts loop). Anchoring on the declaration
+          // instead only fires when the literal itself is written under a
+          // `queryKey` name, which is exactly the SiteReviewCanvas.tsx shape
+          // this was added for. Residual gap: a `queryKey`-named local
+          // assigned via some other indirection (e.g. built up across
+          // several statements, or aliased under a different local name
+          // before being handed to `queryKey`) still isn't caught — closing
+          // that fully would need a scope-aware custom rule, not a
+          // no-restricted-syntax selector.
+          selector:
+            "VariableDeclarator[id.name='queryKey'] > ArrayExpression.init, VariableDeclarator[id.name='queryKey'] > ConditionalExpression.init ArrayExpression",
+          message: 'Use queryKeys.* from src/lib/queryKeys.ts, not a raw array literal assigned to a queryKey local.',
+        },
       ],
 
       // --- Pre-existing noise, deliberately deferred ---

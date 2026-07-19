@@ -167,7 +167,14 @@ export function TicketDetailModal({ ticket, open, onClose, invalidateKeys = [] }
     mutationFn: (ticketId: number) => api.supportTickets.createTodo(ticketId),
     onSuccess: () => {
       invalidateAll();
+      // Not using useInvalidateTodos() here: this modal is shared between
+      // the per-project Support tab and the global Support page (ticket may
+      // have no project_id), and it already has its own caller-supplied
+      // `invalidateKeys` prop contract for cache invalidation. Mirroring the
+      // hook's three targets manually instead, so it stays in sync with
+      // what useInvalidateTodos does for a real project todo write.
       queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
       if (ticket?.project_id) {
         queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(ticket.project_id) });
       }

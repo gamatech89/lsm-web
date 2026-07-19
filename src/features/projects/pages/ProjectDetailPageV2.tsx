@@ -118,6 +118,10 @@ export function ProjectDetailPageV2() {
     queryFn: () => api.lsm.getStatus(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.has_health_check_secret,
     staleTime: 30000,
+    // This proxies out to the customer's live WordPress site (see
+    // src/lib/lsm-api.ts) — opted out of the global refetch-on-focus default
+    // so alt-tabbing back to this page doesn't fire a remote WP round-trip.
+    refetchOnWindowFocus: false,
   });
 
   // Get recovery status
@@ -126,6 +130,8 @@ export function ProjectDetailPageV2() {
     queryFn: () => api.lsm.getRecoveryStatus(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.has_health_check_secret && lsmStatus?.connected,
     staleTime: 10000,
+    // Remote WP round-trip (see status query above) — same opt-out.
+    refetchOnWindowFocus: false,
   });
 
   // Fetch updates for badge counts in sidebar nav
@@ -134,6 +140,8 @@ export function ProjectDetailPageV2() {
     queryFn: () => api.lsm.getUpdates(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.has_health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
+    // Remote WP round-trip (see status query above) — same opt-out.
+    refetchOnWindowFocus: false,
   });
 
   // SSO Login

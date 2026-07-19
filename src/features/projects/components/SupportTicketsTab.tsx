@@ -228,7 +228,12 @@ export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
         ticket={selectedTicket}
         open={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
-        invalidateKeys={[listKey, queryKeys.todos.all(), queryKeys.projects.detail(project.id)]}
+        // Not using useInvalidateTodos() here: TicketDetailModal takes a
+        // caller-supplied invalidateKeys array (its own invalidation
+        // contract, run from invalidateAll() inside the modal) rather than
+        // calling the hook itself. dashboard.all() is included explicitly
+        // to match what useInvalidateTodos does for a real project todo write.
+        invalidateKeys={[listKey, queryKeys.todos.all(), queryKeys.projects.detail(project.id), queryKeys.dashboard.all()]}
       />
 
       <style>{`
