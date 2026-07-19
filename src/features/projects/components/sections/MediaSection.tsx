@@ -34,6 +34,7 @@ import { ConnectWordPressCard } from '../ConnectWordPressCard';
 import { useThemeStore } from '@/stores/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Text } = Typography;
 
@@ -118,6 +119,7 @@ export default function MediaSection({ project }: MediaSectionProps) {
         });
       }
       setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to delete media'),
   });

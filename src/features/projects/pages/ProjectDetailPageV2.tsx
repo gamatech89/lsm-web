@@ -114,7 +114,7 @@ export function ProjectDetailPageV2() {
 
   // Check LSM connection status
   const { data: lsmStatus } = useQuery({
-    queryKey: ['lsm-status', projectId],
+    queryKey: queryKeys.projects.status(projectId),
     queryFn: () => api.lsm.getStatus(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.has_health_check_secret,
     staleTime: 30000,
@@ -122,7 +122,7 @@ export function ProjectDetailPageV2() {
 
   // Get recovery status
   const { data: recoveryStatus, refetch: refetchRecoveryStatus } = useQuery({
-    queryKey: ['lsm-recovery-status', projectId],
+    queryKey: queryKeys.projects.recovery(projectId),
     queryFn: () => api.lsm.getRecoveryStatus(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.has_health_check_secret && lsmStatus?.connected,
     staleTime: 10000,
@@ -130,7 +130,7 @@ export function ProjectDetailPageV2() {
 
   // Fetch updates for badge counts in sidebar nav
   const { data: navUpdates } = useQuery({
-    queryKey: ['lsm-updates', projectId],
+    queryKey: queryKeys.projects.updates(projectId),
     queryFn: () => api.lsm.getUpdates(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.has_health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
@@ -183,8 +183,6 @@ export function ProjectDetailPageV2() {
     onSuccess: () => {
       message.success('Project synced successfully');
       queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
-      queryClient.invalidateQueries({ queryKey: ['lsm-status', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['lsm-health', projectId] });
     },
     onError: () => message.error('Failed to sync project'),
   });

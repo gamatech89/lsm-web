@@ -36,6 +36,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useThemeStore } from '@/stores/theme';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -52,7 +53,7 @@ export default function CoreSection({ project }: CoreSectionProps) {
 
   // Fetch health data
   const { data: healthData, isLoading: isLoadingHealth, refetch: refetchHealth } = useQuery({
-    queryKey: ['lsm-health', project.id],
+    queryKey: queryKeys.projects.health(project.id),
     queryFn: () => api.lsm.getHealth(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -60,7 +61,7 @@ export default function CoreSection({ project }: CoreSectionProps) {
 
   // Fetch updates to check for core updates
   const { data: updatesData, isLoading: isLoadingUpdates, refetch: refetchUpdates } = useQuery({
-    queryKey: ['lsm-updates', project.id],
+    queryKey: queryKeys.projects.updates(project.id),
     queryFn: () => api.lsm.getUpdates(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -73,7 +74,7 @@ export default function CoreSection({ project }: CoreSectionProps) {
       message.success('WordPress core updated successfully');
       refetchHealth();
       refetchUpdates();
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to update WordPress core'),
   });

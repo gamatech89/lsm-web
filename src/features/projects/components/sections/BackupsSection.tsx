@@ -39,6 +39,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '@/stores/theme';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatRelativeTime, formatDate } from '@lsm/utils';
 import type { Backup } from '@/lib/backups-api';
 
@@ -98,6 +99,7 @@ export default function BackupsSection({ project }: BackupsSectionProps) {
     mutationFn: (backupId: number) => api.backups.restore(backupId),
     onSuccess: () => {
       message.info('Backup restore started');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to restore backup'),
   });
