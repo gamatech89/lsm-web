@@ -41,6 +41,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useThemeStore } from '@/stores/theme';
 import type { LibraryResource } from '@/lib/library-resources-api';
 
@@ -74,13 +75,13 @@ export default function LibraryResourcesPage() {
 
   // Fetch library resources
   const { data: resources = [], isLoading } = useQuery({
-    queryKey: ['library-resources'],
+    queryKey: queryKeys.library.list(),
     queryFn: () => api.libraryResources.getAll().then(r => r.data.data || r.data || []),
   });
 
   // Fetch categories
   const { data: categoriesData } = useQuery({
-    queryKey: ['library-resources-categories'],
+    queryKey: queryKeys.library.categories(),
     queryFn: () => api.libraryResources.getCategories().then(r => r.data.data || r.data),
   });
 
@@ -92,7 +93,7 @@ export default function LibraryResourcesPage() {
     mutationFn: (data: FormData) => api.libraryResources.create(data),
     onSuccess: () => {
       message.success(t('library.messages.uploaded'));
-      queryClient.invalidateQueries({ queryKey: ['library-resources'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.library.all() });
       setShowUploadModal(false);
       form.resetFields();
       setFileList([]);
@@ -108,7 +109,7 @@ export default function LibraryResourcesPage() {
       api.libraryResources.update(id, data),
     onSuccess: () => {
       message.success(t('library.messages.updated'));
-      queryClient.invalidateQueries({ queryKey: ['library-resources'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.library.all() });
       setEditingResource(null);
       form.resetFields();
       setFileList([]);
@@ -123,7 +124,7 @@ export default function LibraryResourcesPage() {
     mutationFn: (id: number) => api.libraryResources.delete(id),
     onSuccess: () => {
       message.success(t('library.messages.deleted'));
-      queryClient.invalidateQueries({ queryKey: ['library-resources'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.library.all() });
     },
     onError: () => {
       message.error(t('library.messages.deleteError'));

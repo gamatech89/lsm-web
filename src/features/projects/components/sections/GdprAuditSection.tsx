@@ -53,6 +53,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useThemeStore } from '@/stores/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -83,7 +84,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
   };
 
   const { data: latestReport, isLoading: loadingReport } = useQuery({
-    queryKey: ['gdpr-audit', project.id],
+    queryKey: queryKeys.projects.gdprAudit(project.id),
     queryFn: () => apiClient.get(`/projects/${project.id}/gdpr-audit`).then((r) => r.data?.data),
     enabled: !!project.id,
     staleTime: 1000 * 60 * 5,
@@ -127,7 +128,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
           setActiveStep(0);
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           message.success('GDPR audit completed!');
-          queryClient.invalidateQueries({ queryKey: ['gdpr-audit', project.id] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.projects.gdprAudit(project.id) });
         } else if (data.status === 'failed') {
           setPendingJobId(null);
           setIsPolling(false);
@@ -179,7 +180,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
         setActiveStep(0);
       } else if (data.status === 'completed') {
         message.success('GDPR audit completed!');
-        queryClient.invalidateQueries({ queryKey: ['gdpr-audit', project.id] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects.gdprAudit(project.id) });
       }
     },
     onError: (error: any) => {
@@ -194,6 +195,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
   const saveToReportsMutation = useMutation({
     mutationFn: () => apiClient.post(`/projects/${project.id}/gdpr-audit/${latestReport?.id}/save-report`),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.reports(project.id) });
       message.success(t('gdpr.reportSaved'));
     },
     onError: (error: any) => {

@@ -88,8 +88,7 @@ export function MaintenanceReportFormModal({
     mutationFn: (data: any) => api.maintenanceReports.create(projectId, data),
     onSuccess: () => {
       message.success('Report created successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['project-reports', projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.reports(projectId) });
       handleClose();
     },
     onError: () => message.error('Failed to create report'),
@@ -99,8 +98,7 @@ export function MaintenanceReportFormModal({
     mutationFn: (data: any) => api.maintenanceReports.update(report!.id, data),
     onSuccess: () => {
       message.success('Report updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['project-reports', projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.reports(projectId) });
       handleClose();
     },
     onError: () => message.error('Failed to update report'),

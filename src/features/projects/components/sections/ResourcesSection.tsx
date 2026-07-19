@@ -35,6 +35,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useThemeStore } from '@/stores/theme';
 import { ResourceFormModal } from '../ResourceFormModal';
 
@@ -69,7 +70,7 @@ export default function ResourcesSection({ project }: ResourcesSectionProps) {
 
   // Fetch all available library resources
   const { data: allLibraryResources } = useQuery({
-    queryKey: ['library-resources'],
+    queryKey: queryKeys.library.list(),
     queryFn: () => api.libraryResources.getAll().then(r => r.data.data || r.data),
     staleTime: 5 * 60 * 1000,
   });
@@ -80,16 +81,18 @@ export default function ResourcesSection({ project }: ResourcesSectionProps) {
     onSuccess: () => {
       message.success('Resource deleted');
       queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.library.all() });
     },
   });
 
   // Unlink library resource mutation
   const unlinkMutation = useMutation({
-    mutationFn: (libraryResourceId: number) => 
+    mutationFn: (libraryResourceId: number) =>
       api.libraryResources.unlinkFromProject(libraryResourceId, project.id),
     onSuccess: () => {
       message.success('Library resource unlinked');
       queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.library.all() });
     },
     onError: () => {
       message.error('Failed to unlink resource');
@@ -98,11 +101,12 @@ export default function ResourcesSection({ project }: ResourcesSectionProps) {
 
   // Link library resource mutation
   const linkMutation = useMutation({
-    mutationFn: (libraryResourceId: number) => 
+    mutationFn: (libraryResourceId: number) =>
       api.libraryResources.linkToProject(libraryResourceId, project.id),
     onSuccess: () => {
       message.success('Library resource linked');
       queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.library.all() });
       setShowLibraryModal(false);
       setSelectedLibraryItem(null);
     },

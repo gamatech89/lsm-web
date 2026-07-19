@@ -4,6 +4,7 @@ import { Button, Input, Typography, Spin, Form, App } from 'antd';
 import { LockOutlined, CommentOutlined } from '@ant-design/icons';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { createSiteReviewsApi } from '@/lib/site-reviews-api';
 import { SiteReviewCanvas } from '@/features/projects/components/SiteReviewCanvas';
 import type { SiteReview, SiteReviewAnnotation } from '@/lib/site-reviews-api';
@@ -25,7 +26,7 @@ export function SiteReviewSharePage() {
   const [nameSet, setNameSet] = useState(false);
 
   const { data: shareInfo, isLoading, error } = useQuery({
-    queryKey: ['review-share-info', token],
+    queryKey: queryKeys.share.reviewInfo(token!),
     queryFn: () => reviewsApi.getShare(token!).then(r => r.data.data),
     enabled: !!token,
     retry: false,
