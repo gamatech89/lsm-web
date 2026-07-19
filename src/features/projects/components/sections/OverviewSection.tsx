@@ -64,7 +64,7 @@ export function OverviewSection({
     onSuccess: () => {
       message.success('Project synced successfully');
       queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
-      queryClient.invalidateQueries({ queryKey: ['lsm-health', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.health(project.id) });
     },
     onError: () => message.error('Failed to sync project'),
   });
@@ -152,7 +152,7 @@ export function OverviewSection({
 
   // Fetch site info (content stats)
   const { data: siteInfo, isLoading: isLoadingSiteInfo } = useQuery({
-    queryKey: ['lsm-site-info', project.id],
+    queryKey: queryKeys.projects.siteInfo(project.id),
     queryFn: () => api.lsm.getSiteInfo(project.id).then(r => r.data?.data || r.data),
     enabled: isPluginConnected,
     staleTime: 60000, // 1 minute

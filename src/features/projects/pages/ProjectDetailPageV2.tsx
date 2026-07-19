@@ -121,7 +121,7 @@ export function ProjectDetailPageV2() {
   });
 
   // Get recovery status
-  const { data: recoveryStatus, refetch: refetchRecoveryStatus } = useQuery({
+  const { data: recoveryStatus } = useQuery({
     queryKey: queryKeys.projects.recovery(projectId),
     queryFn: () => api.lsm.getRecoveryStatus(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.has_health_check_secret && lsmStatus?.connected,
@@ -163,7 +163,7 @@ export function ProjectDetailPageV2() {
     mutationFn: () => api.lsm.enableMaintenance(projectId),
     onSuccess: () => {
       message.success('Maintenance mode enabled');
-      refetchRecoveryStatus();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
     },
     onError: () => message.error('Failed to enable maintenance mode'),
   });
@@ -172,7 +172,7 @@ export function ProjectDetailPageV2() {
     mutationFn: () => api.lsm.disableMaintenance(projectId),
     onSuccess: () => {
       message.success('Maintenance mode disabled');
-      refetchRecoveryStatus();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
     },
     onError: () => message.error('Failed to disable maintenance mode'),
   });

@@ -23,6 +23,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useThemeStore } from '@/stores/theme';
 
 const { Title, Text, Paragraph } = Typography;
@@ -56,9 +57,8 @@ export function ConnectWordPressCard({ project, compact = false }: ConnectWordPr
       message.success('API key saved successfully! Connection established.');
       setApiKeyInput('');
       // Invalidate and refetch to update UI
-      await queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
-      await queryClient.invalidateQueries({ queryKey: ['lsm-status', project.id] });
-      await queryClient.refetchQueries({ queryKey: ['projects', project.id] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+      await queryClient.refetchQueries({ queryKey: queryKeys.projects.detail(project.id) });
     } catch (error) {
       message.error('Failed to save API key');
     } finally {
