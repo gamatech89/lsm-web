@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Input, Button, Typography, Spin, Tooltip, App, message as staticMessage } from 'antd';
+import { Input, Button, Typography, Spin, Tooltip, App } from 'antd';
 import {
   LockOutlined, EyeOutlined, EyeInvisibleOutlined, LinkOutlined, SafetyOutlined,
   ClockCircleOutlined, EyeFilled, SnippetsOutlined, CheckOutlined,
@@ -20,7 +20,7 @@ const labelFor = (k: string) => LABELS[k] ?? (k.charAt(0).toUpperCase() + k.slic
 
 export function EphemeralSecretRevealPage() {
   const { token = '' } = useParams();
-  const { message } = App.useApp ? App.useApp() : { message: staticMessage };
+  const { message } = App.useApp();
   useSecureShareStyles();
 
   const [meta, setMeta] = useState<EphemeralSecretMeta | null>(null);

@@ -24,11 +24,6 @@ export function AiChatPanel() {
     dismissError,
   } = useAiChat();
 
-  // Only show for admins (role=admin or is_admin flag)
-  if (user?.role !== 'admin' && !user?.is_admin) {
-    return null;
-  }
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -55,6 +50,13 @@ export function AiChatPanel() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Only show for admins (role=admin or is_admin flag).
+  // Must come after all hooks above so hook call order/count never changes
+  // between renders (react-hooks/rules-of-hooks).
+  if (user?.role !== 'admin' && !user?.is_admin) {
+    return null;
+  }
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

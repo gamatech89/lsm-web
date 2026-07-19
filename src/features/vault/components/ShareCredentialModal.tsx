@@ -8,8 +8,7 @@ import {
   Button, 
   Typography, 
   Result, 
-  Space, 
-  message,
+  Space,
   Divider,
   Alert,
   App,
@@ -45,7 +44,7 @@ export function ShareCredentialModal({ open, onClose, credential }: ShareCredent
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const invalidateCredentials = useInvalidateCredentials();
   const { t } = useTranslation();
-  const { message: antdMessage } = App.useApp ? App.useApp() : { message };
+  const { message: antdMessage } = App.useApp();
 
   // Generate Link Mutation
   const shareMutation = useMutation({

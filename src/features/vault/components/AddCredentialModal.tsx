@@ -1,4 +1,4 @@
-import { Modal, Form, Input, Select, Typography, Row, Col, Space, Switch, message, App } from 'antd';
+import { Modal, Form, Input, Select, Typography, Row, Col, Space, Switch, App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   LockOutlined,
@@ -24,7 +24,7 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
   const [form] = Form.useForm();
   const invalidateCredentials = useInvalidateCredentials();
   const { t } = useTranslation();
-  const { message: antdMessage } = App.useApp ? App.useApp() : { message };
+  const { message: antdMessage } = App.useApp();
 
   const typeOptions = [
     { label: t('vault.types.wordpress'), value: 'wordpress', icon: <GlobalOutlined /> },

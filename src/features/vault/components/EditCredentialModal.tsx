@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Form, Input, Select, Typography, Row, Col, Space, Switch, message, App } from 'antd';
+import { Modal, Form, Input, Select, Typography, Row, Col, Space, Switch, App } from 'antd';
 import {
   LockOutlined,
   GlobalOutlined,
@@ -28,7 +28,7 @@ export function EditCredentialModal({ open, onClose, credential }: EditCredentia
   const [form] = Form.useForm();
   const invalidateCredentials = useInvalidateCredentials();
   const { t } = useTranslation();
-  const { message: antdMessage } = App.useApp ? App.useApp() : { message };
+  const { message: antdMessage } = App.useApp();
 
   const typeOptions = [
     { label: t('vault.types.wordpress'), value: 'wordpress', icon: <GlobalOutlined /> },

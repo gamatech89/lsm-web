@@ -136,7 +136,7 @@ export function TicketDetailModal({ ticket, open, onClose, invalidateKeys = [] }
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.supportTickets.detail(ticket?.id) });
-    invalidateKeys.forEach((key) => queryClient.invalidateQueries({ queryKey: [...key] }));
+    invalidateKeys.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
   };
 
   const replyMutation = useMutation({
