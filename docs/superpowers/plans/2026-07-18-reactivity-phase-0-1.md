@@ -641,6 +641,67 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 ---
 
+### Task 5b: WordPress duplicates and stragglers
+
+**Added 2026-07-19 during execution.** Task 5's file list omitted the three duplicate WordPress management components covered by spec finding #39, plus two stragglers. This is a gap in the plan, not in Task 5's execution — Task 5 correctly stayed inside its stated scope and flagged these.
+
+**Files:**
+- Modify: `src/features/projects/components/WordPressManagementTab.tsx` (5 legacy keys)
+- Modify: `src/features/projects/components/WordPressManagementDrawer.tsx` (3)
+- Modify: `src/features/projects/components/WordPressManagement.tsx` (2)
+- Modify: `src/features/projects/components/ConnectWordPressCard.tsx:60`
+- Modify: `src/features/projects/components/sections/OverviewSection.tsx:67,155`
+- Modify: `src/features/projects/pages/ProjectDetailPageV2.tsx` (maintenance mutations)
+
+Use the same key mapping table as Task 5. `['lsm-status', id]` → `queryKeys.projects.status(id)`, `['lsm-health', id]` → `queryKeys.projects.health(id)`, `['lsm-site-info', id]` → `queryKeys.projects.siteInfo(id)`.
+
+**Do not migrate these — they are false positives, not query keys:** `src/stores/timer.ts:63`, `src/stores/auth.ts:65`, `src/stores/theme.ts:63` (zustand persist storage names), `src/lib/i18n.ts:2642` (localStorage lookup key), `SiteReviewCanvas.tsx:237` (a postMessage event type). They merely contain the string `lsm-`.
+
+- [ ] **Step 1: Migrate the keys per the Task 5 mapping table**
+
+- [ ] **Step 2: #39 — the three duplicates have inconsistent invalidation**
+
+`WordPressManagement.tsx` invalidates after its core update; `WordPressManagementTab.tsx` and `WordPressManagementDrawer.tsx` do not. Across all three, these mutations have zero invalidation: clearCache, optimizeDb, flushRewrite, enableMaintenance, disableMaintenance, disablePlugins, restorePlugins, emergencyRecovery, and no `updateAllPlugins` handler invalidates the updates key.
+
+Give every mutation in all three files the project prefix in `onSuccess`, adding `onSuccess` where absent:
+
+```tsx
+queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+```
+
+Match the actual prop name for the project in each component — it may be `project`, `projectId`, or destructured differently.
+
+- [ ] **Step 3: ProjectDetailPageV2 maintenance mutations**
+
+That page has its own `enableMaintenanceMutation` / `disableMaintenanceMutation` with no cache invalidation — the same defect as Task 5's finding #33, in a file Task 5 did not own. Give both the project-detail invalidation. If they currently call a local `refetchRecoveryStatus()`, the prefix invalidation covers it and the local refetch can go.
+
+- [ ] **Step 4: Verify**
+
+Run: `npm run typecheck && npm run build` — both exit 0.
+
+Then:
+```bash
+grep -rn "queryKey: \['lsm-\|queryKey: \['project-" src/
+```
+Expected: no output.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/features/projects
+git commit -m "fix: WordPress duplicate components and straggler keys
+
+Three near-duplicate WordPress management components had inconsistent
+invalidation — most of their mutations had none at all. Completes the key
+migration Task 5 began; its file list had omitted these.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
+```
+
+**Recorded debt, not done here:** spec #39 also proposes consolidating these three near-duplicate components into one. That is a refactor with its own risk profile, not a freshness fix — leave it for a follow-up and keep this task mechanical.
+
+---
+
 ### Task 6: Time tracking — entries, timer, timesheets, invoices, financial
 
 Spec findings #6, #13, #15, #16, #17.
@@ -752,18 +813,31 @@ export function FloatingTimerWidget() {
 
 `FloatingTimerWidget.tsx:170-188` and `TimerWidget.tsx:118-137` both guard with `&& !runningTimer`, so the store is filled only when empty. Since `stores/timer.ts` persists to localStorage, a timer started on another device is never picked up and a stale persisted timer survives forever — a page refresh does not fix this one.
 
-The server is the source of truth. Sync unconditionally, in both files:
+The server is the source of truth, so the sync must not gate on the store's current value — that gate is the bug.
+
+**Corrected during execution 2026-07-19.** An earlier draft of this step prescribed a fully unconditional `setRunningTimer(currentTimer?.data ?? null)`. That was wrong on two counts, both confirmed in review:
+
+1. **Shape mismatch.** The store's `RunningTimer` needs flat `project_name` / `todo_id` / `todo_name`; the API returns nested `project` / `todo` objects. The raw value type-checks but renders `undefined`. A transform is required.
+2. **Mount-time false clear.** Zustand's `persist` rehydrates synchronously before first render, and `currentTimer?.data` is `undefined` both *before the first fetch resolves* and *when nothing is running*. Writing `null` without distinguishing those two states destroys a legitimately running persisted timer on every mount — strictly worse than the bug being fixed.
+
+The correct shape gates on **fetch state**, never on `runningTimer`:
 
 ```tsx
 useEffect(() => {
-  const serverTimer = currentTimer?.data ?? null;
-  // Server is authoritative: adopt it, and clear a stale persisted timer
-  // when the server says nothing is running.
-  setRunningTimer(serverTimer);
-}, [currentTimer?.data, setRunningTimer]);
+  // Defer until the in-flight fetch settles, so an unresolved query is not
+  // mistaken for "nothing is running" and does not wipe a rehydrated timer.
+  if (isFetching) return;
+  // Deliberately does NOT read runningTimer: gating on the store's current
+  // value is what made this write-once and unfixable by refresh.
+  if (currentTimer?.data) {
+    setRunningTimer(toRunningTimer(currentTimer.data));
+  } else {
+    clearTimer();
+  }
+}, [isFetching, currentTimer?.data, setRunningTimer, clearTimer]);
 ```
 
-Confirm `setRunningTimer` accepts `null` in `src/stores/timer.ts`; widen its type if it does not.
+`isFetching` in the dependency array is what makes this recur: each poll transitions it true→false, so the effect re-evaluates against the server's current answer every interval. `setRunningTimer` already accepts `null` in `src/stores/timer.ts` — no type widening needed.
 
 - [ ] **Step 6: Verify**
 
