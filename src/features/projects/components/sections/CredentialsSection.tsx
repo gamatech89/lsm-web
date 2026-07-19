@@ -50,6 +50,7 @@ import { ShareCredentialModal } from '@/features/vault/components/ShareCredentia
 import { ManageCredentialAccessModal } from '../ManageCredentialAccessModal';
 import { useThemeStore } from '@/stores/theme';
 import { useHasRole, useIsAdmin } from '@/stores/auth';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Text, Title } = Typography;
 
@@ -78,7 +79,7 @@ export default function CredentialsSection({ project }: CredentialsSectionProps)
 
   /* ── data ─────────────────────────────────────────── */
   const { data: credentials, isLoading, refetch } = useQuery({
-    queryKey: ['project-credentials', project.id],
+    queryKey: queryKeys.projects.credentials(project.id),
     queryFn: () => api.credentials.listByProject(project.id).then(r => r.data.data || r.data),
   });
 
@@ -98,7 +99,7 @@ export default function CredentialsSection({ project }: CredentialsSectionProps)
     mutationFn: (id: number) => apiClient.delete(`/credentials/${id}`),
     onSuccess: () => {
       message.success(t('vault.messages.deleted'));
-      queryClient.invalidateQueries({ queryKey: ['project-credentials', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.credentials(project.id) });
     },
     onError: () => message.error(t('common.deleteError')),
   });
@@ -361,11 +362,14 @@ export default function CredentialsSection({ project }: CredentialsSectionProps)
       </Card>
 
       {/* View Modal */}
-      <CredentialViewModal
-        open={!!viewCredential}
-        onClose={() => setViewCredential(null)}
-        credential={viewCredential}
-      />
+      {viewCredential && (
+        <CredentialViewModal
+          key={viewCredential.id}
+          open
+          onClose={() => setViewCredential(null)}
+          credential={viewCredential}
+        />
+      )}
 
       {/* Add / Edit Modal */}
       <CredentialFormModal
@@ -373,26 +377,32 @@ export default function CredentialsSection({ project }: CredentialsSectionProps)
         onClose={() => {
           setAddModalOpen(false);
           setEditCredential(null);
-          queryClient.invalidateQueries({ queryKey: ['project-credentials', project.id] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.projects.credentials(project.id) });
         }}
         projectId={project.id}
         credential={editCredential}
       />
 
       {/* Share Modal */}
-      <ShareCredentialModal
-        open={!!shareCredential}
-        credential={shareCredential}
-        onClose={() => setShareCredential(null)}
-      />
+      {shareCredential && (
+        <ShareCredentialModal
+          key={shareCredential.id}
+          open
+          credential={shareCredential}
+          onClose={() => setShareCredential(null)}
+        />
+      )}
 
       {/* Manage Access Modal */}
-      <ManageCredentialAccessModal
-        open={!!accessCredential}
-        onClose={() => setAccessCredential(null)}
-        credential={accessCredential}
-        projectId={project.id}
-      />
+      {accessCredential && (
+        <ManageCredentialAccessModal
+          key={accessCredential.id}
+          open
+          onClose={() => setAccessCredential(null)}
+          credential={accessCredential}
+          projectId={project.id}
+        />
+      )}
     </div>
   );
 }

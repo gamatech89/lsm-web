@@ -8,8 +8,9 @@ import {
   UserOutlined,
   KeyOutlined
 } from '@ant-design/icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
+import { useInvalidateCredentials } from '../hooks/useInvalidateCredentials';
 
 const { TextArea } = Input;
 
@@ -20,7 +21,7 @@ interface AddCredentialModalProps {
 
 export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
   const [form] = Form.useForm();
-  const queryClient = useQueryClient();
+  const invalidateCredentials = useInvalidateCredentials();
   const { t } = useTranslation();
   const { message: antdMessage } = App.useApp ? App.useApp() : { message };
 
@@ -59,9 +60,9 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
         metadata: Object.keys(metadata).length > 0 ? metadata : null
       });
     },
-    onSuccess: () => {
+    onSuccess: (_response, variables) => {
       antdMessage.success(t('vault.messages.created'));
-      queryClient.invalidateQueries({ queryKey: ['vault'] });
+      invalidateCredentials(variables.project_id);
       handleClose();
     },
     onError: () => {

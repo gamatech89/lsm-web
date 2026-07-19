@@ -29,6 +29,7 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import type { Credential } from '@lsm/types';
+import { useInvalidateCredentials } from '../hooks/useInvalidateCredentials';
 
 const { Text } = Typography;
 
@@ -42,6 +43,7 @@ export function ShareCredentialModal({ open, onClose, credential }: ShareCredent
   const [form] = Form.useForm();
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const invalidateCredentials = useInvalidateCredentials();
   const { t } = useTranslation();
   const { message: antdMessage } = App.useApp ? App.useApp() : { message };
 
@@ -61,6 +63,7 @@ export function ShareCredentialModal({ open, onClose, credential }: ShareCredent
       setGeneratedLink(response.data.data.link);
       setExpiresAt(response.data.data.expires_at);
       antdMessage.success(t('vault.shareModal.success'));
+      invalidateCredentials(credential?.project_id);
     },
     onError: () => {
       antdMessage.error(t('vault.shareModal.error'));

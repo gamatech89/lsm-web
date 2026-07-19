@@ -9,9 +9,10 @@ import {
   UserOutlined,
   KeyOutlined
 } from '@ant-design/icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
 import type { Credential } from '@lsm/types';
+import { useInvalidateCredentials } from '../hooks/useInvalidateCredentials';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -24,7 +25,7 @@ interface EditCredentialModalProps {
 
 export function EditCredentialModal({ open, onClose, credential }: EditCredentialModalProps) {
   const [form] = Form.useForm();
-  const queryClient = useQueryClient();
+  const invalidateCredentials = useInvalidateCredentials();
   const { t } = useTranslation();
   const { message: antdMessage } = App.useApp ? App.useApp() : { message };
 
@@ -75,7 +76,7 @@ export function EditCredentialModal({ open, onClose, credential }: EditCredentia
     },
     onSuccess: () => {
       antdMessage.success(t('vault.messages.updated'));
-      queryClient.invalidateQueries({ queryKey: ['vault'] });
+      invalidateCredentials(credential?.project_id);
       handleClose();
     },
     onError: () => {

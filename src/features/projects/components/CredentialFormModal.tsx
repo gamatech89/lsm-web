@@ -26,9 +26,10 @@ import {
   CloudServerOutlined,
   KeyOutlined,
 } from '@ant-design/icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
 import type { Credential } from '@lsm/types';
+import { useInvalidateCredentials } from '@/features/vault/hooks/useInvalidateCredentials';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -58,7 +59,7 @@ export function CredentialFormModal({
   credential,
 }: CredentialFormModalProps) {
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
+  const invalidateCredentials = useInvalidateCredentials();
   const [form] = Form.useForm();
   const isEditMode = !!credential;
 
@@ -85,8 +86,7 @@ export function CredentialFormModal({
     },
     onSuccess: () => {
       message.success('Credential created successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['vault'] });
+      invalidateCredentials(projectId);
       handleClose();
     },
     onError: () => {
@@ -103,8 +103,7 @@ export function CredentialFormModal({
     },
     onSuccess: () => {
       message.success('Credential updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['vault'] });
+      invalidateCredentials(projectId);
       handleClose();
     },
     onError: () => {

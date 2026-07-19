@@ -42,6 +42,7 @@ import { EditCredentialModal } from '../components/EditCredentialModal';
 import { ManageCredentialAccessModal } from '@/features/projects/components/ManageCredentialAccessModal';
 import { CredentialViewModal } from '@/features/projects/components/CredentialViewModal';
 import { useHasRole, useIsAdmin } from '@/stores/auth';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Title, Text } = Typography;
 
@@ -99,7 +100,7 @@ export function VaultPage() {
 
   /* ── queries & mutations ─────────────────────────── */
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['vault', filters],
+    queryKey: queryKeys.vault.list(filters),
     queryFn: () => api.vault.list(filters).then(r => r.data),
   });
 
@@ -121,7 +122,7 @@ export function VaultPage() {
     mutationFn: (id: number) => apiClient.delete(`/credentials/${id}`),
     onSuccess: () => {
       message.success(t('vault.messages.deleted'));
-      queryClient.invalidateQueries({ queryKey: ['vault'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.vault.all() });
     },
     onError: () => {
       message.error(t('common.deleteError'));
@@ -439,11 +440,14 @@ export function VaultPage() {
         />
       </Card>
 
-      <CredentialViewModal
-        open={!!viewCredential}
-        onClose={() => setViewCredential(null)}
-        credential={viewCredential}
-      />
+      {viewCredential && (
+        <CredentialViewModal
+          key={viewCredential.id}
+          open
+          onClose={() => setViewCredential(null)}
+          credential={viewCredential}
+        />
+      )}
 
       <AddCredentialModal
         open={isAddModalOpen}
@@ -455,11 +459,14 @@ export function VaultPage() {
         onClose={() => setSendSecretOpen(false)}
       />
 
-      <ShareCredentialModal
-        open={!!shareCredential}
-        credential={shareCredential}
-        onClose={() => setShareCredential(null)}
-      />
+      {shareCredential && (
+        <ShareCredentialModal
+          key={shareCredential.id}
+          open
+          credential={shareCredential}
+          onClose={() => setShareCredential(null)}
+        />
+      )}
 
       <EditCredentialModal
         open={!!editCredential}
@@ -467,12 +474,15 @@ export function VaultPage() {
         onClose={() => setEditCredential(null)}
       />
 
-      <ManageCredentialAccessModal
-        open={!!accessCredential}
-        onClose={() => setAccessCredential(null)}
-        credential={accessCredential}
-        projectId={accessCredential?.project_id ?? 0}
-      />
+      {accessCredential && (
+        <ManageCredentialAccessModal
+          key={accessCredential.id}
+          open
+          onClose={() => setAccessCredential(null)}
+          credential={accessCredential}
+          projectId={accessCredential.project_id ?? 0}
+        />
+      )}
     </div>
   );
 }
