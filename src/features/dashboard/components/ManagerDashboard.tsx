@@ -24,19 +24,19 @@ export function ManagerDashboard() {
   
   // Data Fetching
   const { data: dashboardData } = useQuery({
-    queryKey: ['dashboard'],
+    queryKey: queryKeys.dashboard.all(),
     queryFn: () => api.dashboard.get().then(r => r.data.data),
     refetchInterval: 60_000,
   });
 
   const { data: availabilityLogs } = useQuery({
-    queryKey: ['availability'],
+    queryKey: queryKeys.availability.all(),
     queryFn: () => api.availability.list().then(r => r.data.data),
     refetchInterval: 60_000,
   });
 
   const { data: allUsers } = useQuery({
-    queryKey: ['team'],
+    queryKey: queryKeys.team.all(),
     queryFn: () => api.team.list().then(r => r.data.data),
     refetchInterval: 60_000,
   });

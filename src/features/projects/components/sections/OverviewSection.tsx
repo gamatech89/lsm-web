@@ -653,7 +653,7 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
 
   // Fetch availability logs to show absence indicators
   const { data: availabilityLogs } = useQuery({
-    queryKey: ['availability'],
+    queryKey: queryKeys.availability.all(),
     queryFn: () => api.availability.list().then(r => r.data.data),
     staleTime: 60000,
   });
@@ -671,7 +671,9 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
       api.projects.update(project.id, { developer_ids: developerIds } as any),
     onSuccess: () => {
       message.success('Team updated successfully');
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.availability.all() });
       setIsAddingDeveloper(false);
     },
     onError: () => {
@@ -685,7 +687,9 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
       api.projects.update(project.id, { manager_ids: managerIds } as any),
     onSuccess: () => {
       message.success('Managers updated successfully');
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.availability.all() });
       setIsAddingPM(false);
     },
     onError: () => {
