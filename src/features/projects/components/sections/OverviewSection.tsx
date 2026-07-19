@@ -31,6 +31,7 @@ import {
   HddOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '@/stores/theme';
 import { formatDate, formatRelativeTime, getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { api, apiClient } from '@/lib/api';
@@ -57,6 +58,7 @@ export function OverviewSection({
   const isDark = resolvedTheme === 'dark';
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Re-sync (health check)
   const resyncMutation = useMutation({
@@ -142,7 +144,7 @@ export function OverviewSection({
 
   // Fetch real uptime stats from historical data
   const { data: uptimeStats } = useQuery({
-    queryKey: ['uptime-stats', project.id],
+    queryKey: queryKeys.projects.uptimeStats(project.id),
     queryFn: () => apiClient.get(`/projects/${project.id}/uptime-stats?days=30`).then(r => r.data?.data),
     enabled: isPluginConnected,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -200,7 +202,7 @@ export function OverviewSection({
                   icon={<RocketOutlined />}
                   onClick={() => {
                     // Navigate to maintenance section which has the connection UI
-                    window.location.href = `/projects/${project.id}?section=maintenance`;
+                    navigate(`/projects/${project.id}?section=maintenance`);
                   }}
                 >
                   Connect Now

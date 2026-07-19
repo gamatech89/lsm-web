@@ -43,6 +43,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '@/stores/theme';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatRelativeTime } from '@lsm/utils';
 import type { PhpError } from '@/lib/php-errors-api';
 
@@ -64,8 +65,8 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
 
   // Fetch PHP errors from API
   const { data: errorsData, isLoading, refetch } = useQuery({
-    queryKey: ['php-errors', project.id, typeFilter, searchTerm],
-    queryFn: () => api.phpErrors.list(project.id, { 
+    queryKey: queryKeys.projects.phpErrors(project.id, { type: typeFilter, search: searchTerm }),
+    queryFn: () => api.phpErrors.list(project.id, {
       type: typeFilter, 
       search: searchTerm || undefined 
     }).then(r => (r.data as any)?.data || r.data),
@@ -75,7 +76,7 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
 
   // Fetch error stats
   const { data: statsData, refetch: refetchStats } = useQuery({
-    queryKey: ['php-errors-stats', project.id],
+    queryKey: queryKeys.projects.phpErrorsStats(project.id),
     queryFn: () => api.phpErrors.stats(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -86,8 +87,8 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
     mutationFn: () => api.phpErrors.clear(project.id),
     onSuccess: () => {
       message.success('Error log cleared');
-      queryClient.invalidateQueries({ queryKey: ['php-errors', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['php-errors-stats', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.phpErrors(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.phpErrorsStats(project.id) });
     },
     onError: () => message.error('Failed to clear errors'),
   });
@@ -101,8 +102,8 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
       } else {
         message.info('No new errors found on WordPress');
       }
-      queryClient.invalidateQueries({ queryKey: ['php-errors', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['php-errors-stats', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.phpErrors(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.phpErrorsStats(project.id) });
     },
     onError: (error: any) => {
       const errorMsg = error?.response?.data?.error || 'Failed to sync errors from WordPress';
@@ -115,8 +116,8 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
     mutationFn: (errorId: number) => api.phpErrors.resolve(errorId),
     onSuccess: () => {
       message.success('Error marked as resolved');
-      queryClient.invalidateQueries({ queryKey: ['php-errors', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['php-errors-stats', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.phpErrors(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.phpErrorsStats(project.id) });
     },
     onError: () => message.error('Failed to resolve error'),
   });
@@ -126,8 +127,8 @@ export default function IssuesSection({ project }: IssuesSectionProps) {
     mutationFn: (errorId: number) => api.phpErrors.delete(errorId),
     onSuccess: () => {
       message.success('Error deleted');
-      queryClient.invalidateQueries({ queryKey: ['php-errors', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['php-errors-stats', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.phpErrors(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.phpErrorsStats(project.id) });
     },
     onError: () => message.error('Failed to delete error'),
   });

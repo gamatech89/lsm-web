@@ -50,14 +50,14 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
 
   // Fetch users for manager/developer dropdowns
   const { data: users } = useQuery({
-    queryKey: ['team'],
+    queryKey: queryKeys.team.all(),
     queryFn: () => api.team.list({}).then(r => r.data.data),
     staleTime: 1000 * 60 * 5,
   });
 
   // Fetch tags
   const { data: tags } = useQuery({
-    queryKey: ['tags'],
+    queryKey: queryKeys.tags.all(),
     queryFn: () => api.tags.list().then(r => r.data.data),
     staleTime: 1000 * 60 * 5,
   });

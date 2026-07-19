@@ -24,6 +24,7 @@ import { UploadOutlined, PaperClipOutlined, LinkOutlined, FileTextOutlined } fro
 import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { priorityOptions, CONTROL_HEIGHT } from '../constants';
 import { useInvalidateTodos } from '../hooks/useInvalidateTodos';
 import type { Todo } from '@lsm/types';
@@ -64,7 +65,7 @@ export function TodoFormModal({
 
   // Fetch library resources for linking
   const { data: libraryResources = [] } = useQuery({
-    queryKey: ['library-resources'],
+    queryKey: queryKeys.library.list(),
     queryFn: () => api.libraryResources.getAll().then(r => r.data.data || r.data || []),
     enabled: open,
   });

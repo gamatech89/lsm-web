@@ -58,7 +58,7 @@ export default function BackupsSection({ project }: BackupsSectionProps) {
 
   // Fetch backups from API
   const { data: backupsData, isLoading, refetch } = useQuery({
-    queryKey: ['backups', project.id],
+    queryKey: queryKeys.projects.backups(project.id),
     queryFn: () => api.backups.list(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -66,7 +66,7 @@ export default function BackupsSection({ project }: BackupsSectionProps) {
 
   // Fetch backup stats
   const { data: statsData } = useQuery({
-    queryKey: ['backups-stats', project.id],
+    queryKey: queryKeys.projects.backupsStats(project.id),
     queryFn: () => api.backups.stats(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -77,8 +77,8 @@ export default function BackupsSection({ project }: BackupsSectionProps) {
     mutationFn: () => api.backups.create(project.id, { type: 'manual' }),
     onSuccess: () => {
       message.success('Backup started');
-      queryClient.invalidateQueries({ queryKey: ['backups', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['backups-stats', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.backups(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.backupsStats(project.id) });
     },
     onError: () => message.error('Failed to create backup'),
   });
@@ -88,8 +88,8 @@ export default function BackupsSection({ project }: BackupsSectionProps) {
     mutationFn: (backupId: number) => api.backups.delete(backupId),
     onSuccess: () => {
       message.success('Backup deleted');
-      queryClient.invalidateQueries({ queryKey: ['backups', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['backups-stats', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.backups(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.backupsStats(project.id) });
     },
     onError: () => message.error('Failed to delete backup'),
   });

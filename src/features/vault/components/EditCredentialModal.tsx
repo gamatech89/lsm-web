@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Credential } from '@lsm/types';
 import { useInvalidateCredentials } from '../hooks/useInvalidateCredentials';
 
@@ -42,7 +43,7 @@ export function EditCredentialModal({ open, onClose, credential }: EditCredentia
 
   // Fetch Projects
   const { data: projectsData } = useQuery({
-    queryKey: ['projects', 'list'],
+    queryKey: queryKeys.projects.list(),
     queryFn: () => api.projects.list().then(r => r.data.data),
     enabled: open
   });

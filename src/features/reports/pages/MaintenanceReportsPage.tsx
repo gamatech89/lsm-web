@@ -53,7 +53,7 @@ export function MaintenanceReportsPage() {
 
   // Fetch project for name
   const { data: project } = useQuery({
-    queryKey: ['projects', pid],
+    queryKey: queryKeys.projects.detail(pid),
     queryFn: () => api.projects.get(pid).then(r => r.data.data),
     enabled: !!pid,
   });

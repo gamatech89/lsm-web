@@ -86,6 +86,7 @@ export function ProjectsPage() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: queryKeys.projects.list(filters),
     queryFn: () => api.projects.list(filters).then(r => r.data),
+    refetchInterval: 60_000,
   });
 
   // Fetch stats

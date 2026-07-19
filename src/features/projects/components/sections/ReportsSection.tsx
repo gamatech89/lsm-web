@@ -61,7 +61,7 @@ export default function ReportsSection({ project }: ReportsSectionProps) {
     onSuccess: () => {
       message.success('Report deleted');
       queryClient.invalidateQueries({ queryKey: queryKeys.projects.reports(project.id) });
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => {
       message.error('Failed to delete report');

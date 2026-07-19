@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidateCredentials } from '../hooks/useInvalidateCredentials';
 
 const { TextArea } = Input;
@@ -38,7 +39,7 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
 
   // Fetch Projects for Selector
   const { data: projectsData, isLoading: isLoadingProjects } = useQuery({
-    queryKey: ['projects', 'list'],
+    queryKey: queryKeys.projects.list(),
     queryFn: () => api.projects.list().then(r => r.data.data),
     enabled: open
   });

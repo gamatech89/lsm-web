@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '@/stores/theme';
 import { useAuthStore } from '@/stores/auth';
 import { api, apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface UptimeSectionProps {
   project: any;
@@ -42,7 +43,7 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
 
   // Fetch real uptime stats from historical data
   const { data: uptimeData, isError: isUptimeStatsError, refetch: refetchUptime } = useQuery({
-    queryKey: ['uptime-stats', project.id],
+    queryKey: queryKeys.projects.uptimeStats(project.id),
     queryFn: () => apiClient.get(`/projects/${project.id}/uptime-stats?days=30`).then(r => r.data?.data),
     enabled: !!project.url,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -52,7 +53,7 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
 
   // Fetch global monitoring settings to show schedule info (admin-only endpoint)
   const { data: globalSettings } = useQuery({
-    queryKey: ['settings'],
+    queryKey: queryKeys.settings.all(),
     queryFn: () => apiClient.get('/settings').then(r => r.data?.data || r.data),
     staleTime: 1000 * 60 * 10, // 10 minutes
     enabled: isAdmin, // Endpoint returns 403 for non-admins
@@ -69,19 +70,17 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
       } else {
         message.success('Health check completed');
       }
-      // Refresh project data and uptime stats using correct keys
-      // Use string to match how projectId is used in ProjectDetailPageV2
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['projects', Number(project.id)] });
-      queryClient.invalidateQueries({ queryKey: ['projects'] }); // Also invalidate list
-      queryClient.invalidateQueries({ queryKey: ['uptime-stats', project.id] });
+      // Refresh project data and uptime stats
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() }); // Also invalidate list
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.uptimeStats(project.id) });
       refetchUptime();
     },
     onError: (error: any) => {
       const errorMsg = error.response?.data?.message || 'Health check failed';
       message.error(errorMsg);
       // Still refresh uptime stats as the failure is logged
-      queryClient.invalidateQueries({ queryKey: ['uptime-stats', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.uptimeStats(project.id) });
       refetchUptime();
     },
   });
@@ -330,8 +329,7 @@ export default function UptimeSection({ project }: UptimeSectionProps) {
                       apiClient.patch(`/projects/${project.id}`, { uptime_monitoring_enabled: checked })
                         .then(() => {
                           message.success(checked ? 'Automatic monitoring enabled' : 'Automatic monitoring disabled');
-                          queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
-                          queryClient.invalidateQueries({ queryKey: ['projects', Number(project.id)] });
+                          queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
                         })
                         .catch(() => message.error('Failed to update monitoring setting'));
                     }}

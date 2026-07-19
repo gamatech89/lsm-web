@@ -80,7 +80,7 @@ export default function ResourcesSection({ project }: ResourcesSectionProps) {
     mutationFn: (resourceId: number) => api.resources.delete(resourceId),
     onSuccess: () => {
       message.success('Resource deleted');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.library.all() });
     },
   });
@@ -91,7 +91,7 @@ export default function ResourcesSection({ project }: ResourcesSectionProps) {
       api.libraryResources.unlinkFromProject(libraryResourceId, project.id),
     onSuccess: () => {
       message.success('Library resource unlinked');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.library.all() });
     },
     onError: () => {
@@ -105,7 +105,7 @@ export default function ResourcesSection({ project }: ResourcesSectionProps) {
       api.libraryResources.linkToProject(libraryResourceId, project.id),
     onSuccess: () => {
       message.success('Library resource linked');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.library.all() });
       setShowLibraryModal(false);
       setSelectedLibraryItem(null);
