@@ -486,9 +486,44 @@ export function PublicSharePage() {
 
   useEffect(() => { injectStyles(); }, []);
 
-  useEffect(() => { fetchMetadata(); }, [token]);
+  const handleError = useCallback((err: unknown) => {
+    const error = err as { response?: { status?: number; data?: { message?: string } } };
+    if (error.response?.status === 404) {
+      setError('This share link is invalid or has expired.');
+    } else if (error.response?.status === 410) {
+      setError('This share link has expired.');
+    } else if (error.response?.status === 429) {
+      setError('Too many access attempts. Please try again later.');
+    } else if (error.response?.status === 403) {
+      message.error('Incorrect password');
+    } else {
+      setError(error.response?.data?.message || 'Unable to load this credential.');
+    }
+  }, []);
 
-  const fetchMetadata = async () => {
+  const revealCredential = useCallback(async (password?: string) => {
+    try {
+      setLoading(true);
+      const response = await apiClient.post(`/share/${token}/access`, { password });
+      if (response.data.success) {
+        setCredential(response.data.data);
+        setRequiresPassword(false);
+        // Update share info from access response
+        if (response.data.share_info) {
+          setShareInfo(response.data.share_info);
+        }
+      }
+    } catch (err: unknown) {
+      handleError(err);
+      if ((err as any).response?.status === 403) {
+        setRequiresPassword(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [token, handleError]);
+
+  const fetchMetadata = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -514,44 +549,9 @@ export function PublicSharePage() {
       handleError(err);
       setLoading(false);
     }
-  };
+  }, [token, revealCredential, handleError]);
 
-  const revealCredential = async (password?: string) => {
-    try {
-      setLoading(true);
-      const response = await apiClient.post(`/share/${token}/access`, { password });
-      if (response.data.success) {
-        setCredential(response.data.data);
-        setRequiresPassword(false);
-        // Update share info from access response
-        if (response.data.share_info) {
-          setShareInfo(response.data.share_info);
-        }
-      }
-    } catch (err: unknown) {
-      handleError(err);
-      if ((err as any).response?.status === 403) {
-        setRequiresPassword(true);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleError = (err: unknown) => {
-    const error = err as { response?: { status?: number; data?: { message?: string } } };
-    if (error.response?.status === 404) {
-      setError('This share link is invalid or has expired.');
-    } else if (error.response?.status === 410) {
-      setError('This share link has expired.');
-    } else if (error.response?.status === 429) {
-      setError('Too many access attempts. Please try again later.');
-    } else if (error.response?.status === 403) {
-      message.error('Incorrect password');
-    } else {
-      setError(error.response?.data?.message || 'Unable to load this credential.');
-    }
-  };
+  useEffect(() => { fetchMetadata(); }, [fetchMetadata]);
 
   const handlePasswordSubmit = () => {
     if (passwordInput) revealCredential(passwordInput);

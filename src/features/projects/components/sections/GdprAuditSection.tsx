@@ -148,7 +148,7 @@ export default function GdprAuditSection({ project }: GdprAuditSectionProps) {
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
-  }, [pendingJobId, project.id, i18n.language]);
+  }, [pendingJobId, project.id, i18n.language, queryClient, message]);
 
   // Elapsed time counter & step progression
   useEffect(() => {
