@@ -1423,12 +1423,16 @@ queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
 
 **Decision (confirmed with the product owner 2026-07-19): build the endpoint.** It is covered by **Task 14 of this plan**, in the `lsm-api` repo. Task 14 runs *before* this step.
 
-In this step, wire the existing form to the endpoint Task 14 creates:
+In this step, wire the existing form to the endpoint Task 10b created.
+
+**The endpoint as actually built is `PUT /user/password`** (relative to the client's `/api/v1` base), not the `POST /profile/change-password` an earlier draft of this plan guessed at. Use the real one.
+
+Note also: on 422 this endpoint returns Laravel's default `{message, errors}` shape with **no top-level `success` key** — same as the existing `updateProfile` endpoint, since both use raw `$request->validate()`. A `success === false` check will not fire; read `error.response.data.message`.
 
 ```tsx
 const changePasswordMutation = useMutation({
   mutationFn: (values: { current_password: string; password: string; password_confirmation: string }) =>
-    apiClient.post('/profile/change-password', values),
+    apiClient.put('/user/password', values),
   onSuccess: () => {
     message.success('Password changed');
     passwordForm.resetFields();
