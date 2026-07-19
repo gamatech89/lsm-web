@@ -25,8 +25,9 @@ import {
   ExclamationCircleOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { SupportTicket } from '@/lib/support-tickets-api';
 import {
   TICKET_TYPE_LABELS,
@@ -47,27 +48,37 @@ interface SupportTicketsTabProps {
 }
 
 export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
+  const queryClient = useQueryClient();
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
-  const listKey = ['support-tickets', project.id] as const;
+  const filters = { projectId: project.id };
+  const listKey = queryKeys.supportTickets.list(filters);
 
   // Fetch tickets
   const { data: ticketsResponse, isLoading } = useQuery({
     queryKey: listKey,
     queryFn: () => api.supportTickets.getAll(project.id),
-    staleTime: 30000,
+    refetchInterval: 60_000,
   });
 
   // Extract tickets from response (handle nested data)
   const tickets = (ticketsResponse?.data as any)?.data || ticketsResponse?.data || [];
+
+  const markAsReadMutation = useMutation({
+    mutationFn: (id: number) => api.supportTickets.markAsRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.supportTickets.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() });
+    },
+  });
 
   // Mark as read when opening detail
   const handleViewTicket = (ticket: SupportTicket) => {
     setSelectedTicket(ticket);
     setDetailModalOpen(true);
     if (!ticket.is_read) {
-      api.supportTickets.markAsRead(ticket.id);
+      markAsReadMutation.mutate(ticket.id);
     }
   };
 
@@ -217,7 +228,12 @@ export function SupportTicketsTab({ project }: SupportTicketsTabProps) {
         ticket={selectedTicket}
         open={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
-        invalidateKeys={[listKey, ['todos', project.id]]}
+        // Not using useInvalidateTodos() here: TicketDetailModal takes a
+        // caller-supplied invalidateKeys array (its own invalidation
+        // contract, run from invalidateAll() inside the modal) rather than
+        // calling the hook itself. dashboard.all() is included explicitly
+        // to match what useInvalidateTodos does for a real project todo write.
+        invalidateKeys={[listKey, queryKeys.todos.all(), queryKeys.projects.detail(project.id), queryKeys.dashboard.all()]}
       />
 
       <style>{`

@@ -22,8 +22,9 @@ import {
   Button,
 } from 'antd';
 import { CustomerServiceOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { SupportTicket } from '@/lib/support-tickets-api';
 import {
   TICKET_TYPE_LABELS,
@@ -39,30 +40,40 @@ dayjs.extend(relativeTime);
 const { Title, Text } = Typography;
 
 function SupportPage() {
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const queryKey = ['support-tickets-global', statusFilter ?? 'all', search] as const;
+  const filters = { status: statusFilter ?? 'all', search };
+  const listKey = queryKeys.supportTickets.list(filters);
 
   const { data: response, isLoading } = useQuery({
-    queryKey,
+    queryKey: listKey,
     queryFn: () =>
       api.supportTickets.getAllGlobal({
         ...(statusFilter ? { status: statusFilter } : {}),
         ...(search.trim() ? { search: search.trim() } : {}),
       }),
-    staleTime: 30000,
+    refetchInterval: 60_000,
   });
 
   const tickets: SupportTicket[] = (response?.data as any)?.data || response?.data || [];
+
+  const markAsReadMutation = useMutation({
+    mutationFn: (id: number) => api.supportTickets.markAsRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.supportTickets.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() });
+    },
+  });
 
   const openTicket = (ticket: SupportTicket) => {
     setSelectedTicket(ticket);
     setDetailOpen(true);
     if (!ticket.is_read) {
-      api.supportTickets.markAsRead(ticket.id);
+      markAsReadMutation.mutate(ticket.id);
     }
   };
 
@@ -218,7 +229,7 @@ function SupportPage() {
         ticket={selectedTicket}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        invalidateKeys={[queryKey]}
+        invalidateKeys={[listKey]}
       />
     </div>
   );

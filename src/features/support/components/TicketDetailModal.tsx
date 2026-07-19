@@ -39,6 +39,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { SupportTicket, SupportTicketAttachment, SupportTicketMessage } from '@/lib/support-tickets-api';
 import {
   TICKET_TYPE_LABELS,
@@ -125,16 +126,17 @@ export function TicketDetailModal({ ticket, open, onClose, invalidateKeys = [] }
 
   // Full ticket (incl. thread) — the list rows don't carry messages/attachments
   const { data: detailResponse, isLoading: detailLoading } = useQuery({
-    queryKey: ['support-ticket-detail', ticket?.id],
+    queryKey: queryKeys.supportTickets.detail(ticket?.id),
     queryFn: () => api.supportTickets.get(ticket!.id),
     enabled: open && !!ticket,
+    refetchInterval: open ? 10_000 : false,
   });
   const ticketDetail: SupportTicket | null =
     ((detailResponse?.data as any)?.data as SupportTicket) ?? (detailResponse?.data as SupportTicket) ?? null;
 
   const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['support-ticket-detail', ticket?.id] });
-    invalidateKeys.forEach((key) => queryClient.invalidateQueries({ queryKey: [...key] }));
+    queryClient.invalidateQueries({ queryKey: queryKeys.supportTickets.detail(ticket?.id) });
+    invalidateKeys.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
   };
 
   const replyMutation = useMutation({
@@ -165,6 +167,17 @@ export function TicketDetailModal({ ticket, open, onClose, invalidateKeys = [] }
     mutationFn: (ticketId: number) => api.supportTickets.createTodo(ticketId),
     onSuccess: () => {
       invalidateAll();
+      // Not using useInvalidateTodos() here: this modal is shared between
+      // the per-project Support tab and the global Support page (ticket may
+      // have no project_id), and it already has its own caller-supplied
+      // `invalidateKeys` prop contract for cache invalidation. Mirroring the
+      // hook's three targets manually instead, so it stays in sync with
+      // what useInvalidateTodos does for a real project todo write.
+      queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
+      if (ticket?.project_id) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(ticket.project_id) });
+      }
       message.success('Todo created from ticket!');
       handleClose();
     },

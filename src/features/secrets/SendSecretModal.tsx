@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Modal, Form, Input, InputNumber, Button, Switch, Select, Typography, Space, Row, Col,
-  Result, Alert, App, message as staticMessage,
+  Result, Alert, App,
 } from 'antd';
 import {
   CopyOutlined, SafetyCertificateOutlined, LockOutlined, GlobalOutlined,
@@ -31,7 +31,7 @@ export function SendSecretModal({ open, onClose }: Props) {
   const [link, setLink] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [hasPassword, setHasPassword] = useState(false);
-  const { message } = App.useApp ? App.useApp() : { message: staticMessage };
+  const { message } = App.useApp();
 
   const typeOptions = [
     { label: t('vault.types.wordpress'), value: 'wordpress', icon: <GlobalOutlined /> },

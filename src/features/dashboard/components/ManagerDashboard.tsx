@@ -13,6 +13,7 @@ import { ApprovalsWidget } from './widgets/ApprovalsWidget';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Title, Text } = Typography;
 
@@ -23,23 +24,27 @@ export function ManagerDashboard() {
   
   // Data Fetching
   const { data: dashboardData } = useQuery({
-    queryKey: ['dashboard'],
+    queryKey: queryKeys.dashboard.all(),
     queryFn: () => api.dashboard.get().then(r => r.data.data),
+    refetchInterval: 60_000,
   });
 
   const { data: availabilityLogs } = useQuery({
-    queryKey: ['availability'],
+    queryKey: queryKeys.availability.all(),
     queryFn: () => api.availability.list().then(r => r.data.data),
+    refetchInterval: 60_000,
   });
 
   const { data: allUsers } = useQuery({
-    queryKey: ['team'],
+    queryKey: queryKeys.team.all(),
     queryFn: () => api.team.list().then(r => r.data.data),
+    refetchInterval: 60_000,
   });
 
   const { data: projects } = useQuery({
-    queryKey: ['projects'],
+    queryKey: queryKeys.projects.all(),
     queryFn: () => api.projects.list().then(r => r.data.data),
+    refetchInterval: 60_000,
   });
 
   const stats = (dashboardData?.stats || { total: 0, online: 0, at_risk: 0, hacked: 0, updating: 0, down: 0 }) as any;

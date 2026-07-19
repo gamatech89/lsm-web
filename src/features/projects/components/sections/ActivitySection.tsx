@@ -40,6 +40,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useThemeStore } from '@/stores/theme';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatRelativeTime } from '@lsm/utils';
 
 const { Title, Text } = Typography;
@@ -67,21 +68,23 @@ export default function ActivitySection({ project }: ActivitySectionProps) {
 
   // Fetch activity from WordPress
   const { data: activityData, isLoading, refetch } = useQuery({
-    queryKey: ['activity-log', project.id, actionFilter],
-    queryFn: () => api.lsm.getActivityFromWp(project.id, { 
+    queryKey: queryKeys.projects.activityLog(project.id, { action: actionFilter }),
+    queryFn: () => api.lsm.getActivityFromWp(project.id, {
       action: actionFilter,
       limit: 100,
     }).then(r => r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
+    refetchInterval: 60_000,
   });
 
   // Fetch activity stats
   const { data: statsData, refetch: refetchStats } = useQuery({
-    queryKey: ['activity-stats', project.id],
+    queryKey: queryKeys.projects.activityStats(project.id),
     queryFn: () => api.lsm.getActivityStatsFromWp(project.id).then(r => r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
+    refetchInterval: 60_000,
   });
 
   // Show empty state if not connected

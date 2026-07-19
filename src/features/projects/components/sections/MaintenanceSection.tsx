@@ -38,6 +38,7 @@ import { ConnectWordPressCard } from '../ConnectWordPressCard';
 import { useThemeStore } from '@/stores/theme';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Text, Title } = Typography;
 
@@ -65,7 +66,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
 
   // Fetch recovery status (includes maintenance mode)
   const { data: recoveryStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
-    queryKey: ['project-recovery-status', project.id],
+    queryKey: queryKeys.projects.recovery(project.id),
     queryFn: () => api.lsm.getRecoveryStatus(project.id).then(r => r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -73,7 +74,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
 
   // Fetch database stats for cleanup preview
   const { data: dbStats, isLoading: dbStatsLoading, refetch: refetchDbStats } = useQuery({
-    queryKey: ['project-db-stats', project.id],
+    queryKey: queryKeys.projects.dbStats(project.id),
     queryFn: () => api.lsm.getDatabaseStats(project.id).then(r => r.data?.data || r.data),
     enabled: hasLsmConnection,
     staleTime: 60000,
@@ -86,13 +87,17 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
       const data = response.data?.data || response.data;
       const clearedList = data?.cleared?.join(', ') || 'all caches';
       message.success(`Cache cleared: ${clearedList}`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to clear cache'),
   });
 
   const flushRewriteMutation = useMutation({
     mutationFn: () => api.lsm.flushRewrite(project.id),
-    onSuccess: () => message.success('Permalinks flushed successfully'),
+    onSuccess: () => {
+      message.success('Permalinks flushed successfully');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+    },
     onError: () => message.error('Failed to flush permalinks'),
   });
 
@@ -103,6 +108,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
       const saved = data?.saved || '0 B';
       const tables = data?.tables_count || 0;
       message.success(`Database optimized: ${tables} tables, ${saved} saved`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to optimize database'),
   });
@@ -132,6 +138,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
         : `Database cleanup: ${total} items removed`;
       message.success(msg);
       refetchDbStats();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to cleanup database'),
   });
@@ -142,6 +149,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
     onSuccess: () => {
       message.success('Maintenance mode enabled');
       refetchStatus();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to enable maintenance mode'),
   });
@@ -151,6 +159,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
     onSuccess: () => {
       message.success('Maintenance mode disabled');
       refetchStatus();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to disable maintenance mode'),
   });
@@ -161,7 +170,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
     onSuccess: () => {
       message.success('All plugins disabled');
       refetchStatus();
-      queryClient.invalidateQueries({ queryKey: ['project-plugins', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to disable plugins'),
   });
@@ -171,7 +180,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
     onSuccess: () => {
       message.success('Plugins restored');
       refetchStatus();
-      queryClient.invalidateQueries({ queryKey: ['project-plugins', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to restore plugins'),
   });
@@ -181,7 +190,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
     onSuccess: () => {
       message.success('Emergency recovery executed');
       refetchStatus();
-      queryClient.invalidateQueries({ queryKey: ['project-plugins', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to execute emergency recovery'),
   });
@@ -234,7 +243,7 @@ export default function MaintenanceSection({ project }: MaintenanceSectionProps)
           </Button>
           <Button
             icon={<SyncOutlined />}
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['project-updates', project.id] })}
+            onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.projects.updates(project.id) })}
           >
             Check Updates
           </Button>

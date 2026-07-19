@@ -40,6 +40,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { getRoleConfig } from '@lsm/utils';
 import { useIsAdmin } from '@/stores/auth';
 import type { User, CreateUserRequest } from '@lsm/types';
@@ -135,20 +136,20 @@ export function TeamPage() {
 
   // Fetch team
   const { data, isLoading } = useQuery({
-    queryKey: ['team', { search, role: roleFilter, tag: tagFilter }],
+    queryKey: queryKeys.team.list({ search, role: roleFilter, tag: tagFilter }),
     queryFn: () => api.team.list({ search, role: roleFilter, tag: tagFilter } as any).then(r => r.data.data),
   });
 
   // Fetch availability logs
   const { data: availabilityLogs } = useQuery({
-    queryKey: ['availability'],
+    queryKey: queryKeys.availability.all(),
     queryFn: () => api.availability.list().then(r => r.data.data),
     staleTime: 60000,
   });
 
   // Fetch tags for filter and form
   const { data: tags } = useQuery({
-    queryKey: ['tags'],
+    queryKey: queryKeys.tags.all(),
     queryFn: () => api.tags.list().then(r => r.data.data),
     staleTime: 1000 * 60 * 5,
   });
@@ -158,7 +159,10 @@ export function TeamPage() {
     mutationFn: (data: CreateUserRequest) => api.team.create(data),
     onSuccess: () => {
       message.success(t('team.messages.created'));
-      queryClient.invalidateQueries({ queryKey: ['team'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.availability.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
       setShowModal(false);
       form.resetFields();
     },
@@ -182,7 +186,10 @@ export function TeamPage() {
       api.team.update(id, data),
     onSuccess: () => {
       message.success(t('team.messages.updated'));
-      queryClient.invalidateQueries({ queryKey: ['team'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.availability.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
       setShowModal(false);
       setEditingUser(null);
       form.resetFields();
@@ -206,7 +213,10 @@ export function TeamPage() {
     mutationFn: (id: number) => api.team.delete(id),
     onSuccess: () => {
       message.success(t('team.messages.deleted'));
-      queryClient.invalidateQueries({ queryKey: ['team'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.availability.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
     },
     onError: () => {
       message.error(t('common.deleteError'));

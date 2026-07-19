@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '@/stores/theme';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { AvailabilityLog } from '@/lib/availability-api';
 
 const SetAvailabilityModal = lazy(() => import('@/features/team/components/SetAvailabilityModal').then(m => ({ default: m.SetAvailabilityModal })));
@@ -51,18 +52,18 @@ export function AdminDashboard() {
   const queryClient = useQueryClient();
   
   const { data: dashboardData, isError: isDashboardError } = useQuery({
-    queryKey: ['dashboard'],
+    queryKey: queryKeys.dashboard.all(),
     queryFn: () => api.dashboard.get().then(r => r.data.data),
     refetchInterval: 60000,
   });
 
   const { data: availabilityLogs } = useQuery({
-    queryKey: ['availability'],
+    queryKey: queryKeys.availability.all(),
     queryFn: () => api.availability.list().then(r => r.data.data),
   });
 
   const { data: allUsers } = useQuery({
-    queryKey: ['team'],
+    queryKey: queryKeys.team.all(),
     queryFn: () => api.team.list().then(r => r.data.data),
   });
 
@@ -71,8 +72,10 @@ export function AdminDashboard() {
     mutationFn: (id: number) => api.availability.destroy(id),
     onSuccess: () => {
       messageApi.success(t('availability.cancelled'));
-      queryClient.invalidateQueries({ queryKey: ['availability'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.availability.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
     },
     onError: () => {
       messageApi.error(t('availability.error'));

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Form, Input, Select, Typography, Row, Col, Space, Switch, message, App } from 'antd';
+import { Modal, Form, Input, Select, Typography, Row, Col, Space, Switch, App } from 'antd';
 import {
   LockOutlined,
   GlobalOutlined,
@@ -9,9 +9,11 @@ import {
   UserOutlined,
   KeyOutlined
 } from '@ant-design/icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Credential } from '@lsm/types';
+import { useInvalidateCredentials } from '../hooks/useInvalidateCredentials';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -24,9 +26,9 @@ interface EditCredentialModalProps {
 
 export function EditCredentialModal({ open, onClose, credential }: EditCredentialModalProps) {
   const [form] = Form.useForm();
-  const queryClient = useQueryClient();
+  const invalidateCredentials = useInvalidateCredentials();
   const { t } = useTranslation();
-  const { message: antdMessage } = App.useApp ? App.useApp() : { message };
+  const { message: antdMessage } = App.useApp();
 
   const typeOptions = [
     { label: t('vault.types.wordpress'), value: 'wordpress', icon: <GlobalOutlined /> },
@@ -41,7 +43,7 @@ export function EditCredentialModal({ open, onClose, credential }: EditCredentia
 
   // Fetch Projects
   const { data: projectsData } = useQuery({
-    queryKey: ['projects', 'list'],
+    queryKey: queryKeys.projects.list(),
     queryFn: () => api.projects.list().then(r => r.data.data),
     enabled: open
   });
@@ -75,7 +77,7 @@ export function EditCredentialModal({ open, onClose, credential }: EditCredentia
     },
     onSuccess: () => {
       antdMessage.success(t('vault.messages.updated'));
-      queryClient.invalidateQueries({ queryKey: ['vault'] });
+      invalidateCredentials(credential?.project_id);
       handleClose();
     },
     onError: () => {

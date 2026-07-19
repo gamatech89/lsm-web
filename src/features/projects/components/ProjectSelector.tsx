@@ -10,6 +10,7 @@ import { Select, Avatar, Space, Typography, Spin, Input, Divider } from 'antd';
 import { SearchOutlined, GlobalOutlined, CheckOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useThemeStore } from '@/stores/theme';
 import type { Project } from '@lsm/types';
 
@@ -28,7 +29,7 @@ export function ProjectSelector({ currentProject }: ProjectSelectorProps) {
 
   // Fetch all projects for the dropdown
   const { data: projectsData, isLoading } = useQuery({
-    queryKey: ['projects-list'],
+    queryKey: queryKeys.projects.list(),
     queryFn: () => api.projects.list({ per_page: 100 }).then(r => r.data.data),
     staleTime: 30000,
     enabled: isOpen,

@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatRelativeTime } from '@lsm/utils';
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '@/stores/theme';
@@ -116,8 +117,9 @@ export default function NotificationsPage() {
 
     // Fetch notifications
     const { data: notificationsData, isLoading } = useQuery({
-        queryKey: ['notifications', 'page', page, perPage],
+        queryKey: queryKeys.notifications.page(page, perPage),
         queryFn: () => api.notifications.list(page, perPage).then(r => r.data),
+        refetchInterval: 30_000,
     });
 
     const notifications = notificationsData?.data?.data || [];
@@ -133,7 +135,7 @@ export default function NotificationsPage() {
     const markReadMutation = useMutation({
         mutationFn: (id: string) => api.notifications.markAsRead(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() });
         },
     });
 
@@ -142,7 +144,7 @@ export default function NotificationsPage() {
         mutationFn: () => api.notifications.markAllAsRead(),
         onSuccess: () => {
             message.success('All notifications marked as read');
-            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() });
         },
     });
 

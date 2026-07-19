@@ -8,7 +8,7 @@
  * - PM vs Developer color distinction
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -48,6 +48,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   extractDomain,
 } from '@lsm/utils';
@@ -83,33 +84,35 @@ export function ProjectsPage() {
 
   // Fetch projects
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['projects', filters],
+    queryKey: queryKeys.projects.list(filters),
     queryFn: () => api.projects.list(filters).then(r => r.data),
+    refetchInterval: 60_000,
   });
 
   // Fetch stats
   const { data: stats, refetch: refetchStats } = useQuery({
-    queryKey: ['projects', 'stats'],
+    queryKey: queryKeys.projects.stats(),
     queryFn: () => api.projects.getStats().then(r => r.data.data),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   // Fetch filter options
   const { data: filterOptions } = useQuery({
-    queryKey: ['projects', 'filter-options'],
+    queryKey: queryKeys.projects.filterOptions(),
     queryFn: () => api.projects.getFilterOptions().then(r => r.data.data),
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
-  // Capture user_id from URL on first render (before searchParams changes)
-  const initialUserIdRef = useRef(searchParams.get('user_id'));
+  // user_id URL param drives the manager/developer filter — read directly from
+  // the URL (not a ref) so a second navigation to /projects?user_id=… while this
+  // page stays mounted re-applies the filter instead of being ignored.
+  const userIdParam = searchParams.get('user_id');
 
   // Resolve user_id URL param → apply the correct manager/developer filter
   useEffect(() => {
-    const userId = initialUserIdRef.current;
-    if (!userId || !filterOptions) return;
+    if (!userIdParam || !filterOptions) return;
 
-    const uid = Number(userId);
+    const uid = Number(userIdParam);
     const isManager = filterOptions.managers?.some((m: any) => m.id === uid);
     const isDeveloper = filterOptions.developers?.some((d: any) => d.id === uid);
 
@@ -119,19 +122,18 @@ export function ProjectsPage() {
       setFilters(f => ({ ...f, developer_id: uid, page: 1 }));
     }
 
-    // Mark as processed and clean up URL
-    initialUserIdRef.current = null;
+    // Clean up URL now that the param has been applied
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('user_id');
     setSearchParams(newParams, { replace: true });
-  }, [filterOptions]);
+  }, [userIdParam, filterOptions]);
 
   // Update project mutation (for inline status changes)
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.projects.update(id, data),
     onSuccess: () => {
       message.success('Status updated');
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
     },
     onError: () => {
       message.error('Failed to update status');

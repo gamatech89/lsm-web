@@ -47,6 +47,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -70,7 +71,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
 
   // Check LSM status
   const { data: lsmStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
-    queryKey: ['lsm-status', project.id],
+    queryKey: queryKeys.projects.status(project.id),
     queryFn: () => api.lsm.getStatus(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: !!project.has_health_check_secret,
     staleTime: 30000,
@@ -78,7 +79,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
 
   // Get health data
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
-    queryKey: ['lsm-health', project.id],
+    queryKey: queryKeys.projects.health(project.id),
     queryFn: () => api.lsm.getHealth(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 30000,
@@ -86,7 +87,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
 
   // Get available updates
   const { data: updates, isLoading: updatesLoading, refetch: refetchUpdates } = useQuery({
-    queryKey: ['lsm-updates', project.id],
+    queryKey: queryKeys.projects.updates(project.id),
     queryFn: () => api.lsm.getUpdates(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
@@ -94,7 +95,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
 
   // Get recovery status (includes maintenance_mode)
   const { data: recoveryStatus, refetch: refetchRecoveryStatus } = useQuery({
-    queryKey: ['lsm-recovery-status', project.id],
+    queryKey: queryKeys.projects.recovery(project.id),
     queryFn: () => api.lsm.getRecoveryStatus(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 10000,
@@ -124,6 +125,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
     onSuccess: (response) => {
       const cleared = response.data.cleared?.length || 0;
       message.success(`Cleared ${cleared} cache type(s)`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to clear cache'),
   });
@@ -132,13 +134,17 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
     mutationFn: () => api.lsm.optimizeDatabase(project.id),
     onSuccess: (response) => {
       message.success(`Optimized ${response.data.tables_count || 0} tables`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to optimize database'),
   });
 
   const flushRewriteMutation = useMutation({
     mutationFn: () => api.lsm.flushRewrite(project.id),
-    onSuccess: () => message.success('Rewrite rules flushed'),
+    onSuccess: () => {
+      message.success('Rewrite rules flushed');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+    },
     onError: () => message.error('Failed to flush rewrite rules'),
   });
 
@@ -148,7 +154,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
       message.success(`Updated ${response.data.updated_count || 0} plugin(s)`);
       refetchUpdates();
       refetchHealth();
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to update plugins'),
   });
@@ -159,6 +165,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
       message.success('WordPress core updated');
       refetchUpdates();
       refetchHealth();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to update WordPress core'),
   });
@@ -168,6 +175,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
     onSuccess: () => {
       message.success('Maintenance mode enabled');
       refetchRecoveryStatus();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to enable maintenance mode'),
   });
@@ -177,6 +185,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
     onSuccess: () => {
       message.success('Maintenance mode disabled');
       refetchRecoveryStatus();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to disable maintenance mode'),
   });
@@ -185,6 +194,7 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
     mutationFn: () => api.lsm.disablePlugins(project.id),
     onSuccess: (response) => {
       message.warning(`Disabled ${response.data.disabled_count || 0} plugin(s)`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to disable plugins'),
   });
@@ -193,13 +203,17 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
     mutationFn: () => api.lsm.restorePlugins(project.id),
     onSuccess: (response) => {
       message.success(`Restored ${response.data.restored_count || 0} plugin(s)`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to restore plugins'),
   });
 
   const emergencyRecoveryMutation = useMutation({
     mutationFn: () => api.lsm.emergencyRecovery(project.id),
-    onSuccess: () => message.warning('Emergency recovery executed!'),
+    onSuccess: () => {
+      message.warning('Emergency recovery executed!');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+    },
     onError: () => message.error('Failed to execute emergency recovery'),
   });
 
@@ -228,9 +242,8 @@ export function WordPressManagementTab({ project }: WordPressManagementTabProps)
       setApiKeyInput('');
       setShowApiKeyModal(false);
       // Invalidate and refetch to ensure UI updates
-      await queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
-      await queryClient.invalidateQueries({ queryKey: ['lsm-status', project.id] });
-      await queryClient.refetchQueries({ queryKey: ['projects', project.id] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+      await queryClient.refetchQueries({ queryKey: queryKeys.projects.detail(project.id) });
       refetchStatus();
     } catch (error) {
       message.error('Failed to save API key');

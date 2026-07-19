@@ -20,6 +20,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Project, CreateProjectRequest } from '@lsm/types';
 
 interface ProjectFormModalProps {
@@ -49,14 +50,14 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
 
   // Fetch users for manager/developer dropdowns
   const { data: users } = useQuery({
-    queryKey: ['team'],
+    queryKey: queryKeys.team.all(),
     queryFn: () => api.team.list({}).then(r => r.data.data),
     staleTime: 1000 * 60 * 5,
   });
 
   // Fetch tags
   const { data: tags } = useQuery({
-    queryKey: ['tags'],
+    queryKey: queryKeys.tags.all(),
     queryFn: () => api.tags.list().then(r => r.data.data),
     staleTime: 1000 * 60 * 5,
   });
@@ -66,8 +67,8 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
     mutationFn: (data: CreateProjectRequest) => api.projects.create(data),
     onSuccess: () => {
       message.success('Project created successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
       onClose();
       form.resetFields();
     },
@@ -88,8 +89,8 @@ export function ProjectFormModal({ open, onClose, project }: ProjectFormModalPro
       api.projects.update(project!.id, data),
     onSuccess: () => {
       message.success('Project updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['projects', project!.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
       onClose();
     },
     onError: (error: any) => {

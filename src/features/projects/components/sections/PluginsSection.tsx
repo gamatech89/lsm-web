@@ -40,6 +40,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useThemeStore } from '@/stores/theme';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Text, Title } = Typography;
 
@@ -77,7 +78,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
 
   // Fetch all plugins
   const { data: pluginsData, isLoading: pluginsLoading, refetch } = useQuery({
-    queryKey: ['project-plugins', project.id],
+    queryKey: queryKeys.projects.plugins(project.id),
     queryFn: () => api.lsm.getPlugins(project.id).then(r => r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -85,7 +86,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
 
   // Fetch updates data for available plugin updates
   const { data: updatesData, isLoading: updatesLoading } = useQuery({
-    queryKey: ['project-updates', project.id],
+    queryKey: queryKeys.projects.updates(project.id),
     queryFn: () => api.lsm.getUpdates(project.id).then(r => r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -100,30 +101,20 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
     const updates = (updatesData as any)?.data || updatesData;
     const pluginUpdates = updates?.plugins || [];
 
-    console.log('🔍 [PLUGINS DEBUG] Raw pluginsData:', pluginsData);
-    console.log('🔍 [PLUGINS DEBUG] Raw updatesData:', updatesData);
-    console.log('🔍 [PLUGINS DEBUG] Parsed pluginList:', pluginList);
-    console.log('🔍 [PLUGINS DEBUG] Parsed pluginUpdates:', pluginUpdates);
-
     // Create a map of update info by slug as fallback
     const updateMap = new Map<string, any>();
     for (const u of pluginUpdates) {
       const slug = u.slug || u.plugin?.replace(/^.*\/|\.php$/g, '') || u.file?.replace(/^.*\/|\.php$/g, '');
-      console.log('🔍 [UPDATE MAP] Processing update:', { u, computed_slug: slug });
       if (slug) updateMap.set(slug, u);
     }
-    console.log('🔍 [UPDATE MAP] Final updateMap:', Array.from(updateMap.entries()));
 
     // If pluginList is an array, use it; otherwise check if it has a plugins key
     const rawPlugins = Array.isArray(pluginList) ? pluginList : (pluginList?.plugins || []);
-    console.log('🔍 [PLUGINS DEBUG] rawPlugins count:', rawPlugins.length);
 
     if (rawPlugins.length === 0) {
-      console.log('⚠️ [PLUGINS DEBUG] NO PLUGINS - Using fallback to updates-only');
       // Fallback to updates-only if no plugins endpoint
       return pluginUpdates.map((p: any) => {
         const slug = p.slug || p.plugin?.replace(/^.*\/|\.php$/g, '') || p.file?.replace(/^.*\/|\.php$/g, '') || 'unknown';
-        console.log('🔍 [FALLBACK] Processing:', { p, computed_slug: slug });
         return {
           slug,
           name: p.name || p.plugin?.split('/')[0]?.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || p.slug || 'Unknown Plugin',
@@ -143,14 +134,6 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
     return rawPlugins.map((p: any) => {
       const slug = p.slug || p.plugin?.replace(/^.*\/|\.php$/g, '') || 'unknown';
       const updateInfo = updateMap.get(slug);
-
-      console.log('🔍 [PLUGIN MAPPING] Processing:', {
-        raw_plugin: p,
-        computed_slug: slug,
-        has_p_slug: !!p.slug,
-        has_p_plugin: !!p.plugin,
-        updateInfo: updateInfo,
-      });
 
       // Plugin's own fields take priority
       const hasUpdate = p.update_available ?? !!updateInfo?.new_version;
@@ -195,8 +178,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
     },
     onSuccess: () => {
       message.success('Plugin updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['project-plugins', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['project-updates', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: (error: any) => message.error(error?.response?.data?.error || 'Failed to update plugin'),
   });
@@ -212,7 +194,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
     },
     onSuccess: (data, variables) => {
       message.success(`Plugin ${variables.active ? 'activated' : 'deactivated'} successfully`);
-      queryClient.invalidateQueries({ queryKey: ['project-plugins', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: (error: any, variables) => {
       // Check for protected plugin error
@@ -224,14 +206,6 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
     },
   });
 
-  // Toggle auto-update mutation - Note: This would require a new backend endpoint
-  const toggleAutoUpdateMutation = useMutation({
-    mutationFn: async ({ slug, enabled }: { slug: string; enabled: boolean }) => {
-      message.info('Auto-update toggle coming soon');
-      return { success: false };
-    },
-  });
-
   // Delete plugin mutation - REAL API
   const deletePluginMutation = useMutation({
     mutationFn: async (pluginSlug: string) => {
@@ -239,8 +213,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
     },
     onSuccess: (_, pluginSlug) => {
       message.success('Plugin deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['project-plugins', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['lsm-health', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: (error: any) => {
       const errorMsg = error?.response?.data?.error || 'Failed to delete plugin';
@@ -265,8 +238,7 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
       } else {
         message.success(`${updated.length} plugin${updated.length !== 1 ? 's' : ''} updated successfully`);
       }
-      queryClient.invalidateQueries({ queryKey: ['project-plugins', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['project-updates', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: (error: any) => message.error(error?.response?.data?.error || 'Failed to update plugins'),
   });
@@ -371,11 +343,6 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
               loading={updatePluginMutation.isPending}
               onClick={(e) => {
                 e.stopPropagation();
-                console.log('🚀 [UPDATE CLICK] Updating plugin:', {
-                  record,
-                  slug: record.slug,
-                  name: record.name,
-                });
                 updatePluginMutation.mutate(record.slug);
               }}
               style={{

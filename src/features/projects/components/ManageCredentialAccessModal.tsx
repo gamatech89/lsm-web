@@ -17,12 +17,15 @@ import {
   Spin,
   Empty,
   Tag,
+  Alert,
 } from 'antd';
 import { LockOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Credential } from '@lsm/types';
 import { useThemeStore } from '@/stores/theme';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidateCredentials } from '@/features/vault/hooks/useInvalidateCredentials';
 
 const { Text, Title } = Typography;
 
@@ -41,6 +44,7 @@ export function ManageCredentialAccessModal({
 }: ManageCredentialAccessModalProps) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const invalidateCredentials = useInvalidateCredentials();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
 
@@ -51,8 +55,8 @@ export function ManageCredentialAccessModal({
     border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
   };
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['credential-access', credential?.id],
+  const { data, isPending, isError } = useQuery({
+    queryKey: queryKeys.vault.access(credential?.id),
     queryFn: () => api.credentials.getAccess(credential!.id).then(r => r.data.data),
     enabled: open && !!credential,
   });
@@ -67,8 +71,8 @@ export function ManageCredentialAccessModal({
     mutationFn: (userIds: number[]) => api.credentials.syncAccess(credential!.id, userIds),
     onSuccess: () => {
       message.success('Access updated');
-      queryClient.invalidateQueries({ queryKey: ['project-credentials', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['credential-access', credential?.id] });
+      invalidateCredentials(projectId);
+      queryClient.invalidateQueries({ queryKey: queryKeys.vault.access(credential?.id) });
       onClose();
     },
     onError: () => message.error('Failed to update access'),
@@ -103,6 +107,7 @@ export function ManageCredentialAccessModal({
             <Button onClick={onClose}>Cancel</Button>
             <Button
               type="primary"
+              disabled={isPending || isError}
               loading={syncMutation.isPending}
               onClick={() => syncMutation.mutate(selectedUserIds)}
             >
@@ -137,10 +142,17 @@ export function ManageCredentialAccessModal({
         Managers always have access.
       </Text>
 
-      {isLoading ? (
+      {isPending ? (
         <div style={{ textAlign: 'center', padding: 32 }}>
           <Spin />
         </div>
+      ) : isError ? (
+        <Alert
+          message="Failed to Load Access List"
+          description="Could not load the current developer access list for this credential, so it cannot be safely edited right now. Please close this dialog and try again."
+          type="error"
+          showIcon
+        />
       ) : developers.length === 0 ? (
         <Empty
           image={<TeamOutlined style={{ fontSize: 40, color: '#94a3b8' }} />}

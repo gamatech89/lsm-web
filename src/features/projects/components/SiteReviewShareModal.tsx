@@ -3,6 +3,7 @@ import { Modal, Button, Input, Space, Typography, Form, DatePicker, App, Tag, Po
 import { CopyOutlined, CheckOutlined, LinkOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { SiteReview } from '@/lib/site-reviews-api';
 
 const { Text, Paragraph } = Typography;
@@ -27,7 +28,7 @@ export function SiteReviewShareModal({ review, onClose }: Props) {
       }),
     onSuccess: (res) => {
       setShareUrl(res.data.data.share_url);
-      queryClient.invalidateQueries({ queryKey: ['site-reviews'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.siteReviews(review.project_id) });
       message.success('Share link generated');
     },
     onError: () => message.error('Failed to generate share link'),
@@ -37,7 +38,7 @@ export function SiteReviewShareModal({ review, onClose }: Props) {
     mutationFn: () => api.siteReviews.revokeShare(review.id),
     onSuccess: () => {
       setShareUrl(null);
-      queryClient.invalidateQueries({ queryKey: ['site-reviews'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.siteReviews(review.project_id) });
       message.success('Share link revoked');
       form.resetFields();
     },

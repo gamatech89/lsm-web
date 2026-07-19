@@ -17,6 +17,7 @@ import {
 import { UploadOutlined, LinkOutlined, FileOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { UploadFile } from 'antd';
 
 interface ResourceFormModalProps {
@@ -65,7 +66,7 @@ export function ResourceFormModal({
     mutationFn: (data: any) => api.resources.create(projectId, data),
     onSuccess: () => {
       message.success('Resource added');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
       onClose();
       form.resetFields();
       setFileList([]);
@@ -80,7 +81,7 @@ export function ResourceFormModal({
     mutationFn: (data: any) => api.resources.update(resource!.id, data),
     onSuccess: () => {
       message.success('Resource updated');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
       onClose();
     },
     onError: () => {

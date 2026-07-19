@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatRelativeTime } from '@lsm/utils';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -66,8 +67,9 @@ export function ActivityPage() {
 
   // Fetch activity logs
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['activity', filters],
+    queryKey: queryKeys.activity.list(filters),
     queryFn: () => api.activity.list(filters).then(r => r.data),
+    refetchInterval: 60_000,
   });
 
   const getSubjectTypeColor = (type: string): string => {

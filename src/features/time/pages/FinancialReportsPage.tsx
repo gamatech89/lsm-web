@@ -35,9 +35,11 @@ import {
   TeamOutlined,
   FileExcelOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidateTimeData } from '../hooks/useInvalidateTimeData';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -87,7 +89,7 @@ interface User {
 
 export function FinancialReportsPage() {
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
+  const invalidateTimeData = useInvalidateTimeData();
   const { t } = useTranslation();
 
   // State
@@ -111,7 +113,7 @@ export function FinancialReportsPage() {
 
   // Fetch approved entries
   const { data: entriesData, isLoading } = useQuery({
-    queryKey: ['financial', 'approved', filters],
+    queryKey: queryKeys.financial.approved(filters),
     queryFn: async () => {
       const response = await api.timeEntries.list(filters);
       return (response.data.data || []) as TimeEntry[];
@@ -120,7 +122,7 @@ export function FinancialReportsPage() {
 
   // Fetch summary
   const { data: summary } = useQuery({
-    queryKey: ['financial', 'summary', filters],
+    queryKey: queryKeys.financial.summary(filters),
     queryFn: async () => {
       const entries = entriesData || [];
       const totalMinutes = entries.reduce((acc: number, e: TimeEntry) => acc + (e.duration_minutes || 0), 0);
@@ -144,7 +146,7 @@ export function FinancialReportsPage() {
 
   // Fetch projects for filter
   const { data: projects } = useQuery({
-    queryKey: ['timer', 'projects'],
+    queryKey: queryKeys.timer.projects(),
     queryFn: () => api.timer.getProjects().then((r: { data: { success: boolean; data: Project[] } }) => r.data.data),
   });
 
@@ -163,8 +165,7 @@ export function FinancialReportsPage() {
       message.success(`${selectedIds.length} entries marked as paid!`);
       setSelectedIds([]);
       setMarkPaidModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['financial'] });
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      invalidateTimeData();
     },
     onError: () => {
       message.error('Failed to mark entries as paid');

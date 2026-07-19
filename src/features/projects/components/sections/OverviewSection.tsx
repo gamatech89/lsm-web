@@ -31,9 +31,11 @@ import {
   HddOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '@/stores/theme';
 import { formatDate, formatRelativeTime, getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { api, apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Project } from '@lsm/types';
 
 const { Text, Title } = Typography;
@@ -56,14 +58,15 @@ export function OverviewSection({
   const isDark = resolvedTheme === 'dark';
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Re-sync (health check)
   const resyncMutation = useMutation({
     mutationFn: () => apiClient.post(`/projects/${project.id}/check-health`),
     onSuccess: () => {
       message.success('Project synced successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['lsm-health', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.health(project.id) });
     },
     onError: () => message.error('Failed to sync project'),
   });
@@ -141,7 +144,7 @@ export function OverviewSection({
 
   // Fetch real uptime stats from historical data
   const { data: uptimeStats } = useQuery({
-    queryKey: ['uptime-stats', project.id],
+    queryKey: queryKeys.projects.uptimeStats(project.id),
     queryFn: () => apiClient.get(`/projects/${project.id}/uptime-stats?days=30`).then(r => r.data?.data),
     enabled: isPluginConnected,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -151,7 +154,7 @@ export function OverviewSection({
 
   // Fetch site info (content stats)
   const { data: siteInfo, isLoading: isLoadingSiteInfo } = useQuery({
-    queryKey: ['lsm-site-info', project.id],
+    queryKey: queryKeys.projects.siteInfo(project.id),
     queryFn: () => api.lsm.getSiteInfo(project.id).then(r => r.data?.data || r.data),
     enabled: isPluginConnected,
     staleTime: 60000, // 1 minute
@@ -199,7 +202,7 @@ export function OverviewSection({
                   icon={<RocketOutlined />}
                   onClick={() => {
                     // Navigate to maintenance section which has the connection UI
-                    window.location.href = `/projects/${project.id}?section=maintenance`;
+                    navigate(`/projects/${project.id}?section=maintenance`);
                   }}
                 >
                   Connect Now
@@ -581,7 +584,7 @@ function BackupInfoCard({ cardStyle }: { cardStyle: React.CSSProperties }) {
     driver: string;
     schedule: { enabled: boolean; frequency: string; time: string };
   }>({
-    queryKey: ['backup-settings'],
+    queryKey: queryKeys.settings.backup(),
     queryFn: () => apiClient.get('/backups/settings').then(r => r.data?.data || r.data),
     staleTime: 5 * 60 * 1000,
   });
@@ -652,14 +655,14 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
 
   // Fetch availability logs to show absence indicators
   const { data: availabilityLogs } = useQuery({
-    queryKey: ['availability'],
+    queryKey: queryKeys.availability.all(),
     queryFn: () => api.availability.list().then(r => r.data.data),
     staleTime: 60000,
   });
 
   // Fetch available developers and managers
   const { data: filterOptions } = useQuery({
-    queryKey: ['project-filter-options'],
+    queryKey: queryKeys.projects.filterOptions(),
     queryFn: () => api.projects.getFilterOptions().then(r => r.data.data),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -670,7 +673,9 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
       api.projects.update(project.id, { developer_ids: developerIds } as any),
     onSuccess: () => {
       message.success('Team updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.availability.all() });
       setIsAddingDeveloper(false);
     },
     onError: () => {
@@ -684,7 +689,9 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
       api.projects.update(project.id, { manager_ids: managerIds } as any),
     onSuccess: () => {
       message.success('Managers updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.availability.all() });
       setIsAddingPM(false);
     },
     onError: () => {

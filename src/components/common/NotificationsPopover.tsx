@@ -3,6 +3,7 @@ import { Button, Badge, Popover, List, Typography, Empty, Spin } from 'antd';
 import { BellOutlined, CheckCircleOutlined, InfoCircleOutlined, WarningOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatRelativeTime } from '@lsm/utils';
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '@/stores/theme';
@@ -78,7 +79,7 @@ export function NotificationsPopover() {
 
   // Fetch unread count (every 10s for near-real-time updates)
   const { data: unreadData } = useQuery({
-    queryKey: ['notifications', 'unread-count'],
+    queryKey: queryKeys.notifications.unreadCount(),
     queryFn: () => api.notifications.getUnreadCount().then(r => r.data),
     refetchInterval: 10000,
   });
@@ -90,13 +91,13 @@ export function NotificationsPopover() {
   useEffect(() => {
     if (unreadCount !== prevUnreadRef.current) {
       prevUnreadRef.current = unreadCount;
-      queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list() });
     }
   }, [unreadCount, queryClient]);
 
   // Fetch notifications list (also refetch when popover opens)
   const { data: notificationsData, isLoading } = useQuery({
-    queryKey: ['notifications', 'list'],
+    queryKey: queryKeys.notifications.list(),
     queryFn: () => api.notifications.list().then(r => r.data),
     enabled: open,
     refetchInterval: open ? 10000 : false,
@@ -106,7 +107,7 @@ export function NotificationsPopover() {
   const markReadMutation = useMutation({
     mutationFn: (id: string) => api.notifications.markAsRead(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() });
     },
   });
 
@@ -114,7 +115,7 @@ export function NotificationsPopover() {
   const markAllReadMutation = useMutation({
     mutationFn: () => api.notifications.markAllAsRead(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() });
     },
   });
 

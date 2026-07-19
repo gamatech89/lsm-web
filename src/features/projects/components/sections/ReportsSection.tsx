@@ -27,6 +27,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '@/stores/theme';
 import { apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatDate } from '@lsm/utils';
 import { saveAs } from 'file-saver';
 import type { ColumnsType } from 'antd/es/table';
@@ -50,7 +51,7 @@ export default function ReportsSection({ project }: ReportsSectionProps) {
 
   // Fetch reports
   const { data: reports, isLoading } = useQuery({
-    queryKey: ['project-reports', project.id],
+    queryKey: queryKeys.projects.reports(project.id),
     queryFn: () => apiClient.get(`/projects/${project.id}/maintenance-reports`).then(r => r.data.data),
   });
 
@@ -59,8 +60,8 @@ export default function ReportsSection({ project }: ReportsSectionProps) {
     mutationFn: (id: number) => apiClient.delete(`/maintenance-reports/${id}`),
     onSuccess: () => {
       message.success('Report deleted');
-      queryClient.invalidateQueries({ queryKey: ['project-reports', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.reports(project.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => {
       message.error('Failed to delete report');

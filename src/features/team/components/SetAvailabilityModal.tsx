@@ -1,6 +1,7 @@
 import { Modal, Form, DatePicker, Select, Input, message } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useTranslation } from 'react-i18next';
 import { useIsAdmin, useCanManageProjects } from '@/stores/auth';
 import type { AvailabilityLog } from '@/lib/availability-api';
@@ -41,7 +42,7 @@ export function SetAvailabilityModal({
 
   // Fetch team members for admin user selector
   const { data: teamMembers } = useQuery({
-    queryKey: ['team'],
+    queryKey: queryKeys.team.all(),
     queryFn: () => api.team.list().then(r => r.data.data),
     enabled: open && canSetForOthers && !targetUserId && !existingLog,
   });
@@ -68,9 +69,10 @@ export function SetAvailabilityModal({
     },
     onSuccess: (response: any) => {
       message.success(response.data.message || t('availability.statusSet'));
-      queryClient.invalidateQueries({ queryKey: ['availability'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['team'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.availability.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
       onClose();
       form.resetFields();
     },
@@ -89,8 +91,10 @@ export function SetAvailabilityModal({
       }),
     onSuccess: () => {
       message.success(t('availability.updated'));
-      queryClient.invalidateQueries({ queryKey: ['availability'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.availability.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
       onClose();
       form.resetFields();
     },

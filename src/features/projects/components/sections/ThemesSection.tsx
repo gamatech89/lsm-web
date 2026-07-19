@@ -38,6 +38,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useThemeStore } from '@/stores/theme';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Title, Text } = Typography;
 
@@ -70,7 +71,7 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
 
   // Fetch all themes
   const { data: themesData, isLoading, refetch } = useQuery({
-    queryKey: ['project-themes', project.id],
+    queryKey: queryKeys.projects.themes(project.id),
     queryFn: () => api.lsm.getThemes(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -81,7 +82,7 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
     mutationFn: () => api.lsm.switchTheme(project.id),
     onSuccess: () => {
       message.success('Switched to default theme');
-      queryClient.invalidateQueries({ queryKey: ['project-themes', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to switch theme'),
   });
@@ -91,7 +92,7 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
     mutationFn: (slug: string) => api.lsm.activateTheme(project.id, slug),
     onSuccess: () => {
       message.success('Theme activated');
-      queryClient.invalidateQueries({ queryKey: ['project-themes', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to activate theme'),
   });
@@ -101,7 +102,7 @@ export default function ThemesSection({ project }: ThemesSectionProps) {
     mutationFn: (slug: string) => api.lsm.updateTheme(project.id, slug),
     onSuccess: () => {
       message.success('Theme updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['project-themes', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: (error: any) => message.error(error?.response?.data?.error || 'Failed to update theme'),
   });

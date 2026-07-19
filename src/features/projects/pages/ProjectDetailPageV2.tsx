@@ -43,6 +43,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
 import { useAuthStore, useIsAdmin, useCurrentUser } from '@/stores/auth';
@@ -106,33 +107,41 @@ export function ProjectDetailPageV2() {
 
   // Fetch project
   const { data: project, isLoading, error } = useQuery({
-    queryKey: ['projects', projectId],
+    queryKey: queryKeys.projects.detail(projectId),
     queryFn: () => api.projects.get(projectId).then(r => r.data.data),
     enabled: !!projectId,
   });
 
   // Check LSM connection status
   const { data: lsmStatus } = useQuery({
-    queryKey: ['lsm-status', projectId],
+    queryKey: queryKeys.projects.status(projectId),
     queryFn: () => api.lsm.getStatus(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.has_health_check_secret,
     staleTime: 30000,
+    // This proxies out to the customer's live WordPress site (see
+    // src/lib/lsm-api.ts) — opted out of the global refetch-on-focus default
+    // so alt-tabbing back to this page doesn't fire a remote WP round-trip.
+    refetchOnWindowFocus: false,
   });
 
   // Get recovery status
-  const { data: recoveryStatus, refetch: refetchRecoveryStatus } = useQuery({
-    queryKey: ['lsm-recovery-status', projectId],
+  const { data: recoveryStatus } = useQuery({
+    queryKey: queryKeys.projects.recovery(projectId),
     queryFn: () => api.lsm.getRecoveryStatus(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.has_health_check_secret && lsmStatus?.connected,
     staleTime: 10000,
+    // Remote WP round-trip (see status query above) — same opt-out.
+    refetchOnWindowFocus: false,
   });
 
   // Fetch updates for badge counts in sidebar nav
   const { data: navUpdates } = useQuery({
-    queryKey: ['lsm-updates', projectId],
+    queryKey: queryKeys.projects.updates(projectId),
     queryFn: () => api.lsm.getUpdates(projectId).then(r => (r.data as any)?.data || r.data),
     enabled: !!project?.has_health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
+    // Remote WP round-trip (see status query above) — same opt-out.
+    refetchOnWindowFocus: false,
   });
 
   // SSO Login
@@ -162,7 +171,7 @@ export function ProjectDetailPageV2() {
     mutationFn: () => api.lsm.enableMaintenance(projectId),
     onSuccess: () => {
       message.success('Maintenance mode enabled');
-      refetchRecoveryStatus();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
     },
     onError: () => message.error('Failed to enable maintenance mode'),
   });
@@ -171,7 +180,7 @@ export function ProjectDetailPageV2() {
     mutationFn: () => api.lsm.disableMaintenance(projectId),
     onSuccess: () => {
       message.success('Maintenance mode disabled');
-      refetchRecoveryStatus();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
     },
     onError: () => message.error('Failed to disable maintenance mode'),
   });
@@ -181,9 +190,7 @@ export function ProjectDetailPageV2() {
     mutationFn: () => apiClient.post(`/projects/${projectId}/check-health`),
     onSuccess: () => {
       message.success('Project synced successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['lsm-status', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['lsm-health', projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
     },
     onError: () => message.error('Failed to sync project'),
   });
@@ -192,6 +199,8 @@ export function ProjectDetailPageV2() {
   const deleteMutation = useMutation({
     mutationFn: () => api.projects.delete(projectId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
       message.success('Project deleted');
       navigate('/projects');
     },

@@ -63,6 +63,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useThemeStore } from '@/stores/theme';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -90,7 +91,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
 
   // Fetch health data
   const { data: healthData, isLoading, refetch } = useQuery({
-    queryKey: ['lsm-health', project.id],
+    queryKey: queryKeys.projects.health(project.id),
     queryFn: () => api.lsm.getHealth(project.id).then(r => (r.data as any)?.data || r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -98,7 +99,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
 
   // Fetch security settings
   const { data: securitySettings, isLoading: isLoadingSettings } = useQuery({
-    queryKey: ['lsm-security-settings', project.id],
+    queryKey: queryKeys.projects.securitySettings(project.id),
     queryFn: () => api.lsm.getSecuritySettings(project.id).then(r => r.data?.data || r.data),
     enabled: hasLsmConnection,
     staleTime: 30000,
@@ -106,7 +107,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
 
   // Fetch security headers
   const { data: securityHeaders, isLoading: isLoadingHeaders } = useQuery({
-    queryKey: ['lsm-security-headers', project.id],
+    queryKey: queryKeys.projects.securityHeaders(project.id),
     queryFn: () => api.lsm.getSecurityHeaders(project.id).then(r => r.data?.data || r.data),
     enabled: hasLsmConnection,
     staleTime: 60000, // Cache for 1 minute
@@ -117,7 +118,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
 
   // Fetch security header snippets (only when modal is open)
   const { data: headerSnippets, isLoading: isLoadingSnippets } = useQuery({
-    queryKey: ['lsm-security-header-snippets', project.id],
+    queryKey: queryKeys.projects.securityHeaderSnippets(project.id),
     queryFn: () => api.lsm.getSecurityHeaderSnippets(project.id).then(r => r.data?.data || r.data),
     enabled: hasLsmConnection && snippetModalOpen,
     staleTime: 300000, // Cache for 5 minutes
@@ -131,7 +132,7 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
     onSuccess: (_, variables) => {
       const settingName = Object.keys(variables)[0];
       message.success(`${settingName.replace('_', ' ')} updated`);
-      queryClient.invalidateQueries({ queryKey: ['lsm-security-settings', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
       setUpdatingSetting(null);
     },
     onError: (error: any) => {

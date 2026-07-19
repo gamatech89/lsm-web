@@ -33,6 +33,7 @@ import {
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { MaintenanceReport } from '@lsm/types';
 import type { UploadFile } from 'antd/es/upload/interface';
 
@@ -78,7 +79,7 @@ export function MaintenanceReportFormModal({
 
   // Fetch completed todos for import
   const { data: completedTodos } = useQuery({
-    queryKey: ['todos', 'completed', projectId],
+    queryKey: queryKeys.todos.completed(projectId),
     queryFn: () => api.todos.listByProject(projectId, { status: 'completed', include_completed: true }).then(r => r.data.data),
     enabled: showImportModal,
   });
@@ -87,8 +88,7 @@ export function MaintenanceReportFormModal({
     mutationFn: (data: any) => api.maintenanceReports.create(projectId, data),
     onSuccess: () => {
       message.success('Report created successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['project-reports', projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.reports(projectId) });
       handleClose();
     },
     onError: () => message.error('Failed to create report'),
@@ -98,8 +98,7 @@ export function MaintenanceReportFormModal({
     mutationFn: (data: any) => api.maintenanceReports.update(report!.id, data),
     onSuccess: () => {
       message.success('Report updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['project-reports', projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.reports(projectId) });
       handleClose();
     },
     onError: () => message.error('Failed to update report'),

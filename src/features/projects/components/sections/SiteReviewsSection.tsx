@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useThemeStore } from '@/stores/theme';
 import type { Project } from '@lsm/types';
 import type { SiteReview } from '@/lib/site-reviews-api';
@@ -33,7 +34,7 @@ export default function SiteReviewsSection({ project }: Props) {
   const [form] = Form.useForm();
 
   const { data: reviews = [], isLoading } = useQuery({
-    queryKey: ['site-reviews', project.id],
+    queryKey: queryKeys.projects.siteReviews(project.id),
     queryFn: () => api.siteReviews.list(project.id).then(r => r.data.data),
   });
 
@@ -41,7 +42,7 @@ export default function SiteReviewsSection({ project }: Props) {
     mutationFn: (values: { title: string; url: string }) =>
       api.siteReviews.create(project.id, values),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site-reviews', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.siteReviews(project.id) });
       message.success('Review session created');
       setCreateOpen(false);
       form.resetFields();
@@ -52,7 +53,7 @@ export default function SiteReviewsSection({ project }: Props) {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.siteReviews.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site-reviews', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.siteReviews(project.id) });
       message.success('Review deleted');
     },
     onError: () => message.error('Failed to delete review'),
@@ -61,7 +62,7 @@ export default function SiteReviewsSection({ project }: Props) {
   const archiveMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
       api.siteReviews.update(id, { status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['site-reviews', project.id] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.projects.siteReviews(project.id) }),
     onError: () => message.error('Failed to update review'),
   });
 
@@ -201,7 +202,7 @@ export default function SiteReviewsSection({ project }: Props) {
           review={openReview}
           onClose={() => {
             setOpenReview(null);
-            queryClient.invalidateQueries({ queryKey: ['site-reviews', project.id] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.projects.siteReviews(project.id) });
           }}
         />
       )}
@@ -212,7 +213,7 @@ export default function SiteReviewsSection({ project }: Props) {
           review={shareReview}
           onClose={() => {
             setShareReview(null);
-            queryClient.invalidateQueries({ queryKey: ['site-reviews', project.id] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.projects.siteReviews(project.id) });
           }}
         />
       )}

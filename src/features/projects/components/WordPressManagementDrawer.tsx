@@ -48,6 +48,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatRelativeTime } from '@lsm/utils';
 
 const { Title, Text, Paragraph } = Typography;
@@ -65,14 +66,14 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
 
   // Check LSM status
   const { data: lsmStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
-    queryKey: ['lsm-status', project.id],
+    queryKey: queryKeys.projects.status(project.id),
     queryFn: () => api.lsm.getStatus(project.id).then(r => r.data),
     enabled: open && !!project.has_health_check_secret,
   });
 
   // Get health data
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
-    queryKey: ['lsm-health', project.id],
+    queryKey: queryKeys.projects.health(project.id),
     queryFn: () => api.lsm.getHealth(project.id).then(r => r.data),
     enabled: open && !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 30000,
@@ -80,7 +81,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
 
   // Get available updates
   const { data: updates, isLoading: updatesLoading, refetch: refetchUpdates } = useQuery({
-    queryKey: ['lsm-updates', project.id],
+    queryKey: queryKeys.projects.updates(project.id),
     queryFn: () => api.lsm.getUpdates(project.id).then(r => r.data),
     enabled: open && !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
@@ -110,6 +111,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
     onSuccess: (response) => {
       const cleared = response.data.cleared?.length || 0;
       message.success(`Cleared ${cleared} cache type(s)`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to clear cache'),
   });
@@ -118,13 +120,17 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
     mutationFn: () => api.lsm.optimizeDatabase(project.id),
     onSuccess: (response) => {
       message.success(`Optimized ${response.data.tables_count || 0} tables`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to optimize database'),
   });
 
   const flushRewriteMutation = useMutation({
     mutationFn: () => api.lsm.flushRewrite(project.id),
-    onSuccess: () => message.success('Rewrite rules flushed'),
+    onSuccess: () => {
+      message.success('Rewrite rules flushed');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+    },
     onError: () => message.error('Failed to flush rewrite rules'),
   });
 
@@ -134,7 +140,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
       message.success(`Updated ${response.data.updated_count || 0} plugin(s)`);
       refetchUpdates();
       refetchHealth();
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to update plugins'),
   });
@@ -145,19 +151,26 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
       message.success('WordPress core updated');
       refetchUpdates();
       refetchHealth();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to update WordPress core'),
   });
 
   const enableMaintenanceMutation = useMutation({
     mutationFn: () => api.lsm.enableMaintenance(project.id),
-    onSuccess: () => message.success('Maintenance mode enabled'),
+    onSuccess: () => {
+      message.success('Maintenance mode enabled');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+    },
     onError: () => message.error('Failed to enable maintenance mode'),
   });
 
   const disableMaintenanceMutation = useMutation({
     mutationFn: () => api.lsm.disableMaintenance(project.id),
-    onSuccess: () => message.success('Maintenance mode disabled'),
+    onSuccess: () => {
+      message.success('Maintenance mode disabled');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+    },
     onError: () => message.error('Failed to disable maintenance mode'),
   });
 
@@ -165,6 +178,7 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
     mutationFn: () => api.lsm.disablePlugins(project.id),
     onSuccess: (response) => {
       message.warning(`Disabled ${response.data.disabled_count || 0} plugin(s)`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to disable plugins'),
   });
@@ -173,13 +187,17 @@ export function WordPressManagementDrawer({ project, open, onClose }: WordPressM
     mutationFn: () => api.lsm.restorePlugins(project.id),
     onSuccess: (response) => {
       message.success(`Restored ${response.data.restored_count || 0} plugin(s)`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to restore plugins'),
   });
 
   const emergencyRecoveryMutation = useMutation({
     mutationFn: () => api.lsm.emergencyRecovery(project.id),
-    onSuccess: () => message.warning('Emergency recovery executed!'),
+    onSuccess: () => {
+      message.warning('Emergency recovery executed!');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+    },
     onError: () => message.error('Failed to execute emergency recovery'),
   });
 

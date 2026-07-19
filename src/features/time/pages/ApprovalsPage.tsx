@@ -35,8 +35,10 @@ import {
   DollarOutlined,
   AuditOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidateTimeData } from '../hooks/useInvalidateTimeData';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -77,7 +79,7 @@ const formatDuration = (minutes: number): string => {
 
 export function ApprovalsPage() {
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
+  const invalidateTimeData = useInvalidateTimeData();
   const { t } = useTranslation();
 
   // State
@@ -93,7 +95,7 @@ export function ApprovalsPage() {
 
   // Fetch pending timesheets
   const { data: pendingTimesheets, isLoading } = useQuery({
-    queryKey: ['timesheets', 'pending'],
+    queryKey: queryKeys.timesheets.pending(),
     queryFn: () => api.timesheets.pending().then((r: { data: { success: boolean; data: Timesheet[] } }) => r.data.data),
   });
 
@@ -127,9 +129,7 @@ export function ApprovalsPage() {
       setSelectedTimesheet(null);
       setSelectedEntryIds(new Set());
       setRateOverrides({});
-      queryClient.invalidateQueries({ queryKey: ['timesheets'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      invalidateTimeData();
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || t('approvals.messages.approveError'));
@@ -149,8 +149,7 @@ export function ApprovalsPage() {
       setSelectedTimesheet(null);
       setRejectReason('');
       setSelectedEntryIds(new Set());
-      queryClient.invalidateQueries({ queryKey: ['timesheets'] });
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      invalidateTimeData();
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || t('approvals.messages.rejectError'));

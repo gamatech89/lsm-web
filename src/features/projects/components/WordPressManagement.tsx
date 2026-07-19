@@ -40,6 +40,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useThemeStore } from '@/stores/theme';
 import { formatRelativeTime } from '@lsm/utils';
 
@@ -57,14 +58,14 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
 
   // Check LSM status
   const { data: lsmStatus, isLoading: statusLoading } = useQuery({
-    queryKey: ['lsm-status', project.id],
+    queryKey: queryKeys.projects.status(project.id),
     queryFn: () => api.lsm.getStatus(project.id).then(r => r.data),
     enabled: !!project.has_health_check_secret,
   });
 
   // Get available updates
   const { data: updates, isLoading: updatesLoading, refetch: refetchUpdates } = useQuery({
-    queryKey: ['lsm-updates', project.id],
+    queryKey: queryKeys.projects.updates(project.id),
     queryFn: () => api.lsm.getUpdates(project.id).then(r => r.data),
     enabled: !!project.has_health_check_secret && lsmStatus?.connected,
     staleTime: 60000,
@@ -94,6 +95,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
     onSuccess: (response) => {
       const cleared = response.data.cleared?.length || 0;
       message.success(`Cleared ${cleared} cache type(s)`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to clear cache'),
   });
@@ -103,6 +105,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
     mutationFn: () => api.lsm.optimizeDatabase(project.id),
     onSuccess: (response) => {
       message.success(`Optimized ${response.data.tables_count || 0} tables`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to optimize database'),
   });
@@ -110,7 +113,10 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
   // Flush rewrite mutation
   const flushRewriteMutation = useMutation({
     mutationFn: () => api.lsm.flushRewrite(project.id),
-    onSuccess: () => message.success('Rewrite rules flushed'),
+    onSuccess: () => {
+      message.success('Rewrite rules flushed');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+    },
     onError: () => message.error('Failed to flush rewrite rules'),
   });
 
@@ -121,7 +127,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
       const updated = response.data.updated_count || 0;
       message.success(`Updated ${updated} plugin(s)`);
       refetchUpdates();
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to update plugins'),
   });
@@ -132,7 +138,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
     onSuccess: () => {
       message.success('WordPress core updated');
       refetchUpdates();
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to update WordPress core'),
   });
@@ -140,14 +146,20 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
   // Enable maintenance mutation
   const enableMaintenanceMutation = useMutation({
     mutationFn: () => api.lsm.enableMaintenance(project.id),
-    onSuccess: () => message.success('Maintenance mode enabled'),
+    onSuccess: () => {
+      message.success('Maintenance mode enabled');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+    },
     onError: () => message.error('Failed to enable maintenance mode'),
   });
 
-  // Disable maintenance mutation  
+  // Disable maintenance mutation
   const disableMaintenanceMutation = useMutation({
     mutationFn: () => api.lsm.disableMaintenance(project.id),
-    onSuccess: () => message.success('Maintenance mode disabled'),
+    onSuccess: () => {
+      message.success('Maintenance mode disabled');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
+    },
     onError: () => message.error('Failed to disable maintenance mode'),
   });
 
@@ -156,6 +168,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
     mutationFn: () => api.lsm.disablePlugins(project.id),
     onSuccess: (response) => {
       message.warning(`Disabled ${response.data.disabled_count || 0} plugin(s)`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to disable plugins'),
   });
@@ -165,6 +178,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
     mutationFn: () => api.lsm.restorePlugins(project.id),
     onSuccess: (response) => {
       message.success(`Restored ${response.data.restored_count || 0} plugin(s)`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to restore plugins'),
   });
@@ -174,6 +188,7 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
     mutationFn: () => api.lsm.emergencyRecovery(project.id),
     onSuccess: () => {
       message.warning('Emergency recovery executed!');
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to execute emergency recovery'),
   });

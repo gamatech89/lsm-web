@@ -27,6 +27,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Tag as TagType } from '@lsm/types';
 import type { ColumnsType } from 'antd/es/table';
 import type { Color } from 'antd/es/color-picker';
@@ -44,7 +45,7 @@ export function TagsPage() {
 
   // Fetch tags
   const { data, isLoading } = useQuery({
-    queryKey: ['tags'],
+    queryKey: queryKeys.tags.all(),
     queryFn: () => api.tags.list().then(r => r.data.data),
   });
 
@@ -53,7 +54,9 @@ export function TagsPage() {
     mutationFn: (data: { name: string; color?: string }) => api.tags.create(data),
     onSuccess: () => {
       message.success(t('tags.messages.created'));
-      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
       setShowModal(false);
       form.resetFields();
     },
@@ -68,7 +71,9 @@ export function TagsPage() {
       api.tags.update(id, data),
     onSuccess: () => {
       message.success(t('tags.messages.updated'));
-      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
       setShowModal(false);
       setEditingTag(null);
       form.resetFields();
@@ -83,7 +88,9 @@ export function TagsPage() {
     mutationFn: (id: number) => api.tags.delete(id),
     onSuccess: () => {
       message.success(t('tags.messages.deleted'));
-      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
     },
     onError: () => {
       message.error(t('common.deleteError'));

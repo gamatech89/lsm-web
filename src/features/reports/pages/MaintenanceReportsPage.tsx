@@ -30,6 +30,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatDate } from '@lsm/utils';
 import type { MaintenanceReport } from '@lsm/types';
 import type { ColumnsType } from 'antd/es/table';
@@ -52,14 +53,14 @@ export function MaintenanceReportsPage() {
 
   // Fetch project for name
   const { data: project } = useQuery({
-    queryKey: ['projects', pid],
+    queryKey: queryKeys.projects.detail(pid),
     queryFn: () => api.projects.get(pid).then(r => r.data.data),
     enabled: !!pid,
   });
 
   // Fetch reports
   const { data: reports, isLoading } = useQuery({
-    queryKey: ['projects', pid, 'reports'],
+    queryKey: queryKeys.projects.reports(pid),
     queryFn: () => api.maintenanceReports.list(pid).then(r => r.data.data),
     enabled: !!pid,
   });
@@ -76,7 +77,7 @@ export function MaintenanceReportsPage() {
     }) => api.maintenanceReports.create(pid, data),
     onSuccess: () => {
       message.success('Report created successfully');
-      queryClient.invalidateQueries({ queryKey: ['projects', pid, 'reports'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.reports(pid) });
       setShowModal(false);
       form.resetFields();
     },
@@ -90,7 +91,7 @@ export function MaintenanceReportsPage() {
     mutationFn: (reportId: number) => api.maintenanceReports.delete(pid, reportId),
     onSuccess: () => {
       message.success('Report deleted');
-      queryClient.invalidateQueries({ queryKey: ['projects', pid, 'reports'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.reports(pid) });
     },
     onError: () => {
       message.error('Failed to delete report');

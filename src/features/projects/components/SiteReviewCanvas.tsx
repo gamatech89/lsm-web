@@ -10,6 +10,8 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidateTodos } from '../hooks/useInvalidateTodos';
 import { useThemeStore } from '@/stores/theme';
 import type { SiteReview, SiteReviewAnnotation } from '@/lib/site-reviews-api';
 
@@ -36,6 +38,7 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
   const isDark = resolvedTheme === 'dark';
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const invalidateTodos = useInvalidateTodos();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
@@ -52,8 +55,8 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
   const [iframeLoading, setIframeLoading] = useState(true);
 
   const queryKey = shareToken
-    ? ['review-share-data', shareToken]
-    : ['site-review', review.id];
+    ? queryKeys.share.reviewPins(shareToken)
+    : queryKeys.projects.siteReviewPins(review.project_id, review.id);
 
   const { data: pins = [] } = useQuery<SiteReviewAnnotation[]>({
     queryKey,
@@ -200,6 +203,7 @@ export function SiteReviewCanvas({ review, onClose, shareToken, guestName }: Pro
       api.siteReviews.createTodoFromAnnotation(annotationId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
+      invalidateTodos(review.project_id);
       message.success('Todo created!');
     },
     onError: () => message.error('Failed to create Todo'),

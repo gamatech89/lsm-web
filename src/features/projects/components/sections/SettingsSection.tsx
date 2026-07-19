@@ -30,6 +30,7 @@ import {
 import { useThemeStore } from '@/stores/theme';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Text, Title } = Typography;
 
@@ -120,7 +121,7 @@ export default function SettingsSection({ project }: SettingsSectionProps) {
     mutationFn: (data: Record<string, any>) => 
       api.projects.update(project.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
   });
 
@@ -131,8 +132,7 @@ export default function SettingsSection({ project }: SettingsSectionProps) {
     },
     onSuccess: () => {
       message.success('API key saved! Connection established.');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['lsm-status', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
       setApiKeyInput('');
     },
     onError: (err: any) => message.error(err?.message || 'Failed to save API key'),
@@ -143,7 +143,7 @@ export default function SettingsSection({ project }: SettingsSectionProps) {
       api.projects.update(project.id, { notification_preferences: notifPrefs as any }),
     onSuccess: () => {
       message.success('Notification preferences saved!');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
     onError: () => message.error('Failed to save notification preferences'),
   });

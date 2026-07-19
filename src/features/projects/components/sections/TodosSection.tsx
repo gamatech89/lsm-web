@@ -41,12 +41,13 @@ import {
   PaperClipOutlined,
   HolderOutlined,
 } from '@ant-design/icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useThemeStore } from '@/stores/theme';
 import { TodoFormModal } from '../TodoFormModal';
 import { TodoDetailModal } from '../TodoDetailModal';
 import { priorityOptions, statusOptions } from '../../constants';
+import { useInvalidateTodos } from '../../hooks/useInvalidateTodos';
 
 const { Title, Text } = Typography;
 
@@ -77,7 +78,7 @@ const DEVELOPER_ALLOWED_STATUSES = ['pending', 'in_progress', 'in_review'];
 export default function TodosSection({ project }: TodosSectionProps) {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
-  const queryClient = useQueryClient();
+  const invalidateTodos = useInvalidateTodos();
   const isDevRole = useHasRole('developer');
   const isAdmin = useIsAdmin();
   const isDeveloper = isDevRole && !isAdmin;
@@ -146,7 +147,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
     onSuccess: (_, { status }) => {
       const label = statusConfig[status]?.label || status;
       message.success(`Status changed to ${label}`);
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      invalidateTodos(project.id);
     },
     onError: () => {
       message.error('Failed to update status');
@@ -158,7 +159,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
     mutationFn: (todoId: number) => api.todos.delete(todoId),
     onSuccess: () => {
       message.success('Task deleted');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      invalidateTodos(project.id);
     },
   });
 
@@ -168,7 +169,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
       api.todos.update(todoId, { assignee_id: assigneeId } as any),
     onSuccess: () => {
       message.success('Assignee updated');
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      invalidateTodos(project.id);
     },
     onError: () => {
       message.error('Failed to update assignee');
@@ -184,7 +185,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
     onSuccess: () => {
       message.success(`${selectedRowKeys.length} tasks completed`);
       setSelectedRowKeys([]);
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      invalidateTodos(project.id);
     },
   });
 
@@ -196,7 +197,7 @@ export default function TodosSection({ project }: TodosSectionProps) {
     onSuccess: () => {
       message.success(`${selectedRowKeys.length} tasks deleted`);
       setSelectedRowKeys([]);
-      queryClient.invalidateQueries({ queryKey: ['projects', project.id] });
+      invalidateTodos(project.id);
     },
   });
 
