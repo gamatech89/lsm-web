@@ -582,7 +582,7 @@ function BackupInfoCard({ cardStyle }: { cardStyle: React.CSSProperties }) {
     driver: string;
     schedule: { enabled: boolean; frequency: string; time: string };
   }>({
-    queryKey: ['backup-settings'],
+    queryKey: queryKeys.settings.backup(),
     queryFn: () => apiClient.get('/backups/settings').then(r => r.data?.data || r.data),
     staleTime: 5 * 60 * 1000,
   });

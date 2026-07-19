@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '@/stores/theme';
 import { apiClient } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Title, Text } = Typography;
 
@@ -76,14 +77,14 @@ export function SettingsPage() {
 
   // Fetch current settings
   const { data: settings, isLoading, error } = useQuery({
-    queryKey: ['settings'],
+    queryKey: queryKeys.settings.all(),
     queryFn: () => apiClient.get('/settings').then(r => r.data?.data || r.data),
     enabled: isAdmin,
   });
 
   // Fetch backup config
   const { data: backupConfig, isLoading: loadingBackupConfig } = useQuery<BackupConfig>({
-    queryKey: ['backup-settings'],
+    queryKey: queryKeys.settings.backup(),
     queryFn: () => apiClient.get('/backups/settings').then(r => r.data?.data || r.data),
     enabled: isAdmin,
   });
@@ -121,7 +122,7 @@ export function SettingsPage() {
     },
     onSuccess: () => {
       message.success(t('settings.saveSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.all() });
     },
     onError: (error: any) => {
       const response = error.response;
@@ -448,7 +449,7 @@ export function SettingsPage() {
               icon={<ReloadOutlined />}
               onClick={() => {
                 form.resetFields();
-                queryClient.invalidateQueries({ queryKey: ['settings'] });
+                queryClient.invalidateQueries({ queryKey: queryKeys.settings.all() });
               }}
             >
               {t('settings.reset')}

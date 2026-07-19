@@ -58,6 +58,9 @@ export function createAuthApi(client: AxiosInstance) {
     updateBilling: (data: { billing_company_name?: string | null; billing_address?: string | null; billing_tax_id?: string | null; invoice_prefix?: string | null }) =>
       client.put<ApiResponse<User>>('/user/billing', data),
 
+    changePassword: (data: { current_password: string; password: string; password_confirmation: string }) =>
+      client.put<ApiResponse<null>>('/user/password', data),
+
     twoFactorEnable: () =>
       client.post<ApiResponse<TwoFactorEnableResponse>>('/two-factor/enable'),
 

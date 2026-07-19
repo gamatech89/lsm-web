@@ -32,15 +32,17 @@ import {
   CloseCircleOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 export function ProfilePage() {
   const { message } = App.useApp();
+  const queryClient = useQueryClient();
   const { user, setUser, updateUser } = useAuthStore();
   const [profileForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
@@ -64,6 +66,7 @@ export function ProfilePage() {
         setUser(response.data.data);
       }
       message.success('Profile updated successfully');
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
     },
     onError: () => {
       message.error('Failed to update profile');
@@ -72,20 +75,15 @@ export function ProfilePage() {
 
   // Change password mutation
   const changePasswordMutation = useMutation({
-    mutationFn: async (_data: {
-      current_password: string;
-      new_password: string;
-      new_password_confirmation: string;
-    }) => {
-      return Promise.resolve({ success: true });
-    },
+    mutationFn: (data: { current_password: string; password: string; password_confirmation: string }) =>
+      api.auth.changePassword(data),
     onSuccess: () => {
       message.success('Password changed successfully');
       passwordForm.resetFields();
       setShowPasswordForm(false);
     },
-    onError: () => {
-      message.error('Failed to change password');
+    onError: (error: any) => {
+      message.error(error?.response?.data?.message ?? 'Failed to change password');
     },
   });
 
@@ -104,6 +102,7 @@ export function ProfilePage() {
         setUser(response.data.data);
       }
       message.success('Billing information updated successfully');
+      queryClient.invalidateQueries({ queryKey: queryKeys.team.all() });
     },
     onError: () => {
       message.error('Failed to update billing information');
@@ -189,7 +188,11 @@ export function ProfilePage() {
     new_password: string;
     new_password_confirmation: string;
   }) => {
-    changePasswordMutation.mutate(values);
+    changePasswordMutation.mutate({
+      current_password: values.current_password,
+      password: values.new_password,
+      password_confirmation: values.new_password_confirmation,
+    });
   };
 
   const handleBillingSubmit = (values: {
