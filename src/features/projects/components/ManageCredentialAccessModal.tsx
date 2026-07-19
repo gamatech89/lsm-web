@@ -17,6 +17,7 @@ import {
   Spin,
   Empty,
   Tag,
+  Alert,
 } from 'antd';
 import { LockOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -54,7 +55,7 @@ export function ManageCredentialAccessModal({
     border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
   };
 
-  const { data, isPending } = useQuery({
+  const { data, isPending, isError } = useQuery({
     queryKey: queryKeys.vault.access(credential?.id),
     queryFn: () => api.credentials.getAccess(credential!.id).then(r => r.data.data),
     enabled: open && !!credential,
@@ -106,7 +107,7 @@ export function ManageCredentialAccessModal({
             <Button onClick={onClose}>Cancel</Button>
             <Button
               type="primary"
-              disabled={isPending}
+              disabled={isPending || isError}
               loading={syncMutation.isPending}
               onClick={() => syncMutation.mutate(selectedUserIds)}
             >
@@ -145,6 +146,13 @@ export function ManageCredentialAccessModal({
         <div style={{ textAlign: 'center', padding: 32 }}>
           <Spin />
         </div>
+      ) : isError ? (
+        <Alert
+          message="Failed to Load Access List"
+          description="Could not load the current developer access list for this credential, so it cannot be safely edited right now. Please close this dialog and try again."
+          type="error"
+          showIcon
+        />
       ) : developers.length === 0 ? (
         <Empty
           image={<TeamOutlined style={{ fontSize: 40, color: '#94a3b8' }} />}
