@@ -1,18 +1,19 @@
 import { Card, Typography, Button, App } from 'antd';
 import { PlayCircleOutlined, PauseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useThemeStore } from '@/stores/theme';
 import { useTranslation } from 'react-i18next';
 import { useTimerStore } from '@/stores/timer';
+import { useInvalidateTimeData } from '@/features/time/hooks/useInvalidateTimeData';
 
 const { Text } = Typography;
 
 export function ActiveTimerWidget() {
   const { t } = useTranslation();
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
-  const { 
+  const invalidateTimeData = useInvalidateTimeData();
+  const {
     runningTimer, 
     elapsedSeconds, 
     clearTimer, 
@@ -27,8 +28,7 @@ export function ActiveTimerWidget() {
     onSuccess: () => {
       clearTimer();
       message.success('Time logged successfully!');
-      queryClient.invalidateQueries({ queryKey: ['timer'] });
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      invalidateTimeData();
     },
     onError: () => {
       message.error('Failed to stop timer');

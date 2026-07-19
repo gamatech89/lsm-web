@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useThemeStore } from '@/stores/theme';
 
 const { Text } = Typography;
@@ -15,8 +16,9 @@ export function ApprovalsWidget() {
   const isDark = resolvedTheme === 'dark';
 
   const { data: pendingTimesheets } = useQuery({
-    queryKey: ['timesheets', 'pending'],
+    queryKey: queryKeys.timesheets.pending(),
     queryFn: () => api.timesheets.pending().then(r => r.data.data),
+    refetchInterval: 60_000,
   });
 
   const pendingCount = pendingTimesheets?.length || 0;

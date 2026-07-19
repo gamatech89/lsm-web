@@ -24,7 +24,7 @@ export function DeveloperDashboard() {
   
   // Fetch Timer Stats (Hours Today)
   const { data: timerStats } = useQuery({
-    queryKey: ['time-entries', 'today-stats'],
+    queryKey: queryKeys.time.todayStats(),
     queryFn: () => api.timeEntries.today().then(r => r.data.data),
     refetchInterval: 60000, 
   });

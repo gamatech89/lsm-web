@@ -38,6 +38,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 dayjs.extend(isoWeek);
 dayjs.extend(weekOfYear);
@@ -85,7 +86,7 @@ export function AnalyticsPage() {
 
   // Fetch time entries
   const { data: entriesData, isLoading } = useQuery({
-    queryKey: ['analytics', 'entries', filters],
+    queryKey: queryKeys.analytics.entries(filters),
     queryFn: async () => {
       const response = await api.timeEntries.list(filters);
       return (response.data.data || []) as TimeEntry[];

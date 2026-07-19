@@ -26,21 +26,25 @@ export function ManagerDashboard() {
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => api.dashboard.get().then(r => r.data.data),
+    refetchInterval: 60_000,
   });
 
   const { data: availabilityLogs } = useQuery({
     queryKey: ['availability'],
     queryFn: () => api.availability.list().then(r => r.data.data),
+    refetchInterval: 60_000,
   });
 
   const { data: allUsers } = useQuery({
     queryKey: ['team'],
     queryFn: () => api.team.list().then(r => r.data.data),
+    refetchInterval: 60_000,
   });
 
   const { data: projects } = useQuery({
     queryKey: queryKeys.projects.all(),
     queryFn: () => api.projects.list().then(r => r.data.data),
+    refetchInterval: 60_000,
   });
 
   const stats = (dashboardData?.stats || { total: 0, online: 0, at_risk: 0, hacked: 0, updating: 0, down: 0 }) as any;

@@ -13,8 +13,10 @@ import {
   ClockCircleOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidateTimeData } from '../hooks/useInvalidateTimeData';
 import {
   useTimerStore,
   calculateElapsedSeconds,
@@ -25,8 +27,8 @@ const { Text } = Typography;
 
 export function TimerWidget() {
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
-  
+  const invalidateTimeData = useInvalidateTimeData();
+
   const {
     runningTimer,
     elapsedSeconds,
@@ -45,14 +47,14 @@ export function TimerWidget() {
 
   // Fetch current timer on mount
   const { data: currentTimer, isFetching } = useQuery({
-    queryKey: ['timer', 'current'],
+    queryKey: queryKeys.timer.current(),
     queryFn: () => api.timer.getCurrent().then(r => r.data),
     refetchInterval: 60000, // Sync every minute
   });
 
   // Fetch project options
   const { data: projects } = useQuery({
-    queryKey: ['timer', 'projects'],
+    queryKey: queryKeys.timer.projects(),
     queryFn: () => api.timer.getProjects().then(r => r.data.data),
   });
 
@@ -79,7 +81,7 @@ export function TimerWidget() {
       setSelectedProject(null);
       setDescription('');
       setShowInput(false);
-      queryClient.invalidateQueries({ queryKey: ['timer'] });
+      invalidateTimeData();
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || 'Failed to start timer');
@@ -93,8 +95,7 @@ export function TimerWidget() {
     onSuccess: () => {
       clearTimer();
       message.success('Timer stopped');
-      queryClient.invalidateQueries({ queryKey: ['timer'] });
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      invalidateTimeData();
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || 'Failed to stop timer');
@@ -107,17 +108,22 @@ export function TimerWidget() {
     onSuccess: () => {
       clearTimer();
       message.info('Timer discarded');
-      queryClient.invalidateQueries({ queryKey: ['timer'] });
+      invalidateTimeData();
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || 'Failed to discard timer');
     },
   });
 
-  // Sync with server state
+  // Sync with server state. The server is authoritative: adopt whatever it
+  // reports even when a timer is already running locally (a timer started on
+  // another device would otherwise never be picked up), and clear a stale
+  // persisted timer when the server says nothing is running. Skip while a
+  // fetch is in flight so we don't clear on the not-yet-loaded initial state.
   useEffect(() => {
-    if (currentTimer?.data && !runningTimer) {
-      const entry = currentTimer.data;
+    if (isFetching) return;
+    const entry = currentTimer?.data ?? null;
+    if (entry) {
       setRunningTimer({
         id: entry.id,
         project_id: entry.project_id,
@@ -129,8 +135,7 @@ export function TimerWidget() {
         is_billable: entry.is_billable,
       });
       setElapsedSeconds(calculateElapsedSeconds(entry.started_at));
-    } else if (!currentTimer?.data && runningTimer && !isFetching) {
-      // Server says no timer, clear local state
+    } else {
       clearTimer();
     }
   }, [currentTimer, isFetching]);

@@ -38,11 +38,13 @@ import {
   UserOutlined,
   FileExcelOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import { api, apiClient } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 import { saveAs } from 'file-saver';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidateTimeData } from '../hooks/useInvalidateTimeData';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -68,7 +70,7 @@ const formatDuration = (minutes: number | null | undefined): string => {
 
 export function InvoicesPage() {
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
+  const invalidateTimeData = useInvalidateTimeData();
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'manager';
@@ -99,7 +101,7 @@ export function InvoicesPage() {
 
   // Fetch invoices - disabled if API unavailable
   const { data: invoicesData, isLoading, error } = useQuery({
-    queryKey: ['invoices', statusFilter, dateRange?.[0]?.valueOf(), dateRange?.[1]?.valueOf(), developerFilter],
+    queryKey: queryKeys.invoices.list({ status: statusFilter, from: dateRange?.[0]?.valueOf(), to: dateRange?.[1]?.valueOf(), developer: developerFilter }),
     queryFn: async () => {
       const res = await invoicesApi!.list(Object.keys(filters).length > 0 ? filters : undefined);
       return res.data.data?.data || [];
@@ -184,7 +186,7 @@ export function InvoicesPage() {
 
   // Fetch invoice details
   const { data: invoiceDetails, isFetching: fetchingDetails } = useQuery({
-    queryKey: ['invoices', 'detail', selectedInvoice?.id],
+    queryKey: queryKeys.invoices.detail(selectedInvoice?.id),
     queryFn: async () => {
       const res = await invoicesApi!.get(selectedInvoice!.id);
       return res.data.data;
@@ -201,7 +203,7 @@ export function InvoicesPage() {
     },
     onSuccess: () => {
       message.success(t('invoices.messages.approved'));
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      invalidateTimeData();
       setDetailsOpen(false);
     },
     onError: (err: { response?: { data?: { message?: string } }; message?: string }) => {
@@ -217,7 +219,7 @@ export function InvoicesPage() {
     },
     onSuccess: () => {
       message.success(t('invoices.messages.declined'));
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      invalidateTimeData();
       setDetailsOpen(false);
     },
     onError: (err: { response?: { data?: { message?: string } }; message?: string }) => {
@@ -233,7 +235,7 @@ export function InvoicesPage() {
     },
     onSuccess: () => {
       message.success(t('invoices.messages.paid'));
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      invalidateTimeData();
       setDetailsOpen(false);
     },
     onError: (err: { response?: { data?: { message?: string } }; message?: string }) => {

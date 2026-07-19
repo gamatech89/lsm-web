@@ -42,11 +42,13 @@ import {
   HistoryOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidateTimeData } from '../hooks/useInvalidateTimeData';
 
 dayjs.extend(isoWeek);
 dayjs.extend(weekOfYear);
@@ -93,7 +95,7 @@ type ViewType = 'today' | 'week' | 'month' | 'all';
 
 export function MyTimePage() {
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
+  const invalidateTimeData = useInvalidateTimeData();
   const [form] = Form.useForm();
   const { t } = useTranslation();
 
@@ -131,14 +133,14 @@ export function MyTimePage() {
 
   // Fetch today's entries
   const { data: todayData, isLoading: todayLoading } = useQuery({
-    queryKey: ['time-entries', 'today'],
+    queryKey: queryKeys.time.today(),
     queryFn: () => api.timeEntries.today().then((r: { data: { success: boolean; data: { entries: TimeEntry[]; total_minutes: number; formatted_total: string } } }) => r.data.data),
     enabled: view === 'today',
   });
 
   // Fetch entries based on view
   const { data: entriesData, isLoading: entriesLoading } = useQuery({
-    queryKey: ['time-entries', view, selectedDate.format('YYYY-MM-DD'), dateRange?.map(d => d.format('YYYY-MM-DD')), page],
+    queryKey: queryKeys.time.entries({ view, date: selectedDate.format('YYYY-MM-DD'), range: dateRange?.map(d => d.format('YYYY-MM-DD')), page }),
     queryFn: () => api.timeEntries.list({ ...getDateParams(), per_page: pageSize, page }).then((r: { data: { data: TimeEntry[]; meta?: { total: number; current_page: number } } }) => ({
       entries: r.data.data,
       meta: r.data.meta || { total: r.data.data.length, current_page: 1 }
@@ -148,7 +150,7 @@ export function MyTimePage() {
 
   // Fetch projects for the form
   const { data: projects } = useQuery({
-    queryKey: ['timer', 'projects'],
+    queryKey: queryKeys.timer.projects(),
     queryFn: () => api.timer.getProjects().then((r: { data: { success: boolean; data: Project[] } }) => r.data.data),
   });
 
@@ -160,7 +162,7 @@ export function MyTimePage() {
       message.success(t('time.messages.created'));
       setIsModalOpen(false);
       form.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      invalidateTimeData();
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || t('common.saveError'));
@@ -176,7 +178,7 @@ export function MyTimePage() {
       setIsModalOpen(false);
       setEditingEntry(null);
       form.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      invalidateTimeData();
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || t('common.saveError'));
@@ -188,7 +190,7 @@ export function MyTimePage() {
     mutationFn: (id: number) => api.timeEntries.delete(id).then((r: { data: { success: boolean } }) => r.data),
     onSuccess: () => {
       message.success(t('time.messages.deleted'));
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      invalidateTimeData();
     },
   });
 
@@ -201,7 +203,7 @@ export function MyTimePage() {
     onSuccess: (data: { message?: string }) => {
       message.success(data.message || t('time.selection.submitSuccess'));
       setSelectedRowKeys([]);
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      invalidateTimeData();
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || t('time.selection.submitError'));

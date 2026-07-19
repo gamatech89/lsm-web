@@ -17,8 +17,10 @@ import {
   MinusOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidateTimeData } from '../hooks/useInvalidateTimeData';
 import {
   useTimerStore,
   calculateElapsedSeconds,
@@ -60,17 +62,11 @@ interface ProjectItem {
 
 export function FloatingTimerWidget() {
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
+  const invalidateTimeData = useInvalidateTimeData();
   const popupRef = useRef<HTMLDivElement>(null);
 
   // Import auth store to check user role
   const user = useAuthStore((state) => state.user);
-
-  // Hide for pure admin users (role=admin) - they don't track time
-  // Developer-admins (is_admin=true, role=developer) still track time
-  if (user?.role === 'admin') {
-    return null;
-  }
 
   const {
     runningTimer,
@@ -92,20 +88,20 @@ export function FloatingTimerWidget() {
 
   // Fetch current timer on mount
   const { data: currentTimer, isFetching } = useQuery({
-    queryKey: ['timer', 'current'],
+    queryKey: queryKeys.timer.current(),
     queryFn: () => api.timer.getCurrent().then((r: { data: TimerResponse }) => r.data || null),
     refetchInterval: 60000,
   });
 
   // Fetch project options
   const { data: projects } = useQuery({
-    queryKey: ['timer', 'projects'],
+    queryKey: queryKeys.timer.projects(),
     queryFn: () => api.timer.getProjects().then((r: { data: { success: boolean; data: ProjectItem[] } }) => r.data.data),
   });
 
   // Fetch todos for selected project
   const { data: todos } = useQuery({
-    queryKey: ['timer', 'todos', selectedProject],
+    queryKey: queryKeys.timer.todos(selectedProject ?? undefined),
     queryFn: () => api.todos.listByProject(selectedProject!).then((r) => (r.data.data || []) as { id: number; title: string; status: string }[]),
     enabled: !!selectedProject,
   });
@@ -134,7 +130,7 @@ export function FloatingTimerWidget() {
       setSelectedTodo(null);
       setDescription('');
       setIsPopupOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['timer'] });
+      invalidateTimeData();
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || 'Failed to start timer');
@@ -148,8 +144,7 @@ export function FloatingTimerWidget() {
     onSuccess: () => {
       clearTimer();
       message.success('Time logged successfully!');
-      queryClient.invalidateQueries({ queryKey: ['timer'] });
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      invalidateTimeData();
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || 'Failed to stop timer');
@@ -162,14 +157,19 @@ export function FloatingTimerWidget() {
     onSuccess: () => {
       clearTimer();
       message.info('Timer discarded');
-      queryClient.invalidateQueries({ queryKey: ['timer'] });
+      invalidateTimeData();
     },
   });
 
-  // Sync with server state
+  // Sync with server state. The server is authoritative: adopt whatever it
+  // reports even when a timer is already running locally (a timer started on
+  // another device would otherwise never be picked up), and clear a stale
+  // persisted timer when the server says nothing is running. Skip while a
+  // fetch is in flight so we don't clear on the not-yet-loaded initial state.
   useEffect(() => {
-    if (currentTimer?.data && !runningTimer) {
-      const entry = currentTimer.data;
+    if (isFetching) return;
+    const entry = currentTimer?.data ?? null;
+    if (entry) {
       setRunningTimer({
         id: entry.id,
         project_id: entry.project_id,
@@ -181,7 +181,7 @@ export function FloatingTimerWidget() {
         is_billable: entry.is_billable,
       });
       setElapsedSeconds(calculateElapsedSeconds(entry.started_at));
-    } else if (!currentTimer?.data && runningTimer && !isFetching) {
+    } else {
       clearTimer();
     }
   }, [currentTimer, isFetching]);
@@ -219,6 +219,13 @@ export function FloatingTimerWidget() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [runningTimer]);
+
+  // Hide for pure admin users (role=admin) - they don't track time
+  // Developer-admins (is_admin=true, role=developer) still track time
+  // Hooks are all called above; safe to bail out now.
+  if (user?.role === 'admin') {
+    return null;
+  }
 
   // Handle start timer
   const handleStart = () => {
