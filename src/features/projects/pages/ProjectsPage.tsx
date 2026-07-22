@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {
@@ -480,17 +481,6 @@ export function ProjectsPage() {
   const compromisedCount = data?.data?.filter((p: Project) => p.security_status === 'compromised').length || 0;
   const monitoringCount = data?.data?.filter((p: Project) => p.security_status === 'monitoring').length || 0;
 
-  // Responsive - simple matchMedia hook
-  const useMediaQuery = (query: string) => {
-    const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
-    useEffect(() => {
-      const mql = window.matchMedia(query);
-      const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-      mql.addEventListener('change', handler);
-      return () => mql.removeEventListener('change', handler);
-    }, [query]);
-    return matches;
-  };
   const isMobile = useMediaQuery('(max-width: 767px)');
   const isTablet = useMediaQuery('(min-width: 768px) and (max-width: 1024px)');
 

@@ -44,20 +44,9 @@ import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { useThemeStore } from '@/stores/theme';
 import type { LibraryResource } from '@/lib/library-resources-api';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const { Title, Text } = Typography;
-
-/* ── responsive hook ─────────────────────────────── */
-const useMediaQuery = (query: string) => {
-  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mql = window.matchMedia(query);
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, [query]);
-  return matches;
-};
 
 export default function LibraryResourcesPage() {
   const { resolvedTheme } = useThemeStore();

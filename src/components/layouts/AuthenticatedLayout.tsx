@@ -46,23 +46,10 @@ import { useThemeStore } from '@/stores/theme';
 import { api, apiClient } from '@/lib/api';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { TwoFactorSetupGate } from '@/features/auth/components/TwoFactorSetupGate';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
-
-// Custom hook for responsive breakpoints
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia(query).matches : false
-  );
-  useEffect(() => {
-    const mql = window.matchMedia(query);
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, [query]);
-  return matches;
-}
 
 const FloatingTimerWidget = lazy(() => import('@/features/time/components/FloatingTimerWidget').then(m => ({ default: m.FloatingTimerWidget })));
 const SetAvailabilityModal = lazy(() => import('@/features/team/components/SetAvailabilityModal').then(m => ({ default: m.SetAvailabilityModal })));

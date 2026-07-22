@@ -43,20 +43,9 @@ import { ManageCredentialAccessModal } from '@/features/projects/components/Mana
 import { CredentialViewModal } from '@/features/projects/components/CredentialViewModal';
 import { useHasRole, useIsAdmin } from '@/stores/auth';
 import { queryKeys } from '@/lib/queryKeys';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const { Title, Text } = Typography;
-
-/* ── responsive hook ─────────────────────────────── */
-const useMediaQuery = (query: string) => {
-  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mql = window.matchMedia(query);
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, [query]);
-  return matches;
-};
 
 export function VaultPage() {
   const { message } = App.useApp();
