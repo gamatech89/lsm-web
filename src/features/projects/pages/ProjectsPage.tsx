@@ -15,7 +15,6 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {
   Card,
-  Table,
   Input,
   Select,
   Button,
@@ -55,6 +54,7 @@ import {
 } from '@lsm/utils';
 import { ProjectFormModal } from '../components/ProjectFormModal';
 import { PageHeader } from '@/components/common/PageHeader';
+import { ResponsiveTable } from '@/components/common/ResponsiveTable';
 import type { Project, ProjectFilters } from '@lsm/types';
 import type { ColumnsType } from 'antd/es/table';
 import { useThemeStore } from '@/stores/theme';
@@ -766,8 +766,8 @@ export function ProjectsPage() {
           )}
         </div>
 
-        {/* Table */}
-        <Table
+        {/* Table (cards on mobile) */}
+        <ResponsiveTable<Project>
           className="projects-pro-table"
           columns={columns}
           dataSource={data?.data || []}
@@ -813,6 +813,47 @@ export function ProjectsPage() {
           })}
           scroll={{ x: 1070 }}
           size="small"
+          renderCard={(project) => {
+            const healthMeta = healthOptions.find(o => o.value === project.health_status);
+            const healthLabel = (healthMeta?.label || project.health_status || '').replace('● ', '');
+            return (
+              <Card
+                size="small"
+                style={{ borderRadius: 12, cursor: 'pointer' }}
+                onClick={() => navigate(`/projects/${project.id}`)}
+                styles={{ body: { padding: 14 } }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Avatar
+                    shape="square"
+                    size={40}
+                    style={{
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      color: '#fff',
+                      fontWeight: 700,
+                      borderRadius: 8,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {project.name.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Text strong style={{ display: 'block', overflowWrap: 'anywhere' }}>
+                      {project.name}
+                    </Text>
+                    {project.url && (
+                      <Text type="secondary" style={{ fontSize: 12, overflowWrap: 'anywhere' }}>
+                        {project.url.replace(/^https?:\/\//, '')}
+                      </Text>
+                    )}
+                  </div>
+                  <Tag bordered={false} color={healthMeta?.color} style={{ margin: 0, flexShrink: 0 }}>
+                    {healthLabel}
+                  </Tag>
+                </div>
+              </Card>
+            );
+          }}
         />
       </Card>
 
