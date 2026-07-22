@@ -17,7 +17,6 @@ import {
   Typography,
   Tag,
   Button,
-  Space,
   Spin,
   App,
   Empty,
@@ -47,6 +46,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
 import { useAuthStore, useIsAdmin, useCurrentUser } from '@/stores/auth';
+import { PageHeader } from '@/components/common/PageHeader';
 import { ProjectFormModal } from '../components/ProjectFormModal';
 import { ProjectSubNav } from '../components/ProjectSubNav';
 import { OverviewSection } from '../components/sections/OverviewSection';
@@ -80,7 +80,7 @@ import { SupportTicketsTab } from '../components/SupportTicketsTab';
 // Inline sections for Todos, Resources, Reports (existing functionality)
 // Note: Todos, Resources, and Reports sections reuse existing components
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
 export function ProjectDetailPageV2() {
   const { id } = useParams<{ id: string }>();
@@ -307,58 +307,42 @@ export function ProjectDetailPageV2() {
       }}
     >
       {/* Header Bar - Single bar aligned with content width */}
-      <div
-        style={{
-          flexShrink: 0,
-          borderRadius: 12,
-          background: isDark ? '#1e293b' : '#fff',
-          border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
-          padding: '10px 16px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <Space align="center" size={12}>
-          <Link to="/projects">
-            <Button icon={<ArrowLeftOutlined />} type="text" size="small" />
-          </Link>
-          <Avatar
-            shape="square"
-            size={32}
-            style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 700,
-              borderRadius: 6,
-            }}
-          >
-            {project.name.charAt(0).toUpperCase()}
-          </Avatar>
-          <div style={{ minWidth: 0 }}>
-            <Text strong style={{ fontSize: 14 }}>{project.name}</Text>
-            {project.url && (
-              <div>
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  {project.url.replace(/^https?:\/\//, '')}
-                </Text>
-              </div>
-            )}
-          </div>
-          <Tag bordered={false} color={healthConfig.color} style={{ margin: 0 }}>
-            {healthConfig.label}
-          </Tag>
-          {project.security_status !== 'secure' && (
-            <Tag bordered={false} color={securityConfig.color} style={{ margin: 0 }}>
-              <LockOutlined /> {securityConfig.label}
+      <PageHeader
+        prefix={
+          <>
+            <Link to="/projects">
+              <Button icon={<ArrowLeftOutlined />} type="text" size="small" />
+            </Link>
+            <Avatar
+              shape="square"
+              size={32}
+              style={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                color: '#fff',
+                fontSize: 14,
+                fontWeight: 700,
+                borderRadius: 6,
+              }}
+            >
+              {project.name.charAt(0).toUpperCase()}
+            </Avatar>
+          </>
+        }
+        title={project.name}
+        subtitle={project.url ? project.url.replace(/^https?:\/\//, '') : undefined}
+        tags={
+          <>
+            <Tag bordered={false} color={healthConfig.color} style={{ margin: 0 }}>
+              {healthConfig.label}
             </Tag>
-          )}
-        </Space>
-        <Space size={8}>
-          {project.url && (
-            <Button icon={<GlobalOutlined />} href={project.url} target="_blank" size="small" />
-          )}
+            {project.security_status !== 'secure' && (
+              <Tag bordered={false} color={securityConfig.color} style={{ margin: 0 }}>
+                <LockOutlined /> {securityConfig.label}
+              </Tag>
+            )}
+          </>
+        }
+        primaryAction={
           <Button
             icon={<SyncOutlined spin={resyncMutation.isPending} />}
             size="small"
@@ -367,32 +351,39 @@ export function ProjectDetailPageV2() {
           >
             Re-sync
           </Button>
-          {lsmStatus?.connected && (
-            <Button type="primary" icon={<LoginOutlined />} onClick={handleSsoLogin} loading={ssoLoading} size="small">
-              Admin
-            </Button>
-          )}
-          {canEdit && (
-            <Button icon={<EditOutlined />} onClick={() => setShowEditModal(true)} size="small">
-              Edit
-            </Button>
-          )}
-          {canDelete && (
-            <Popconfirm
-              title="Delete project?"
-              description="This action cannot be undone. All associated data will be deleted."
-              onConfirm={() => deleteMutation.mutate()}
-              okText="Yes, delete"
-              cancelText="Cancel"
-              okButtonProps={{ danger: true }}
-            >
-              <Button icon={<DeleteOutlined />} danger size="small">
-                Delete
+        }
+        actions={
+          <>
+            {project.url && (
+              <Button icon={<GlobalOutlined />} href={project.url} target="_blank" size="small" />
+            )}
+            {lsmStatus?.connected && (
+              <Button type="primary" icon={<LoginOutlined />} onClick={handleSsoLogin} loading={ssoLoading} size="small">
+                Admin
               </Button>
-            </Popconfirm>
-          )}
-        </Space>
-      </div>
+            )}
+            {canEdit && (
+              <Button icon={<EditOutlined />} onClick={() => setShowEditModal(true)} size="small">
+                Edit
+              </Button>
+            )}
+            {canDelete && (
+              <Popconfirm
+                title="Delete project?"
+                description="This action cannot be undone. All associated data will be deleted."
+                onConfirm={() => deleteMutation.mutate()}
+                okText="Yes, delete"
+                cancelText="Cancel"
+                okButtonProps={{ danger: true }}
+              >
+                <Button icon={<DeleteOutlined />} danger size="small">
+                  Delete
+                </Button>
+              </Popconfirm>
+            )}
+          </>
+        }
+      />
 
       {/* Main Content Area - Fills remaining height */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', gap: 16 }}>
