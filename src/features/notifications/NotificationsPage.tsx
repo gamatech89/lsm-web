@@ -32,20 +32,9 @@ import { queryKeys } from '@/lib/queryKeys';
 import { formatRelativeTime } from '@lsm/utils';
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '@/stores/theme';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const { Title, Text } = Typography;
-
-/* ── responsive hook ─────────────────────────────── */
-const useMediaQuery = (query: string) => {
-    const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
-    useEffect(() => {
-        const mql = window.matchMedia(query);
-        const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-        mql.addEventListener('change', handler);
-        return () => mql.removeEventListener('change', handler);
-    }, [query]);
-    return matches;
-};
 
 /**
  * Get human-readable notification message

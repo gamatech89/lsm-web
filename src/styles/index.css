@@ -536,3 +536,13 @@ html.dark .ant-table-thead > tr > th,
   color: #94a3b8 !important;
 }
 
+/* Any antd table scrolls within its own box on narrow screens instead of
+   stretching the page. ResponsiveTable opts specific lists into cards; this
+   catches every table that does not. */
+@media (max-width: 767px) {
+  .ant-table-wrapper .ant-table-content,
+  .ant-table-wrapper .ant-table-body {
+    overflow-x: auto;
+  }
+}
+
