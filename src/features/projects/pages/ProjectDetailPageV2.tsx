@@ -355,7 +355,9 @@ export function ProjectDetailPageV2() {
         actions={
           <>
             {project.url && (
-              <Button icon={<GlobalOutlined />} href={project.url} target="_blank" size="small" />
+              <Button icon={<GlobalOutlined />} href={project.url} target="_blank" size="small">
+                Visit site
+              </Button>
             )}
             {lsmStatus?.connected && (
               <Button type="primary" icon={<LoginOutlined />} onClick={handleSsoLogin} loading={ssoLoading} size="small">

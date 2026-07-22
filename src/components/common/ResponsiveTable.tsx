@@ -1,5 +1,5 @@
-import { Table } from 'antd';
-import type { TableProps } from 'antd';
+import { Table, Spin, Empty, Pagination } from 'antd';
+import type { TableProps, TablePaginationConfig } from 'antd';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 
 export interface ResponsiveTableProps<T> extends TableProps<T> {
@@ -24,11 +24,43 @@ export function ResponsiveTable<T extends object>({
       }
       return i;
     };
+
+    const { loading, pagination } = tableProps;
+
+    if (loading) {
+      return (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+          <Spin size="large" />
+        </div>
+      );
+    }
+
+    const rows = dataSource as T[];
+
+    if (rows.length === 0) {
+      return <Empty style={{ padding: '48px 0' }} />;
+    }
+
+    const paginationConfig: TablePaginationConfig | false | undefined = pagination;
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {(dataSource as T[]).map((rec, i) => (
+        {rows.map((rec, i) => (
           <div key={keyOf(rec, i)}>{renderCard(rec)}</div>
         ))}
+        {paginationConfig && (
+          <Pagination
+            current={paginationConfig.current}
+            pageSize={paginationConfig.pageSize}
+            total={paginationConfig.total}
+            onChange={paginationConfig.onChange}
+            onShowSizeChange={paginationConfig.onShowSizeChange}
+            showSizeChanger={paginationConfig.showSizeChanger}
+            showTotal={paginationConfig.showTotal}
+            pageSizeOptions={paginationConfig.pageSizeOptions}
+            style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}
+          />
+        )}
       </div>
     );
   }
