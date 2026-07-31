@@ -784,7 +784,11 @@ export function ProjectsPage() {
             size: isMobile ? 'small' : 'default',
             style: { padding: '12px 16px', margin: 0 },
           }}
-          onChange={(_pagination, _tableFilters, sorter: any) => {
+          onChange={(_pagination, _tableFilters, sorter: any, extra) => {
+            // antd fires Table onChange on pagination clicks too, with the
+            // still-active sorter — only react to actual sort changes here;
+            // pagination.onChange above owns page/per_page updates.
+            if (extra.action !== 'sort') return;
             if (sorter && sorter.columnKey) {
               const sortKeyMap: Record<string, string> = {
                 created_at: 'created_at',
