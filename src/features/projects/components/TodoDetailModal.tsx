@@ -33,6 +33,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
 import { useHasRole, useIsAdmin } from '@/stores/auth';
@@ -199,7 +200,7 @@ export function TodoDetailModal({
     onSuccess: () => {
       invalidateTodos(projectId);
     },
-    onError: () => message.error('Failed to update todo'),
+    onError: (error) => message.error(getApiErrorMessage(error, 'Failed to update todo')),
   });
 
   // Delete todo mutation

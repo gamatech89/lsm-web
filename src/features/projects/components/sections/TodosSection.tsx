@@ -43,6 +43,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { useThemeStore } from '@/stores/theme';
 import { TodoFormModal } from '../TodoFormModal';
 import { TodoDetailModal } from '../TodoDetailModal';
@@ -149,8 +150,8 @@ export default function TodosSection({ project }: TodosSectionProps) {
       message.success(`Status changed to ${label}`);
       invalidateTodos(project.id);
     },
-    onError: () => {
-      message.error('Failed to update status');
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Failed to update status'));
     },
   });
 
@@ -160,6 +161,9 @@ export default function TodosSection({ project }: TodosSectionProps) {
     onSuccess: () => {
       message.success('Task deleted');
       invalidateTodos(project.id);
+    },
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Failed to delete task'));
     },
   });
 
@@ -171,8 +175,8 @@ export default function TodosSection({ project }: TodosSectionProps) {
       message.success('Assignee updated');
       invalidateTodos(project.id);
     },
-    onError: () => {
-      message.error('Failed to update assignee');
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Failed to update assignee'));
     },
   });
 
@@ -187,6 +191,9 @@ export default function TodosSection({ project }: TodosSectionProps) {
       setSelectedRowKeys([]);
       invalidateTodos(project.id);
     },
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Failed to complete tasks'));
+    },
   });
 
   // Bulk delete mutation
@@ -198,6 +205,9 @@ export default function TodosSection({ project }: TodosSectionProps) {
       message.success(`${selectedRowKeys.length} tasks deleted`);
       setSelectedRowKeys([]);
       invalidateTodos(project.id);
+    },
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Failed to delete tasks'));
     },
   });
 

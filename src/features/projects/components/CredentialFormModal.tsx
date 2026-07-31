@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import { api, apiClient } from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { Credential } from '@lsm/types';
 import { useInvalidateCredentials } from '@/features/vault/hooks/useInvalidateCredentials';
 
@@ -89,8 +90,8 @@ export function CredentialFormModal({
       invalidateCredentials(projectId);
       handleClose();
     },
-    onError: () => {
-      message.error('Failed to create credential');
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Failed to create credential'));
     },
   });
 
@@ -106,8 +107,8 @@ export function CredentialFormModal({
       invalidateCredentials(projectId);
       handleClose();
     },
-    onError: () => {
-      message.error('Failed to update credential');
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Failed to update credential'));
     },
   });
 
