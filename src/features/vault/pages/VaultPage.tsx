@@ -43,6 +43,7 @@ import { ManageCredentialAccessModal } from '@/features/projects/components/Mana
 import { CredentialViewModal } from '@/features/projects/components/CredentialViewModal';
 import { useHasRole, useIsAdmin } from '@/stores/auth';
 import { queryKeys } from '@/lib/queryKeys';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const { Title, Text } = Typography;
@@ -113,8 +114,8 @@ export function VaultPage() {
       message.success(t('vault.messages.deleted'));
       queryClient.invalidateQueries({ queryKey: queryKeys.vault.all() });
     },
-    onError: () => {
-      message.error(t('common.deleteError'));
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, t('common.deleteError')));
     },
   });
 

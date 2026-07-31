@@ -51,6 +51,7 @@ import { ManageCredentialAccessModal } from '../ManageCredentialAccessModal';
 import { useThemeStore } from '@/stores/theme';
 import { useHasRole, useIsAdmin } from '@/stores/auth';
 import { queryKeys } from '@/lib/queryKeys';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 const { Text, Title } = Typography;
 
@@ -101,7 +102,7 @@ export default function CredentialsSection({ project }: CredentialsSectionProps)
       message.success(t('vault.messages.deleted'));
       queryClient.invalidateQueries({ queryKey: queryKeys.projects.credentials(project.id) });
     },
-    onError: () => message.error(t('common.deleteError')),
+    onError: (error) => message.error(getApiErrorMessage(error, t('common.deleteError'))),
   });
 
   /* ── type helpers ─────────────────────────────────── */
