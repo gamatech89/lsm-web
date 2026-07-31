@@ -96,9 +96,12 @@ function filtersFromParams(params: URLSearchParams): ProjectFilters {
   return filters;
 }
 
-function paramsFromFilters(filters: ProjectFilters): URLSearchParams {
-  const params = new URLSearchParams();
+// Rewrites only the known filter keys; any other query param (e.g. a user_id
+// deep link not yet consumed by its effect) is carried over untouched.
+function paramsFromFilters(filters: ProjectFilters, base?: URLSearchParams): URLSearchParams {
+  const params = new URLSearchParams(base);
   for (const key of FILTER_PARAM_KEYS) {
+    params.delete(key);
     const value = (filters as any)[key];
     if (value === undefined || value === null || value === '') continue;
     if (value === (DEFAULT_FILTERS as any)[key]) continue;
@@ -125,7 +128,7 @@ export function ProjectsPage() {
 
   const setFilters = useCallback(
     (update: (current: ProjectFilters) => ProjectFilters) => {
-      setSearchParams(prev => paramsFromFilters(update(filtersFromParams(prev))), { replace: true });
+      setSearchParams(prev => paramsFromFilters(update(filtersFromParams(prev)), prev), { replace: true });
     },
     [setSearchParams]
   );
@@ -175,7 +178,9 @@ export function ProjectsPage() {
         next.developer_id = uid;
         next.page = 1;
       }
-      return paramsFromFilters(next);
+      const params = paramsFromFilters(next, prev);
+      params.delete('user_id');
+      return params;
     }, { replace: true });
   }, [userIdParam, filterOptions]);
 
@@ -838,26 +843,27 @@ export function ProjectsPage() {
             // still-active sorter — only react to actual sort changes here;
             // pagination.onChange above owns page/per_page updates.
             if (extra.action !== 'sort') return;
-            if (sorter && sorter.columnKey) {
+            // Third click on a sorted column cancels sorting: antd then emits a
+            // sorter with no order (and no columnKey) — clear the sort params.
+            if (!sorter?.order) {
+              setFilters(f => {
+                const { sort_by, sort_dir, ...rest } = f as any;
+                return { ...rest, page: 1 };
+              });
+              return;
+            }
+            if (sorter.columnKey) {
               const sortKeyMap: Record<string, string> = {
                 created_at: 'created_at',
                 todos: 'pending_todos_count',
               };
               const sortBy = sortKeyMap[sorter.columnKey] || sorter.columnKey;
-              if (sorter.order) {
-                setFilters(f => ({
-                  ...f,
-                  sort_by: sortBy as any,
-                  sort_dir: sorter.order === 'ascend' ? 'asc' : 'desc',
-                  page: 1,
-                }));
-              } else {
-                // Reset to default sort
-                setFilters(f => {
-                  const { sort_by, sort_dir, ...rest } = f as any;
-                  return { ...rest, page: 1 };
-                });
-              }
+              setFilters(f => ({
+                ...f,
+                sort_by: sortBy as any,
+                sort_dir: sorter.order === 'ascend' ? 'asc' : 'desc',
+                page: 1,
+              }));
             }
           }}
           onRow={(record) => ({

@@ -201,6 +201,10 @@ function useMenuItems(isCollapsed: boolean = false): ItemType[] {
 export function AuthenticatedLayout() {
   const isMobile = useMediaQuery('(max-width: 767px)');
   const isTablet = useMediaQuery('(min-width: 768px) and (max-width: 1024px)');
+  // Below ~1216px the expanded 260px sider leaves too little header room for the
+  // button labels and user name block — they must collapse to icons or the fixed-width
+  // header content overflows past the viewport edge.
+  const compactHeader = useMediaQuery('(max-width: 1215px)');
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
@@ -485,7 +489,7 @@ export function AuthenticatedLayout() {
               onClick={() => setIsAvailabilityModalOpen(true)}
               style={{ borderRadius: 10, color: '#ef4444' }}
             >
-              {!isMobile && !isTablet && t('availability.setStatus')}
+              {!isMobile && !compactHeader && t('availability.setStatus')}
             </Button>
 
             {/* Send a one-time secret */}
@@ -496,7 +500,7 @@ export function AuthenticatedLayout() {
                 onClick={() => setSecretModalOpen(true)}
                 style={{ borderRadius: 10, color: textSecondary }}
               >
-                {!isMobile && !isTablet && t('secrets.send', 'Send a secret')}
+                {!isMobile && !compactHeader && t('secrets.send', 'Send a secret')}
               </Button>
             </Tooltip>
 
@@ -570,8 +574,8 @@ export function AuthenticatedLayout() {
                 >
                   {user?.name?.charAt(0).toUpperCase()}
                 </Avatar>
-                {/* Hide user text on mobile/tablet */}
-                {!isMobile && !isTablet && (
+                {/* Hide user text whenever the header is compact */}
+                {!isMobile && !compactHeader && (
                   <div style={{ lineHeight: 1.2 }}>
                     <Text
                       strong
