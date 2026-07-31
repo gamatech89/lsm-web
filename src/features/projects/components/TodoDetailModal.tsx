@@ -211,7 +211,7 @@ export function TodoDetailModal({
       invalidateTodos(projectId);
       onClose();
     },
-    onError: () => message.error('Failed to delete todo'),
+    onError: (error) => message.error(getApiErrorMessage(error, 'Failed to delete todo')),
   });
 
   // Log Time Mutation
@@ -224,7 +224,7 @@ export function TodoDetailModal({
       setLogTimeDescription('');
       invalidateTimeData();
     },
-    onError: () => message.error('Failed to log time'),
+    onError: (error) => message.error(getApiErrorMessage(error, 'Failed to log time')),
   });
 
   // Delete Time Mutation
@@ -234,6 +234,7 @@ export function TodoDetailModal({
       message.success('Time entry deleted');
       invalidateTimeData();
     },
+    onError: (error) => message.error(getApiErrorMessage(error, 'Failed to delete time entry')),
   });
 
   const handleLogTime = () => {

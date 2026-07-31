@@ -79,8 +79,8 @@ export function TodoFormModal({
       invalidateTodos(projectId);
       handleClose();
     },
-    onError: () => {
-      message.error('Failed to create todo');
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Failed to create todo'));
     },
   });
 
