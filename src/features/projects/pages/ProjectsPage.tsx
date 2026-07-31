@@ -8,7 +8,7 @@
  * - PM vs Developer color distinction
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import dayjs from 'dayjs';
@@ -63,6 +63,53 @@ dayjs.extend(relativeTime);
 
 const { Text } = Typography;
 
+// The URL is the source of truth for the list state so browser Back and
+// refresh restore the exact filters, sort, and page. Defaults stay out of
+// the URL; numeric params are parsed back to numbers.
+const DEFAULT_FILTERS: ProjectFilters = {
+  page: 1,
+  per_page: 15,
+  search: '',
+  health: 'all',
+  security: 'all',
+};
+
+const FILTER_PARAM_KEYS = [
+  'search', 'health', 'security', 'manager_id', 'developer_id',
+  'tag', 'sort_by', 'sort_dir', 'page', 'per_page',
+] as const;
+
+const NUMERIC_FILTER_KEYS: readonly string[] = ['page', 'per_page', 'manager_id', 'developer_id'];
+
+function filtersFromParams(params: URLSearchParams): ProjectFilters {
+  const filters: ProjectFilters = { ...DEFAULT_FILTERS };
+  for (const key of FILTER_PARAM_KEYS) {
+    const raw = params.get(key);
+    if (raw === null || raw === '') continue;
+    if (NUMERIC_FILTER_KEYS.includes(key)) {
+      const num = Number(raw);
+      if (!Number.isNaN(num)) (filters as any)[key] = num;
+    } else {
+      (filters as any)[key] = raw;
+    }
+  }
+  return filters;
+}
+
+// Rewrites only the known filter keys; any other query param (e.g. a user_id
+// deep link not yet consumed by its effect) is carried over untouched.
+function paramsFromFilters(filters: ProjectFilters, base?: URLSearchParams): URLSearchParams {
+  const params = new URLSearchParams(base);
+  for (const key of FILTER_PARAM_KEYS) {
+    params.delete(key);
+    const value = (filters as any)[key];
+    if (value === undefined || value === null || value === '') continue;
+    if (value === (DEFAULT_FILTERS as any)[key]) continue;
+    params.set(key, String(value));
+  }
+  return params;
+}
+
 export function ProjectsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -75,14 +122,16 @@ export function ProjectsPage() {
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Filters state
-  const [filters, setFilters] = useState<ProjectFilters>({
-    page: 1,
-    per_page: 15,
-    search: '',
-    health: 'all',
-    security: 'all',
-  });
+  // Filters state — derived from the URL; writes replace the current history
+  // entry so typing in the search box does not spam history.
+  const filters = useMemo(() => filtersFromParams(searchParams), [searchParams]);
+
+  const setFilters = useCallback(
+    (update: (current: ProjectFilters) => ProjectFilters) => {
+      setSearchParams(prev => paramsFromFilters(update(filtersFromParams(prev)), prev), { replace: true });
+    },
+    [setSearchParams]
+  );
 
   // Fetch projects
   const { data, isLoading, refetch } = useQuery({
@@ -110,7 +159,9 @@ export function ProjectsPage() {
   // page stays mounted re-applies the filter instead of being ignored.
   const userIdParam = searchParams.get('user_id');
 
-  // Resolve user_id URL param → apply the correct manager/developer filter
+  // Resolve user_id URL param → apply the correct manager/developer filter.
+  // Rewrites the URL in one pass: the filter lands in manager_id/developer_id
+  // and user_id is cleaned up (it is not a serialized filter param).
   useEffect(() => {
     if (!userIdParam || !filterOptions) return;
 
@@ -118,16 +169,19 @@ export function ProjectsPage() {
     const isManager = filterOptions.managers?.some((m: any) => m.id === uid);
     const isDeveloper = filterOptions.developers?.some((d: any) => d.id === uid);
 
-    if (isManager) {
-      setFilters(f => ({ ...f, manager_id: uid, page: 1 }));
-    } else if (isDeveloper) {
-      setFilters(f => ({ ...f, developer_id: uid, page: 1 }));
-    }
-
-    // Clean up URL now that the param has been applied
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete('user_id');
-    setSearchParams(newParams, { replace: true });
+    setSearchParams(prev => {
+      const next = filtersFromParams(prev);
+      if (isManager) {
+        next.manager_id = uid;
+        next.page = 1;
+      } else if (isDeveloper) {
+        next.developer_id = uid;
+        next.page = 1;
+      }
+      const params = paramsFromFilters(next, prev);
+      params.delete('user_id');
+      return params;
+    }, { replace: true });
   }, [userIdParam, filterOptions]);
 
   // Update project mutation (for inline status changes)
@@ -784,27 +838,32 @@ export function ProjectsPage() {
             size: isMobile ? 'small' : 'default',
             style: { padding: '12px 16px', margin: 0 },
           }}
-          onChange={(_pagination, _tableFilters, sorter: any) => {
-            if (sorter && sorter.columnKey) {
+          onChange={(_pagination, _tableFilters, sorter: any, extra) => {
+            // antd fires Table onChange on pagination clicks too, with the
+            // still-active sorter — only react to actual sort changes here;
+            // pagination.onChange above owns page/per_page updates.
+            if (extra.action !== 'sort') return;
+            // Third click on a sorted column cancels sorting: antd then emits a
+            // sorter with no order (and no columnKey) — clear the sort params.
+            if (!sorter?.order) {
+              setFilters(f => {
+                const { sort_by, sort_dir, ...rest } = f as any;
+                return { ...rest, page: 1 };
+              });
+              return;
+            }
+            if (sorter.columnKey) {
               const sortKeyMap: Record<string, string> = {
                 created_at: 'created_at',
                 todos: 'pending_todos_count',
               };
               const sortBy = sortKeyMap[sorter.columnKey] || sorter.columnKey;
-              if (sorter.order) {
-                setFilters(f => ({
-                  ...f,
-                  sort_by: sortBy as any,
-                  sort_dir: sorter.order === 'ascend' ? 'asc' : 'desc',
-                  page: 1,
-                }));
-              } else {
-                // Reset to default sort
-                setFilters(f => {
-                  const { sort_by, sort_dir, ...rest } = f as any;
-                  return { ...rest, page: 1 };
-                });
-              }
+              setFilters(f => ({
+                ...f,
+                sort_by: sortBy as any,
+                sort_dir: sorter.order === 'ascend' ? 'asc' : 'desc',
+                page: 1,
+              }));
             }
           }}
           onRow={(record) => ({
