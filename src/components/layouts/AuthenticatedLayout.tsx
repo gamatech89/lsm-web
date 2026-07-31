@@ -477,7 +477,7 @@ export function AuthenticatedLayout() {
               </AutoComplete>
             )}
 
-            {/* Set Status — icon only on mobile */}
+            {/* Set Status — icon only on mobile/tablet so the header never overflows */}
             <Button
               type="text"
               danger
@@ -485,7 +485,7 @@ export function AuthenticatedLayout() {
               onClick={() => setIsAvailabilityModalOpen(true)}
               style={{ borderRadius: 10, color: '#ef4444' }}
             >
-              {!isMobile && t('availability.setStatus')}
+              {!isMobile && !isTablet && t('availability.setStatus')}
             </Button>
 
             {/* Send a one-time secret */}
@@ -496,7 +496,7 @@ export function AuthenticatedLayout() {
                 onClick={() => setSecretModalOpen(true)}
                 style={{ borderRadius: 10, color: textSecondary }}
               >
-                {!isMobile && t('secrets.send', 'Send a secret')}
+                {!isMobile && !isTablet && t('secrets.send', 'Send a secret')}
               </Button>
             </Tooltip>
 
@@ -570,8 +570,8 @@ export function AuthenticatedLayout() {
                 >
                   {user?.name?.charAt(0).toUpperCase()}
                 </Avatar>
-                {/* Hide user text on mobile */}
-                {!isMobile && (
+                {/* Hide user text on mobile/tablet */}
+                {!isMobile && !isTablet && (
                   <div style={{ lineHeight: 1.2 }}>
                     <Text
                       strong
