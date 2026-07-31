@@ -24,6 +24,7 @@ import { UploadOutlined, PaperClipOutlined, LinkOutlined, FileTextOutlined } fro
 import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { queryKeys } from '@/lib/queryKeys';
 import { priorityOptions, CONTROL_HEIGHT } from '../constants';
 import { useInvalidateTodos } from '../hooks/useInvalidateTodos';
@@ -78,8 +79,8 @@ export function TodoFormModal({
       invalidateTodos(projectId);
       handleClose();
     },
-    onError: () => {
-      message.error('Failed to create todo');
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Failed to create todo'));
     },
   });
 
@@ -91,8 +92,8 @@ export function TodoFormModal({
       invalidateTodos(projectId);
       handleClose();
     },
-    onError: () => {
-      message.error('Failed to update todo');
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Failed to update todo'));
     },
   });
 

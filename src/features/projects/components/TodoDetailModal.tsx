@@ -33,6 +33,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
 import { useHasRole, useIsAdmin } from '@/stores/auth';
@@ -199,7 +200,7 @@ export function TodoDetailModal({
     onSuccess: () => {
       invalidateTodos(projectId);
     },
-    onError: () => message.error('Failed to update todo'),
+    onError: (error) => message.error(getApiErrorMessage(error, 'Failed to update todo')),
   });
 
   // Delete todo mutation
@@ -210,7 +211,7 @@ export function TodoDetailModal({
       invalidateTodos(projectId);
       onClose();
     },
-    onError: () => message.error('Failed to delete todo'),
+    onError: (error) => message.error(getApiErrorMessage(error, 'Failed to delete todo')),
   });
 
   // Log Time Mutation
@@ -223,7 +224,7 @@ export function TodoDetailModal({
       setLogTimeDescription('');
       invalidateTimeData();
     },
-    onError: () => message.error('Failed to log time'),
+    onError: (error) => message.error(getApiErrorMessage(error, 'Failed to log time')),
   });
 
   // Delete Time Mutation
@@ -233,6 +234,7 @@ export function TodoDetailModal({
       message.success('Time entry deleted');
       invalidateTimeData();
     },
+    onError: (error) => message.error(getApiErrorMessage(error, 'Failed to delete time entry')),
   });
 
   const handleLogTime = () => {
