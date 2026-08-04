@@ -68,7 +68,7 @@ const SCOPE_OPTIONS: ScopeOption[] = [
     value: 'mcp:read',
     label: 'Lesen',
     hint: 'Projekte, Todos, Zeiten und Team einsehen. Ändert nichts.',
-    roles: ['admin', 'manager', 'developer'],
+    roles: ['admin', 'manager', 'developer', 'viewer'],
   },
   {
     value: 'mcp:write',
