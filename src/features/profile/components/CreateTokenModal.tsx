@@ -33,7 +33,27 @@ import { useAuthStore } from '@/stores/auth';
 
 const { Text, Paragraph } = Typography;
 
-const MCP_URL = `${window.location.origin.replace('app.', 'api.')}/mcp`;
+/**
+ * The MCP endpoint lives on the API host, not this app's own origin, so it
+ * must come from the same source src/lib/api.ts:40 uses to reach the API
+ * (VITE_API_URL) — never guessed from window.location. Guessing previously
+ * meant string-replacing "app." with "api." in the current origin, which was
+ * a no-op in local dev (no "app." to replace, landing on the Vite dev server
+ * instead of the API) and an unverified hostname assumption in production.
+ * `new URL(value, base)` resolves both the absolute production URL and the
+ * relative dev fallback ('/api/v1') to the right origin; the try/catch is
+ * only there so a malformed env value degrades to window.location.origin
+ * instead of throwing at module scope and blanking the whole page.
+ */
+const API_ORIGIN = (() => {
+  try {
+    return new URL(import.meta.env.VITE_API_URL || '/api/v1', window.location.origin).origin;
+  } catch {
+    return window.location.origin;
+  }
+})();
+
+const MCP_URL = `${API_ORIGIN}/mcp`;
 
 interface ScopeOption {
   value: IntegrationTokenScope;
@@ -103,8 +123,16 @@ export function CreateTokenModal({ open, onClose }: Props) {
   });
 
   const handleClose = () => {
+    // Only reset while the <Form> is actually mounted (the create step, not
+    // the reveal step): onSuccess already reset the fields once, while the
+    // form was still on screen, so by the time "Fertig" calls this the form
+    // has been swapped out for the reveal <Space> and this instance isn't
+    // connected to any rendered Form element — calling it here would just
+    // log antd's "not connected" warning on every create-and-acknowledge run.
+    if (!revealed) {
+      form.resetFields();
+    }
     setRevealed(null);
-    form.resetFields();
     onClose();
   };
 
@@ -116,6 +144,16 @@ export function CreateTokenModal({ open, onClose }: Props) {
   const connectCommand = revealed
     ? `claude mcp add --transport http lsm ${MCP_URL} \\\n  --header "Authorization: Bearer ${revealed}" --scope user`
     : '';
+
+  // Pre-checking 'mcp:read' unconditionally contradicted the disabled state
+  // for a role that isn't in its `roles` list (initialValues populates form
+  // state regardless of a field's disabled rendering): the checkbox showed
+  // disabled with "für deine Rolle nicht verfügbar" while the form still
+  // carried it as a selected value. Only default it in when this role can
+  // actually select it; otherwise start with nothing checked.
+  const canSelectReadByDefault =
+    SCOPE_OPTIONS.find((scope) => scope.value === 'mcp:read')?.roles.includes(role) ?? false;
+  const initialScopes: IntegrationTokenScope[] = canSelectReadByDefault ? ['mcp:read'] : [];
 
   return (
     <Modal
@@ -145,7 +183,6 @@ export function CreateTokenModal({ open, onClose }: Props) {
             ]
       }
       width={640}
-      destroyOnClose={false}
       // The reveal step shows the token exactly once — closing this modal by
       // any dismissal path other than the explicit "Fertig" button loses it
       // permanently. `closable`/`maskClosable` alone don't cover Escape: antd
@@ -208,7 +245,7 @@ export function CreateTokenModal({ open, onClose }: Props) {
         <Form
           form={form}
           layout="vertical"
-          initialValues={{ scopes: ['mcp:read'], expires_in: '90d' }}
+          initialValues={{ scopes: initialScopes, expires_in: '90d' }}
           onFinish={(values) => createMutation.mutate(values)}
         >
           <Form.Item
