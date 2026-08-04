@@ -146,8 +146,17 @@ export function CreateTokenModal({ open, onClose }: Props) {
       }
       width={640}
       destroyOnClose={false}
+      // The reveal step shows the token exactly once — closing this modal by
+      // any dismissal path other than the explicit "Fertig" button loses it
+      // permanently. `closable`/`maskClosable` alone don't cover Escape: antd
+      // forwards `keyboard` to rc-dialog, which defaults it to `true` and
+      // checks it independently of `closable`, so Escape would otherwise
+      // still fire onCancel even with the X hidden and the mask locked. All
+      // three must stay tied to `!revealed` together — do not "simplify" this
+      // back down to just the first two.
       maskClosable={!revealed}
       closable={!revealed}
+      keyboard={!revealed}
     >
       {revealed ? (
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
