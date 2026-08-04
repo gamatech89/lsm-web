@@ -32,6 +32,7 @@ import { createBackupsApi } from './backups-api';
 import { createPhpErrorsApi } from './php-errors-api';
 import { createLibraryResourcesApi } from './library-resources-api';
 import { createEphemeralSecretsApi } from './ephemeral-secrets-api';
+import { createIntegrationTokensApi } from './integration-tokens-api';
 import { useAuthStore } from '@/stores/auth';
 
 // Create the base API client
@@ -72,6 +73,7 @@ export const api = {
   libraryResources: createLibraryResourcesApi(client),
   siteReviews: createSiteReviewsApi(client),
   ephemeralSecrets: createEphemeralSecretsApi(client),
+  integrationTokens: createIntegrationTokensApi(client),
 };
 
 // Export the raw client for custom requests
