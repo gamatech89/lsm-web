@@ -36,6 +36,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
+import { IntegrationTokensCard } from '../components/IntegrationTokensCard';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -602,6 +603,8 @@ export function ProfilePage() {
               </>
             )}
           </Card>
+
+          <IntegrationTokensCard />
 
           {/* Billing Information - Developer only */}
           {isDeveloper && (
