@@ -172,4 +172,8 @@ export const queryKeys = {
     // which is the pre-password-gate info call (getShare).
     reviewPins: (token: string) => ['share', 'review-pins', token] as const,
   },
+
+  integrationTokens: {
+    all: () => ['integration-tokens'] as const,
+  },
 } as const;

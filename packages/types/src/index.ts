@@ -536,3 +536,42 @@ export interface EphemeralSecretReveal {
   };
   revealed_once: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Integration tokens — long-lived scoped bearer tokens for MCP clients
+// ---------------------------------------------------------------------------
+
+export type IntegrationTokenScope =
+  | 'mcp:read'
+  | 'mcp:write'
+  | 'mcp:wp'
+  | 'mcp:wp-destructive';
+
+export type IntegrationTokenExpiry = '30d' | '90d' | '1y' | 'never';
+
+export interface IntegrationToken {
+  id: number;
+  name: string;
+  scopes: IntegrationTokenScope[];
+  created_at: string;
+  /** null means the token never expires. */
+  expires_at: string | null;
+  last_used_at: string | null;
+  last_used_ip: string | null;
+  created_from_ip: string | null;
+  is_expired: boolean;
+}
+
+export interface CreateIntegrationTokenPayload {
+  name: string;
+  scopes: IntegrationTokenScope[];
+  expires_in: IntegrationTokenExpiry;
+  /** The caller's current account password — step-up confirmation. */
+  password: string;
+}
+
+export interface CreatedIntegrationToken {
+  /** Plaintext. Returned exactly once, by the create call only. */
+  token: string;
+  integration_token: IntegrationToken;
+}
