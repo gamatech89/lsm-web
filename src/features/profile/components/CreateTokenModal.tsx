@@ -28,6 +28,7 @@ import type {
   IntegrationTokenScope,
 } from '@lsm/types';
 import { api } from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/auth';
 
@@ -44,10 +45,24 @@ const { Text, Paragraph } = Typography;
  * relative dev fallback ('/api/v1') to the right origin; the try/catch is
  * only there so a malformed env value degrades to window.location.origin
  * instead of throwing at module scope and blanking the whole page.
+ *
+ * `new URL(value, base)` does not throw on a scheme-less value — it silently
+ * treats it as a path relative to `base` instead. A misconfigured env value
+ * like "api.example.com/api/v1" (missing "https://") would then resolve to
+ * this app's own origin rather than surfacing as the malformed input it is,
+ * which is exactly the wrong-host failure mode the try/catch below exists to
+ * catch. Requiring an explicit http(s) scheme before treating the value as
+ * absolute closes that gap.
  */
 const API_ORIGIN = (() => {
+  const envUrl = import.meta.env.VITE_API_URL;
+
   try {
-    return new URL(import.meta.env.VITE_API_URL || '/api/v1', window.location.origin).origin;
+    if (envUrl && !/^https?:\/\//i.test(envUrl)) {
+      throw new Error('VITE_API_URL is not an absolute http(s) URL');
+    }
+
+    return new URL(envUrl || '/api/v1', window.location.origin).origin;
   } catch {
     return window.location.origin;
   }
@@ -107,7 +122,13 @@ export function CreateTokenModal({ open, onClose }: Props) {
   const [revealed, setRevealed] = useState<string | null>(null);
   const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const role = useAuthStore((state) => state.user?.role ?? 'developer');
+  // Falls back to the narrowest role, not 'developer': mirrors the backend's
+  // own choice for an unrecognised role (StoreIntegrationTokenRequest's
+  // FALLBACK_SCOPES = ['mcp:read']), which a test pins as "falls back to read
+  // only, not to developer". Defaulting wider here than the API allows would
+  // just mean every checkbox renders as if it might be selectable and then
+  // 422s on submit.
+  const role = useAuthStore((state) => state.user?.role ?? 'viewer');
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateIntegrationTokenPayload) =>
@@ -117,8 +138,8 @@ export function CreateTokenModal({ open, onClose }: Props) {
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: queryKeys.integrationTokens.all() });
     },
-    onError: () => {
-      message.error('Token konnte nicht erstellt werden. Passwort korrekt?');
+    onError: (error) => {
+      message.error(getApiErrorMessage(error, 'Token konnte nicht erstellt werden. Passwort korrekt?'));
     },
   });
 

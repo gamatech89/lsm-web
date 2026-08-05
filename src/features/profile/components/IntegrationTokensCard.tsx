@@ -151,7 +151,8 @@ export function IntegrationTokensCard() {
         Berechtigungen — und nie für mehr, als deine Rolle ohnehin darf.
       </Text>
       <Text type="secondary" style={{ marginTop: 8, display: 'block' }}>
-        Mit „Überall abmelden" werden auch alle deine Integrations-Tokens widerrufen.
+        Mit „Überall abmelden“ oder bei einer Passwortänderung werden auch alle deine
+        Integrations-Tokens widerrufen.
       </Text>
 
       <Table<IntegrationToken>
