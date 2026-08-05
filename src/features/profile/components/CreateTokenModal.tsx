@@ -8,6 +8,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Modal,
   Form,
@@ -70,46 +71,45 @@ const API_ORIGIN = (() => {
 
 const MCP_URL = `${API_ORIGIN}/mcp`;
 
-interface ScopeOption {
+interface ScopeMeta {
   value: IntegrationTokenScope;
-  label: string;
-  hint: string;
+  /** Key segment under integrationTokens.scopes.<key>.{label,hint}. */
+  i18nKey: string;
   /** Roles allowed to select it. Mirrors StoreIntegrationTokenRequest::ROLE_SCOPES. */
   roles: string[];
 }
 
-const SCOPE_OPTIONS: ScopeOption[] = [
+// Label and hint text live in i18n (integrationTokens.scopes.*); only the
+// role gating is static data.
+const SCOPE_META: ScopeMeta[] = [
   {
     value: 'mcp:read',
-    label: 'Lesen',
-    hint: 'Projekte, Todos, Zeiten und Team einsehen. Ändert nichts.',
+    i18nKey: 'read',
     roles: ['admin', 'manager', 'developer', 'viewer'],
   },
   {
     value: 'mcp:write',
-    label: 'Schreiben',
-    hint: 'Todos, Zeiterfassung und Projektdaten anlegen und ändern.',
+    i18nKey: 'write',
     roles: ['admin', 'manager', 'developer'],
   },
   {
     value: 'mcp:wp',
-    label: 'WordPress',
-    hint: 'Wartungsmodus, Cache, Updates und Backups auf Kundenseiten. Umkehrbar.',
+    i18nKey: 'wp',
     roles: ['admin', 'manager', 'developer'],
   },
   {
     value: 'mcp:wp-destructive',
-    label: 'WordPress — kritisch',
-    hint: 'Notfall-Wiederherstellung, Backup-Restore und Massenaktionen über alle Seiten. Nicht umkehrbar.',
+    i18nKey: 'wpDestructive',
     roles: ['admin', 'manager'],
   },
 ];
 
-const EXPIRY_OPTIONS: { value: IntegrationTokenExpiry; label: string }[] = [
-  { value: '30d', label: '30 Tage' },
-  { value: '90d', label: '90 Tage' },
-  { value: '1y', label: '1 Jahr' },
-  { value: 'never', label: 'Läuft nie ab' },
+// Expiry option labels live in i18n (integrationTokens.expiryOptions.*).
+const EXPIRY_META: { value: IntegrationTokenExpiry; i18nKey: string }[] = [
+  { value: '30d', i18nKey: 'days30' },
+  { value: '90d', i18nKey: 'days90' },
+  { value: '1y', i18nKey: 'year1' },
+  { value: 'never', i18nKey: 'never' },
 ];
 
 interface Props {
@@ -118,6 +118,7 @@ interface Props {
 }
 
 export function CreateTokenModal({ open, onClose }: Props) {
+  const { t } = useTranslation();
   const [form] = Form.useForm<CreateIntegrationTokenPayload>();
   const [revealed, setRevealed] = useState<string | null>(null);
   const { message } = App.useApp();
@@ -139,7 +140,7 @@ export function CreateTokenModal({ open, onClose }: Props) {
       queryClient.invalidateQueries({ queryKey: queryKeys.integrationTokens.all() });
     },
     onError: (error) => {
-      message.error(getApiErrorMessage(error, 'Token konnte nicht erstellt werden. Passwort korrekt?'));
+      message.error(getApiErrorMessage(error, t('integrationTokens.toasts.createError')));
     },
   });
 
@@ -159,12 +160,25 @@ export function CreateTokenModal({ open, onClose }: Props) {
 
   const copy = async (value: string) => {
     await navigator.clipboard.writeText(value);
-    message.success('In die Zwischenablage kopiert');
+    message.success(t('integrationTokens.toasts.copied'));
   };
 
   const connectCommand = revealed
     ? `claude mcp add --transport http lsm ${MCP_URL} \\\n  --header "Authorization: Bearer ${revealed}" --scope user`
     : '';
+
+  // Label/hint text is translated here rather than at module scope: it must
+  // come from t(), which is only available inside the component.
+  const SCOPE_OPTIONS = SCOPE_META.map((scope) => ({
+    ...scope,
+    label: t(`integrationTokens.scopes.${scope.i18nKey}.label`),
+    hint: t(`integrationTokens.scopes.${scope.i18nKey}.hint`),
+  }));
+
+  const EXPIRY_OPTIONS = EXPIRY_META.map((expiry) => ({
+    value: expiry.value,
+    label: t(`integrationTokens.expiryOptions.${expiry.i18nKey}`),
+  }));
 
   // Pre-checking 'mcp:read' unconditionally contradicted the disabled state
   // for a role that isn't in its `roles` list (initialValues populates form
@@ -173,24 +187,24 @@ export function CreateTokenModal({ open, onClose }: Props) {
   // carried it as a selected value. Only default it in when this role can
   // actually select it; otherwise start with nothing checked.
   const canSelectReadByDefault =
-    SCOPE_OPTIONS.find((scope) => scope.value === 'mcp:read')?.roles.includes(role) ?? false;
+    SCOPE_META.find((scope) => scope.value === 'mcp:read')?.roles.includes(role) ?? false;
   const initialScopes: IntegrationTokenScope[] = canSelectReadByDefault ? ['mcp:read'] : [];
 
   return (
     <Modal
       open={open}
       onCancel={handleClose}
-      title={revealed ? 'Token erstellt' : 'Neuen Integrations-Token erstellen'}
+      title={revealed ? t('integrationTokens.create.createdTitle') : t('integrationTokens.create.title')}
       footer={
         revealed
           ? [
               <Button key="done" type="primary" onClick={handleClose}>
-                Fertig — ich habe den Token gespeichert
+                {t('integrationTokens.create.done')}
               </Button>,
             ]
           : [
               <Button key="cancel" onClick={handleClose}>
-                Abbrechen
+                {t('integrationTokens.create.cancel')}
               </Button>,
               <Button
                 key="submit"
@@ -199,7 +213,7 @@ export function CreateTokenModal({ open, onClose }: Props) {
                 loading={createMutation.isPending}
                 onClick={() => form.submit()}
               >
-                Token erstellen
+                {t('integrationTokens.create.submit')}
               </Button>,
             ]
       }
@@ -221,12 +235,12 @@ export function CreateTokenModal({ open, onClose }: Props) {
           <Alert
             type="warning"
             showIcon
-            message="Dieser Token wird nur einmal angezeigt."
-            description="Kopiere ihn jetzt. Danach lässt er sich nicht wieder anzeigen — nur widerrufen und neu erstellen."
+            message={t('integrationTokens.create.revealWarningTitle')}
+            description={t('integrationTokens.create.revealWarningDescription')}
           />
 
           <div>
-            <Text strong>Token</Text>
+            <Text strong>{t('integrationTokens.create.tokenLabel')}</Text>
             <Input.TextArea
               value={revealed}
               readOnly
@@ -238,14 +252,14 @@ export function CreateTokenModal({ open, onClose }: Props) {
               onClick={() => copy(revealed)}
               style={{ marginTop: 8 }}
             >
-              Token kopieren
+              {t('integrationTokens.create.copyToken')}
             </Button>
           </div>
 
           <div>
-            <Text strong>Client verbinden</Text>
+            <Text strong>{t('integrationTokens.create.connectClient')}</Text>
             <Paragraph type="secondary" style={{ marginBottom: 8 }}>
-              Diesen Befehl im Terminal ausführen:
+              {t('integrationTokens.create.connectInstructions')}
             </Paragraph>
             <Input.TextArea
               value={connectCommand}
@@ -258,7 +272,7 @@ export function CreateTokenModal({ open, onClose }: Props) {
               onClick={() => copy(connectCommand)}
               style={{ marginTop: 8 }}
             >
-              Befehl kopieren
+              {t('integrationTokens.create.copyCommand')}
             </Button>
           </div>
         </Space>
@@ -271,17 +285,17 @@ export function CreateTokenModal({ open, onClose }: Props) {
         >
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Bitte einen Namen angeben' }]}
-            extra="Wofür ist dieser Token? z. B. „Claude Code — MacBook“"
+            label={t('integrationTokens.create.nameLabel')}
+            rules={[{ required: true, message: t('integrationTokens.create.nameRequired') }]}
+            extra={t('integrationTokens.create.nameHelp')}
           >
-            <Input maxLength={100} placeholder="Claude Code — MacBook" />
+            <Input maxLength={100} placeholder={t('integrationTokens.create.namePlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="scopes"
-            label="Berechtigungen"
-            rules={[{ required: true, message: 'Mindestens eine Berechtigung wählen' }]}
+            label={t('integrationTokens.create.scopesLabel')}
+            rules={[{ required: true, message: t('integrationTokens.create.scopesRequired') }]}
           >
             <Checkbox.Group style={{ width: '100%' }}>
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -296,7 +310,7 @@ export function CreateTokenModal({ open, onClose }: Props) {
                       <br />
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         {scope.hint}
-                        {disabled && ' — für deine Rolle nicht verfügbar'}
+                        {disabled && t('integrationTokens.create.scopeUnavailable')}
                       </Text>
                     </Checkbox>
                   );
@@ -305,15 +319,15 @@ export function CreateTokenModal({ open, onClose }: Props) {
             </Checkbox.Group>
           </Form.Item>
 
-          <Form.Item name="expires_in" label="Gültigkeit" rules={[{ required: true }]}>
+          <Form.Item name="expires_in" label={t('integrationTokens.create.expiryLabel')} rules={[{ required: true }]}>
             <Select options={EXPIRY_OPTIONS} />
           </Form.Item>
 
           <Form.Item
             name="password"
-            label="Aktuelles Passwort"
-            rules={[{ required: true, message: 'Passwort zur Bestätigung eingeben' }]}
-            extra="Zur Bestätigung, dass du das wirklich bist."
+            label={t('integrationTokens.create.passwordLabel')}
+            rules={[{ required: true, message: t('integrationTokens.create.passwordRequired') }]}
+            extra={t('integrationTokens.create.passwordHelp')}
           >
             <Input.Password autoComplete="current-password" />
           </Form.Item>

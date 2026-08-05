@@ -1321,6 +1321,98 @@ const resources = {
         network: 'Network error',
         validation: 'Validation error',
       },
+
+      // Integration Tokens
+      integrationTokens: {
+        card: {
+          title: 'API & Integrations',
+          createButton: 'Create Token',
+          description:
+            'Long-lived tokens for AI clients over MCP. Each token is limited to the scopes you select — and never to more than your role already allows.',
+          revokeAllNotice:
+            'Signing out everywhere, or changing your password, also revokes all your integration tokens.',
+        },
+        table: {
+          name: 'Name',
+          scopes: 'Permissions',
+          expiry: 'Validity',
+          lastUsed: 'Last Used',
+        },
+        empty: 'No integration tokens yet',
+        neverUsed: 'Never used',
+        neverExpires: 'Never expires',
+        expired: 'Expired',
+        expiresIn: 'expires {{relative}}',
+        revoke: 'Revoke',
+        revokeConfirm: {
+          title: 'Revoke "{{name}}"?',
+          content: 'Any client using this token will lose access immediately. This cannot be undone.',
+          okText: 'Revoke',
+          cancelText: 'Cancel',
+        },
+        toasts: {
+          revoked: 'Token revoked',
+          revokeError: 'Failed to revoke token',
+          createError: 'Could not create token. Is the password correct?',
+          copied: 'Copied to clipboard',
+        },
+        scopeTags: {
+          read: 'Read',
+          write: 'Write',
+          wp: 'WordPress',
+          wpDestructive: 'WP critical',
+        },
+        scopes: {
+          read: {
+            label: 'Read',
+            hint: 'View projects, todos, time entries, and team. Changes nothing.',
+          },
+          write: {
+            label: 'Write',
+            hint: 'Create and update todos, time entries, and project data.',
+          },
+          wp: {
+            label: 'WordPress',
+            hint: 'Maintenance mode, cache, updates, and backups on client sites. Reversible.',
+          },
+          wpDestructive: {
+            label: 'WordPress — Critical',
+            hint: 'Emergency recovery, backup restore, and bulk actions across all sites. Not reversible.',
+          },
+        },
+        expiryOptions: {
+          days30: '30 Days',
+          days90: '90 Days',
+          year1: '1 Year',
+          never: 'Never expires',
+        },
+        create: {
+          title: 'Create New Integration Token',
+          createdTitle: 'Token Created',
+          nameLabel: 'Name',
+          namePlaceholder: 'Claude Code — MacBook',
+          nameRequired: 'Please provide a name',
+          nameHelp: 'What is this token for? e.g. "Claude Code — MacBook"',
+          scopesLabel: 'Permissions',
+          scopesRequired: 'Select at least one permission',
+          scopeUnavailable: ' — not available for your role',
+          expiryLabel: 'Validity',
+          passwordLabel: 'Current Password',
+          passwordRequired: 'Enter your password to confirm',
+          passwordHelp: 'To confirm this is really you.',
+          cancel: 'Cancel',
+          submit: 'Create Token',
+          done: "Done — I've saved the token",
+          revealWarningTitle: 'This token is shown only once.',
+          revealWarningDescription:
+            "Copy it now. After that it can't be shown again — only revoked and re-created.",
+          tokenLabel: 'Token',
+          copyToken: 'Copy Token',
+          connectClient: 'Connect Client',
+          connectInstructions: 'Run this command in your terminal:',
+          copyCommand: 'Copy Command',
+        },
+      },
     },
   },
   de: {
@@ -2619,6 +2711,98 @@ const resources = {
         forbidden: 'Zugriff verweigert',
         network: 'Netzwerkfehler',
         validation: 'Validierungsfehler',
+      },
+
+      // Integration Tokens
+      integrationTokens: {
+        card: {
+          title: 'API & Integrationen',
+          createButton: 'Token erstellen',
+          description:
+            'Langlebige Tokens für KI-Clients über MCP. Jeder Token gilt nur für die gewählten Berechtigungen — und nie für mehr, als deine Rolle ohnehin darf.',
+          revokeAllNotice:
+            'Mit „Überall abmelden“ oder bei einer Passwortänderung werden auch alle deine Integrations-Tokens widerrufen.',
+        },
+        table: {
+          name: 'Name',
+          scopes: 'Berechtigungen',
+          expiry: 'Gültigkeit',
+          lastUsed: 'Zuletzt verwendet',
+        },
+        empty: 'Noch keine Integrations-Tokens',
+        neverUsed: 'Nie verwendet',
+        neverExpires: 'Läuft nie ab',
+        expired: 'Abgelaufen',
+        expiresIn: 'läuft {{relative}} ab',
+        revoke: 'Widerrufen',
+        revokeConfirm: {
+          title: 'Token „{{name}}“ widerrufen?',
+          content: 'Jeder Client, der diesen Token verwendet, verliert sofort den Zugriff. Das lässt sich nicht rückgängig machen.',
+          okText: 'Widerrufen',
+          cancelText: 'Abbrechen',
+        },
+        toasts: {
+          revoked: 'Token widerrufen',
+          revokeError: 'Token konnte nicht widerrufen werden',
+          createError: 'Token konnte nicht erstellt werden. Passwort korrekt?',
+          copied: 'In die Zwischenablage kopiert',
+        },
+        scopeTags: {
+          read: 'Lesen',
+          write: 'Schreiben',
+          wp: 'WordPress',
+          wpDestructive: 'WP kritisch',
+        },
+        scopes: {
+          read: {
+            label: 'Lesen',
+            hint: 'Projekte, Todos, Zeiten und Team einsehen. Ändert nichts.',
+          },
+          write: {
+            label: 'Schreiben',
+            hint: 'Todos, Zeiterfassung und Projektdaten anlegen und ändern.',
+          },
+          wp: {
+            label: 'WordPress',
+            hint: 'Wartungsmodus, Cache, Updates und Backups auf Kundenseiten. Umkehrbar.',
+          },
+          wpDestructive: {
+            label: 'WordPress — kritisch',
+            hint: 'Notfall-Wiederherstellung, Backup-Restore und Massenaktionen über alle Seiten. Nicht umkehrbar.',
+          },
+        },
+        expiryOptions: {
+          days30: '30 Tage',
+          days90: '90 Tage',
+          year1: '1 Jahr',
+          never: 'Läuft nie ab',
+        },
+        create: {
+          title: 'Neuen Integrations-Token erstellen',
+          createdTitle: 'Token erstellt',
+          nameLabel: 'Name',
+          namePlaceholder: 'Claude Code — MacBook',
+          nameRequired: 'Bitte einen Namen angeben',
+          nameHelp: 'Wofür ist dieser Token? z. B. „Claude Code — MacBook“',
+          scopesLabel: 'Berechtigungen',
+          scopesRequired: 'Mindestens eine Berechtigung wählen',
+          scopeUnavailable: ' — für deine Rolle nicht verfügbar',
+          expiryLabel: 'Gültigkeit',
+          passwordLabel: 'Aktuelles Passwort',
+          passwordRequired: 'Passwort zur Bestätigung eingeben',
+          passwordHelp: 'Zur Bestätigung, dass du das wirklich bist.',
+          cancel: 'Abbrechen',
+          submit: 'Token erstellen',
+          done: 'Fertig — ich habe den Token gespeichert',
+          revealWarningTitle: 'Dieser Token wird nur einmal angezeigt.',
+          revealWarningDescription:
+            'Kopiere ihn jetzt. Danach lässt er sich nicht wieder anzeigen — nur widerrufen und neu erstellen.',
+          tokenLabel: 'Token',
+          copyToken: 'Token kopieren',
+          connectClient: 'Client verbinden',
+          connectInstructions: 'Diesen Befehl im Terminal ausführen:',
+          copyCommand: 'Befehl kopieren',
+        },
       },
     },
   },
