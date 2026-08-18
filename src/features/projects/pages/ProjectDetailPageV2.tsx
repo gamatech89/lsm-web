@@ -46,6 +46,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
 import { useAuthStore, useIsAdmin, useCurrentUser } from '@/stores/auth';
+import { useBackupsEnabled } from '@/hooks/useBackupSettings';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ProjectFormModal } from '../components/ProjectFormModal';
 import { ProjectSubNav } from '../components/ProjectSubNav';
@@ -93,6 +94,7 @@ export function ProjectDetailPageV2() {
   const isDark = resolvedTheme === 'dark';
   const currentUser = useCurrentUser();
   const isAdmin = useIsAdmin();
+  const backupsEnabled = useBackupsEnabled();
 
   // Active section from URL or default to 'overview'
   const activeSection = searchParams.get('section') || 'overview';
@@ -264,6 +266,10 @@ export function ProjectDetailPageV2() {
       case 'core':
         return <CoreSection {...commonProps} />;
       case 'backups':
+        // Feature off (BACKUP_ENABLED=false): the tab is hidden, but the URL can still be typed.
+        if (!backupsEnabled) {
+          return <OverviewSection {...commonProps} lsmStatus={lsmStatus} recoveryStatus={recoveryStatus} onSsoLogin={handleSsoLogin} ssoLoading={ssoLoading} />;
+        }
         return <BackupsSection {...commonProps} />;
       case 'security':
         return <SecuritySection {...commonProps} />;

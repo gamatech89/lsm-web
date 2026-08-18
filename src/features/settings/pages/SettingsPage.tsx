@@ -28,6 +28,8 @@ import { queryKeys } from '@/lib/queryKeys';
 const { Title, Text } = Typography;
 
 interface BackupConfig {
+  /** Backup feature master switch (BACKUP_ENABLED on the API). */
+  enabled: boolean;
   driver: string;
   available_drivers: string[];
   retention: {
@@ -300,8 +302,18 @@ export function SettingsPage() {
               style={{ ...cardStyle, marginBottom: 24 }}
               loading={loadingBackupConfig}
             >
+              {/* Feature switched off on the API — nothing below applies, say so instead. */}
+              {backupConfig && !backupConfig.enabled && (
+                <Alert
+                  type="info"
+                  showIcon
+                  message={t('settings.backup.featureDisabled')}
+                  description={t('settings.backup.featureDisabledHint')}
+                />
+              )}
+
               {/* Storage Location (read-only) */}
-              {backupConfig && (
+              {backupConfig && backupConfig.enabled && (
                 <>
                   <Text strong style={{ display: 'block', marginBottom: 8 }}>{t('settings.backup.storageLocation')}</Text>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
