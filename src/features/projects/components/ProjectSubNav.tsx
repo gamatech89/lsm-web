@@ -66,7 +66,7 @@ export function ProjectSubNav({
   hasLsmConnection = false,
   canManageCredentials = false,
 }: ProjectSubNavProps) {
-  const backupsEnabled = useBackupsEnabled();
+  const { enabled: backupsEnabled } = useBackupsEnabled();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
 
@@ -242,7 +242,7 @@ export function ProjectSubNav({
           disabled: !hasLsmConnection,
         },
         // Backups tab exists only while the backup feature is on (BACKUP_ENABLED on the API).
-        ...(backupsEnabled ? [{
+        ...(backupsEnabled === true ? [{
           key: 'backups',
           icon: <CloudOutlined />,
           label: 'Backups',

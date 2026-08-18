@@ -40,11 +40,15 @@ export function useBackupSettings() {
 
 /**
  * Whether the backup feature is switched on for this platform.
- * Resolves to `false` while loading or on error, so backup UI stays hidden
- * until the server has confirmed the feature is on (no flash of a tab that
- * then disappears, and nothing to click that would only 403).
+ *
+ * `enabled` is `undefined` until the server has answered (or the request
+ * failed), then a definite boolean. Callers hide backup UI unless it is
+ * exactly `true`, and only redirect/fall back once it is exactly `false` —
+ * so a page deep-linked to the backups tab shows a spinner rather than
+ * flashing Overview while the flag is still loading.
  */
-export function useBackupsEnabled(): boolean {
-  const { data } = useBackupSettings();
-  return data?.enabled === true;
+export function useBackupsEnabled(): { enabled: boolean | undefined; isPending: boolean } {
+  const { data, isPending } = useBackupSettings();
+  if (isPending) return { enabled: undefined, isPending: true };
+  return { enabled: data?.enabled === true, isPending: false };
 }
