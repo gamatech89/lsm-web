@@ -24,29 +24,10 @@ import { useThemeStore } from '@/stores/theme';
 import { apiClient } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 import { queryKeys } from '@/lib/queryKeys';
+import { useBackupSettings } from '@/hooks/useBackupSettings';
 
 const { Title, Text } = Typography;
 
-interface BackupConfig {
-  driver: string;
-  available_drivers: string[];
-  retention: {
-    max_backups: number;
-    max_age_days: number;
-    min_backups: number;
-  };
-  schedule: {
-    enabled: boolean;
-    frequency: string;
-    time: string;
-    day_of_week: number;
-  };
-  defaults: {
-    includes_database: boolean;
-    includes_files: boolean;
-    includes_uploads: boolean;
-  };
-}
 
 const driverIcons: Record<string, React.ReactNode> = {
   local: <HddOutlined />,
@@ -82,12 +63,8 @@ export function SettingsPage() {
     enabled: isAdmin,
   });
 
-  // Fetch backup config
-  const { data: backupConfig, isLoading: loadingBackupConfig } = useQuery<BackupConfig>({
-    queryKey: queryKeys.settings.backup(),
-    queryFn: () => apiClient.get('/backups/settings').then(r => r.data?.data || r.data),
-    enabled: isAdmin,
-  });
+  // Backup config (shared query with the project pages)
+  const { data: backupConfig, isLoading: loadingBackupConfig } = useBackupSettings();
 
   // Update form when settings load
   useEffect(() => {
@@ -300,8 +277,18 @@ export function SettingsPage() {
               style={{ ...cardStyle, marginBottom: 24 }}
               loading={loadingBackupConfig}
             >
+              {/* Feature switched off on the API — nothing below applies, say so instead. */}
+              {backupConfig && !backupConfig.enabled && (
+                <Alert
+                  type="info"
+                  showIcon
+                  message={t('settings.backup.featureDisabled')}
+                  description={t('settings.backup.featureDisabledHint')}
+                />
+              )}
+
               {/* Storage Location (read-only) */}
-              {backupConfig && (
+              {backupConfig && backupConfig.enabled && (
                 <>
                   <Text strong style={{ display: 'block', marginBottom: 8 }}>{t('settings.backup.storageLocation')}</Text>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -341,6 +328,7 @@ export function SettingsPage() {
               )}
 
               {/* Editable settings */}
+              {backupConfig && backupConfig.enabled && (
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
@@ -373,9 +361,10 @@ export function SettingsPage() {
                   </Form.Item>
                 </Col>
               </Row>
+              )}
 
               {/* Read-only config summary */}
-              {backupConfig && (
+              {backupConfig && backupConfig.enabled && (
                 <>
                   <Divider style={{ margin: '12px 0' }} />
                   {/* Schedule Status */}

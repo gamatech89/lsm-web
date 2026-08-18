@@ -36,6 +36,7 @@ import { useThemeStore } from '@/stores/theme';
 import { formatDate, formatRelativeTime, getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { api, apiClient } from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
+import { useBackupSettings } from '@/hooks/useBackupSettings';
 import type { Project } from '@lsm/types';
 
 const { Text, Title } = Typography;
@@ -580,14 +581,7 @@ export function OverviewSection({
  * Backup Info Card - Lightweight informational display
  */
 function BackupInfoCard({ cardStyle }: { cardStyle: React.CSSProperties }) {
-  const { data: backupConfig, isLoading } = useQuery<{
-    driver: string;
-    schedule: { enabled: boolean; frequency: string; time: string };
-  }>({
-    queryKey: queryKeys.settings.backup(),
-    queryFn: () => apiClient.get('/backups/settings').then(r => r.data?.data || r.data),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: backupConfig, isLoading } = useBackupSettings();
 
   const driverLabels: Record<string, string> = {
     local: 'Local Storage',
@@ -596,7 +590,8 @@ function BackupInfoCard({ cardStyle }: { cardStyle: React.CSSProperties }) {
     gdrive: 'Google Drive',
   };
 
-  if (isLoading || !backupConfig) return null;
+  // Hidden while the backup feature is switched off (BACKUP_ENABLED=false on the API).
+  if (isLoading || !backupConfig || !backupConfig.enabled) return null;
 
   return (
     <>

@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { Menu, Badge, Typography, Divider } from 'antd';
 import type { MenuProps } from 'antd';
+import { useBackupsEnabled } from '@/hooks/useBackupSettings';
 import {
   AppstoreOutlined,
   DesktopOutlined,
@@ -65,6 +66,7 @@ export function ProjectSubNav({
   hasLsmConnection = false,
   canManageCredentials = false,
 }: ProjectSubNavProps) {
+  const { enabled: backupsEnabled } = useBackupsEnabled();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
 
@@ -239,12 +241,13 @@ export function ProjectSubNav({
           label: withBadge('Themes', counts.themes, '#f59e0b'),
           disabled: !hasLsmConnection,
         },
-        {
+        // Backups tab exists only while the backup feature is on (BACKUP_ENABLED on the API).
+        ...(backupsEnabled === true ? [{
           key: 'backups',
           icon: <CloudOutlined />,
           label: 'Backups',
           disabled: !hasLsmConnection,
-        },
+        }] : []),
         {
           key: 'issues',
           icon: <BugOutlined />,

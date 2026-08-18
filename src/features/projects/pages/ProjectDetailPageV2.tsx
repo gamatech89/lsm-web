@@ -46,6 +46,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { getHealthStatusConfig, getSecurityStatusConfig } from '@lsm/utils';
 import { useThemeStore } from '@/stores/theme';
 import { useAuthStore, useIsAdmin, useCurrentUser } from '@/stores/auth';
+import { useBackupsEnabled } from '@/hooks/useBackupSettings';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ProjectFormModal } from '../components/ProjectFormModal';
 import { ProjectSubNav } from '../components/ProjectSubNav';
@@ -93,12 +94,22 @@ export function ProjectDetailPageV2() {
   const isDark = resolvedTheme === 'dark';
   const currentUser = useCurrentUser();
   const isAdmin = useIsAdmin();
+  const { enabled: backupsEnabled, isPending: backupsFlagPending } = useBackupsEnabled();
 
   // Active section from URL or default to 'overview'
   const activeSection = searchParams.get('section') || 'overview';
   const setActiveSection = (section: string) => {
     setSearchParams({ section });
   };
+
+  // Backups tab is hidden while the feature is off (BACKUP_ENABLED=false on the API);
+  // a typed/bookmarked ?section=backups is sent back to Overview once the flag is known.
+  useEffect(() => {
+    if (activeSection === 'backups' && backupsEnabled === false) {
+      setSearchParams({ section: 'overview' }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection, backupsEnabled]);
 
   // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
@@ -264,6 +275,10 @@ export function ProjectDetailPageV2() {
       case 'core':
         return <CoreSection {...commonProps} />;
       case 'backups':
+        // Flag still loading → spinner; off → the effect above redirects to Overview.
+        if (backupsFlagPending || backupsEnabled !== true) {
+          return <div style={{ padding: 48, textAlign: 'center' }}><Spin /></div>;
+        }
         return <BackupsSection {...commonProps} />;
       case 'security':
         return <SecuritySection {...commonProps} />;
