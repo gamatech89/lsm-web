@@ -102,11 +102,12 @@ export default function TodosSection({ project }: TodosSectionProps) {
 
   const allTodos = project.todos || [];
 
-  // Calculate team members from project
+  // Calculate team members from project — all managers (multi) with legacy
+  // single-manager fallback, plus developers, deduped by id
   const teamMembers = [
-    ...(project.manager ? [project.manager] : []),
+    ...(project.managers?.length ? project.managers : (project.manager ? [project.manager] : [])),
     ...(project.developers || []),
-  ];
+  ].filter((m: any, i: number, all: any[]) => all.findIndex((u: any) => u.id === m.id) === i);
 
   // Filter todos
   const filteredTodos = useMemo(() => {
