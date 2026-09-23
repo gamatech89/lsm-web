@@ -124,8 +124,15 @@ export function WordPressManagement({ project, isDark }: WordPressManagementProp
   const updateAllPluginsMutation = useMutation({
     mutationFn: () => api.lsm.updateAllPlugins(project.id),
     onSuccess: (response) => {
-      const updated = response.data.updated_count || 0;
-      message.success(`Updated ${updated} plugin(s)`);
+      const data = response.data ?? {};
+      if (data.locked) {
+        message.warning('An update is already running on this site. Please wait for it to finish before starting another.');
+        return;
+      }
+      message.success(`Updated ${data.updated_count || 0} plugin(s)`);
+      if (data.health_after && data.health_after >= 500) {
+        message.error(`Warning: the site returned HTTP ${data.health_after} right after the update. Please check the site.`);
+      }
       refetchUpdates();
       queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },

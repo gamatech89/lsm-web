@@ -231,12 +231,20 @@ export default function PluginsSection({ project }: PluginsSectionProps) {
       const updated = result?.updated || [];
       const failed = result?.failed || [];
 
+      if (result?.locked) {
+        message.warning('An update is already running on this site. Please wait for it to finish before starting another.');
+        return;
+      }
+
       if (failed.length > 0 && updated.length > 0) {
         message.warning(`Updated ${updated.length} plugin${updated.length !== 1 ? 's' : ''}, ${failed.length} failed: ${failed.join(', ')}`);
       } else if (failed.length > 0 && updated.length === 0) {
         message.error(`All updates failed: ${failed.join(', ')}`);
       } else {
         message.success(`${updated.length} plugin${updated.length !== 1 ? 's' : ''} updated successfully`);
+      }
+      if (result?.health_after && result.health_after >= 500) {
+        message.error(`Warning: the site returned HTTP ${result.health_after} right after the update. Please check the site.`);
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project.id) });
     },
