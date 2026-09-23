@@ -7,12 +7,32 @@
  * the user may do comes from the API's `can`, never from their role.
  */
 
-import { Alert, Button, Card, Space, Spin, Tag, Tooltip, Typography } from 'antd';
-import { InfoCircleOutlined, LockOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
+import {
+  Alert,
+  App,
+  Button,
+  Card,
+  Select,
+  Space,
+  Spin,
+  Statistic,
+  Switch,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
+import { InfoCircleOutlined, LockOutlined, PauseCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '@/stores/theme';
 import { useHardening } from '../hooks/useHardening';
-import type { HardeningRuleKey, HardeningRuleState, HardeningRuleStatus } from '@/lib/lsm-api';
+import type {
+  HardeningPauseMinutes,
+  HardeningRuleKey,
+  HardeningRuleState,
+  HardeningRuleStatus,
+} from '@/lib/lsm-api';
 
 const { Text } = Typography;
 
@@ -20,7 +40,12 @@ interface HardeningCardProps {
   project: { id: number; has_health_check_secret?: boolean };
 }
 
-const RULES: HardeningRuleKey[] = ['block_archives', 'block_debug_log', 'block_uploads_php'];
+// The file each rule lives in, for the confirm texts. Paths are not translated.
+const RULES: Array<{ key: HardeningRuleKey; file: string }> = [
+  { key: 'block_archives', file: 'wp-content/.htaccess' },
+  { key: 'block_debug_log', file: 'wp-content/.htaccess' },
+  { key: 'block_uploads_php', file: 'uploads/.htaccess' },
+];
 
 const STATE_COLOR: Record<HardeningRuleState, string> = {
   on: 'success',
@@ -31,17 +56,97 @@ const STATE_COLOR: Record<HardeningRuleState, string> = {
   unsupported: 'default',
 };
 
+const PAUSE_OPTIONS: HardeningPauseMinutes[] = [15, 30, 60];
+
+/**
+ * Explains a disabled control. A disabled button swallows mouse events, so a
+ * Tooltip attached to it never opens — the outer span takes the hover instead.
+ */
+function Explained({ reason, children }: { reason?: string; children: ReactNode }) {
+  if (!reason) return <>{children}</>;
+  return (
+    <Tooltip title={reason} color="#1e293b">
+      <span style={{ display: 'inline-block', cursor: 'not-allowed' }}>
+        <span style={{ display: 'inline-block', pointerEvents: 'none' }}>{children}</span>
+      </span>
+    </Tooltip>
+  );
+}
+
 export function HardeningCard({ project }: HardeningCardProps) {
   const { t } = useTranslation();
+  const { modal } = App.useApp();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
   const hasLsmConnection = !!project.has_health_check_secret;
 
-  const { query } = useHardening(project.id, hasLsmConnection);
+  // Lives beside the button, not inside the confirm: modal.confirm renders its
+  // content once and would not follow a Select's state.
+  const [pauseMinutes, setPauseMinutes] = useState<HardeningPauseMinutes>(60);
+
+  const { query, can, setRule, pause, resume, pendingRule, isPausing, isResuming, isBusy } =
+    useHardening(project.id, hasLsmConnection);
   const { data, isLoading, isError, refetch } = query;
   const status = data?.status ?? null;
 
   const ruleLabel = (rule: HardeningRuleKey) => t(`projects.hardening.rules.${rule}.label`);
+
+  // Turn on, Adopt and Re-apply are the same call — only the wording differs.
+  const confirmEnable = (rule: HardeningRuleKey, file: string, kind: 'enable' | 'adopt' | 'reapply') => {
+    // Adopting changes nothing for visitors: the manual rule already blocks these files.
+    const attachments =
+      rule === 'block_archives' && kind !== 'adopt' ? status?.archive_attachments ?? 0 : 0;
+    modal.confirm({
+      title: t(`projects.hardening.confirm.${kind}.title`, { rule: ruleLabel(rule) }),
+      content: (
+        <div>
+          {attachments > 0 && (
+            <Alert
+              type="warning"
+              showIcon
+              message={t('projects.hardening.confirm.archiveAttachments', { count: attachments })}
+              style={{ marginBottom: 12 }}
+            />
+          )}
+          <Text>{t(`projects.hardening.confirm.${kind}.content`, { file })}</Text>
+        </div>
+      ),
+      okText: t(`projects.hardening.confirm.${kind}.okText`),
+      cancelText: t('common.cancel'),
+      onOk: () => setRule(rule, true),
+    });
+  };
+
+  const confirmDisable = (rule: HardeningRuleKey, file: string) => {
+    modal.confirm({
+      title: t('projects.hardening.confirm.disable.title', { rule: ruleLabel(rule) }),
+      content: (
+        <div>
+          <Text>{t('projects.hardening.confirm.disable.content', { file })}</Text>
+          {rule === 'block_archives' && (
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary">{t('projects.hardening.confirm.disable.archivesNote')}</Text>
+            </div>
+          )}
+        </div>
+      ),
+      okText: t('projects.hardening.confirm.disable.okText'),
+      okButtonProps: { danger: true },
+      cancelText: t('common.cancel'),
+      onOk: () => setRule(rule, false),
+    });
+  };
+
+  const confirmPause = () => {
+    const minutes = pauseMinutes;
+    modal.confirm({
+      title: t('projects.hardening.confirm.pause.title', { minutes }),
+      content: t('projects.hardening.confirm.pause.content', { minutes }),
+      okText: t('projects.hardening.confirm.pause.okText'),
+      cancelText: t('common.cancel'),
+      onOk: () => pause(minutes),
+    });
+  };
 
   const renderStateTag = (rule: HardeningRuleStatus) => {
     // A state this build does not know (newer plugin) shows as its raw name in a
@@ -66,6 +171,102 @@ export function HardeningCard({ project }: HardeningCardProps) {
       </Tooltip>
     ) : (
       tag
+    );
+  };
+
+  const renderControl = (key: HardeningRuleKey, file: string, rule: HardeningRuleStatus) => {
+    const loading = pendingRule === key;
+
+    if (rule.state === 'paused') {
+      return (
+        <Space size={12}>
+          {!data?.pause_overdue && status?.pause_until != null && (
+            <Statistic.Timer
+              type="countdown"
+              value={status.pause_until * 1000}
+              format="mm:ss"
+              onFinish={() => refetch()}
+              valueStyle={{ fontSize: 14 }}
+            />
+          )}
+          <Explained reason={can.pause ? undefined : t('projects.hardening.noPermission.pause')}>
+            <Button
+              size="small"
+              type="primary"
+              loading={isResuming}
+              disabled={!can.pause || (isBusy && !isResuming)}
+              onClick={() => resume()}
+            >
+              {t('projects.hardening.actions.resume')}
+            </Button>
+          </Explained>
+        </Space>
+      );
+    }
+
+    if (rule.state === 'manual' || rule.state === 'drift') {
+      const kind = rule.state === 'manual' ? 'adopt' : 'reapply';
+      return (
+        <Explained reason={can.enable ? undefined : t('projects.hardening.noPermission.enable')}>
+          <Button
+            size="small"
+            loading={loading}
+            disabled={!can.enable || (isBusy && !loading)}
+            onClick={() => confirmEnable(key, file, kind)}
+          >
+            {t(`projects.hardening.actions.${kind}`)}
+          </Button>
+        </Explained>
+      );
+    }
+
+    if (rule.state === 'unsupported') {
+      return <Switch checked={false} disabled />;
+    }
+
+    // A state this build does not know (newer plugin): show the tag, offer nothing.
+    if (rule.state !== 'on' && rule.state !== 'off') return null;
+
+    const isOn = rule.state === 'on';
+    const allowed = isOn ? can.disable : can.enable;
+    const denied = t(isOn ? 'projects.hardening.noPermission.disable' : 'projects.hardening.noPermission.enable');
+    return (
+      <Space size={12}>
+        {isOn && key === 'block_archives' && (
+          <Space size={4}>
+            <Select<HardeningPauseMinutes>
+              size="small"
+              value={pauseMinutes}
+              onChange={setPauseMinutes}
+              disabled={!can.pause || isBusy}
+              options={PAUSE_OPTIONS.map(minutes => ({
+                value: minutes,
+                label: t('projects.hardening.pauseOption', { minutes }),
+              }))}
+              style={{ width: 90 }}
+            />
+            <Explained reason={can.pause ? undefined : t('projects.hardening.noPermission.pause')}>
+              <Button
+                size="small"
+                icon={<PauseCircleOutlined />}
+                loading={isPausing}
+                disabled={!can.pause || (isBusy && !isPausing)}
+                onClick={confirmPause}
+              >
+                {t('projects.hardening.actions.pause')}
+              </Button>
+            </Explained>
+          </Space>
+        )}
+        <Explained reason={allowed ? undefined : denied}>
+          <Switch
+            checked={isOn}
+            loading={loading}
+            disabled={!allowed || (isBusy && !loading)}
+            onChange={checked => (checked ? confirmEnable(key, file, 'enable') : confirmDisable(key, file))}
+          />
+        </Explained>
+      </Space>
     );
   };
 
@@ -123,7 +324,7 @@ export function HardeningCard({ project }: HardeningCardProps) {
       <div>
         {overdueAlert}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {RULES.map((key, index) => {
+          {RULES.map(({ key, file }, index) => {
             const rule = status.rules[key];
             if (!rule) return null;
             return (
@@ -166,6 +367,7 @@ export function HardeningCard({ project }: HardeningCardProps) {
                     </div>
                   )}
                 </div>
+                {renderControl(key, file, rule)}
               </div>
             );
           })}
