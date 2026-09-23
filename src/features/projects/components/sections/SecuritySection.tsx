@@ -64,6 +64,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useThemeStore } from '@/stores/theme';
 import { queryKeys } from '@/lib/queryKeys';
+import { HardeningCard } from '../HardeningCard';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -613,6 +614,8 @@ export default function SecuritySection({ project }: SecuritySectionProps) {
           </div>
         )}
       </Card>
+
+      <HardeningCard project={project} />
 
       {/* Security Headers */}
       <Card

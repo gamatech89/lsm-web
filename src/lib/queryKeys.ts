@@ -45,6 +45,7 @@ export const queryKeys = {
     securityScans: (id: Id) => ['projects', n(id), 'security', 'scans'] as const,
     securityScanLatest: (id: Id) =>
       ['projects', n(id), 'security', 'scan-latest'] as const,
+    securityHardening: (id: Id) => ['projects', n(id), 'security', 'hardening'] as const,
 
     // Operational data
     phpErrors: (id: Id, filters?: Filters) =>

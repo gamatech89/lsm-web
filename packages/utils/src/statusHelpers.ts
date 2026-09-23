@@ -104,12 +104,6 @@ export const priorityConfig: Record<TodoPriority, StatusConfig> = {
     bgColor: '#fffbe6',
     icon: 'ArrowUpOutlined',
   },
-  urgent: {
-    label: 'Urgent',
-    color: '#ff4d4f',
-    bgColor: '#fff2f0',
-    icon: 'ExclamationOutlined',
-  },
   critical: {
     label: 'Critical',
     color: '#cf1322',

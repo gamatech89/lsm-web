@@ -83,6 +83,114 @@ export interface LsmRecoveryStatus {
   recovery_token_exists: boolean;
 }
 
+// Managed .htaccess hardening — shapes are fixed by the API contract
+// (lsm-api docs/superpowers/specs/2026-09-21-htaccess-hardening-design.md).
+
+export type HardeningRuleKey = 'block_archives' | 'block_debug_log' | 'block_uploads_php';
+
+export type HardeningRuleState = 'on' | 'off' | 'paused' | 'manual' | 'drift' | 'unsupported';
+
+export type HardeningUnsupportedReason =
+  | 'multisite'
+  | 'openlitespeed'
+  | 'unknown_server'
+  | 'not_writable';
+
+export type HardeningPauseMinutes = 15 | 30 | 60;
+
+export interface HardeningRuleStatus {
+  state: HardeningRuleState;
+  desired: boolean;
+  unsupported_reason: HardeningUnsupportedReason | null;
+  /** Sticky until the next successful apply of this rule. `at` is unix seconds. */
+  last_failure: { at: number; reason: string } | null;
+}
+
+export interface HardeningLastResult {
+  at: number;
+  /** enable | disable | pause | resume | auto_resume | crash_recovery | deactivate */
+  action: string;
+  rule: HardeningRuleKey | null;
+  ok: boolean;
+  reason: string | null;
+  warnings: string[];
+}
+
+export interface HardeningStatus {
+  plugin_version: string;
+  server: string;
+  rules: Record<HardeningRuleKey, HardeningRuleStatus>;
+  /** Unix seconds, block_archives only. Stays set (in the past) while a resume is overdue. */
+  pause_until: number | null;
+  pause_overdue: boolean;
+  archive_attachments: number;
+  last_result: HardeningLastResult | null;
+}
+
+/** Per user and project, straight from the API's Gate. Never derived from the role client-side. */
+export interface HardeningAbilities {
+  pause: boolean;
+  enable: boolean;
+  disable: boolean;
+}
+
+/**
+ * GET /hardening. Always HTTP 200: an old plugin or an unreachable site comes
+ * back as flags with `status: null`, not as an error.
+ */
+export interface HardeningOverview {
+  reachable: boolean;
+  plugin_outdated: boolean;
+  min_version: string;
+  status: HardeningStatus | null;
+  /** The platform's own open pause row. Only its presence is used here. */
+  open_pause: Record<string, unknown> | null;
+  pause_overdue: boolean;
+  can?: HardeningAbilities;
+}
+
+/**
+ * 200 body of the three hardening POSTs. `status` is nullable: the API's
+ * mapper passes through whatever the plugin sent, and a plugin reply that
+ * doesn't parse as a status object maps to `null` even on `success: true`.
+ */
+export interface HardeningActionResponse {
+  success: boolean;
+  message: string;
+  warnings: string[];
+  status: HardeningStatus | null;
+  open_pause: Record<string, unknown> | null;
+  pause_overdue: boolean;
+  can?: HardeningAbilities;
+}
+
+/**
+ * Body of a failed hardening POST. Two distinct shapes share this type,
+ * distinguished by whether `status` is present at all (the API merges the
+ * platform state — `warnings`, `open_pause`, `pause_overdue`, `can` — into
+ * every response body that carries a `status` key, even when its value is
+ * `null`):
+ *  - 409 busy / 422 plugin refusal or rollback: a plugin-side reply, so
+ *    `status`, `warnings`, `open_pause`, `pause_overdue` and `can` are all
+ *    present (`status` itself may still be `null`).
+ *  - 409 plugin_outdated (+ `min_version`) / 502 unauthorized / 502
+ *    unreachable: a platform-level failure with no plugin reply at all, so
+ *    only `success`, `reason` and `message` are present.
+ * `reason` is a plain string (or `null` for a stale/garbage plugin reply) on
+ * purpose: a newer plugin may send codes this build does not know.
+ */
+export interface HardeningErrorBody {
+  success: false;
+  reason: string | null;
+  message: string;
+  warnings?: string[];
+  status?: HardeningStatus | null;
+  open_pause?: Record<string, unknown> | null;
+  pause_overdue?: boolean;
+  can?: HardeningAbilities;
+  min_version?: string;
+}
+
 export function createLsmApi(client: AxiosInstance) {
   const basePath = (projectId: number) => `/projects/${projectId}/lsm`;
 
@@ -440,6 +548,49 @@ export function createLsmApi(client: AxiosInstance) {
           php: string;
         };
       }>(`${basePath(projectId)}/security-headers/snippets`),
+
+    // ================================================================
+    // SERVER HARDENING (.htaccess)
+    // ================================================================
+
+    /**
+     * Get managed .htaccess hardening status (always answers 200, see HardeningOverview)
+     */
+    getHardening: (projectId: number) =>
+      // The API waits up to 30 s for the plugin; the client default is 30 s too, so without
+      // this the browser gives up first and a hanging site never reaches the quiet state.
+      client.get<HardeningOverview>(`${basePath(projectId)}/hardening`, { timeout: 40000 }),
+
+    /**
+     * Turn one hardening rule on or off. The API waits up to 120 s for the
+     * plugin's write + self-test, so the browser has to wait longer than that.
+     */
+    setHardeningRule: (projectId: number, rule: HardeningRuleKey, enabled: boolean) =>
+      client.post<HardeningActionResponse>(
+        `${basePath(projectId)}/hardening/rule`,
+        { rule, enabled },
+        { timeout: 130000 }
+      ),
+
+    /**
+     * Pause the archive rule for a download (same long timeout as above)
+     */
+    pauseHardening: (projectId: number, minutes: HardeningPauseMinutes) =>
+      client.post<HardeningActionResponse>(
+        `${basePath(projectId)}/hardening/pause`,
+        { minutes },
+        { timeout: 130000 }
+      ),
+
+    /**
+     * Put the archive rule back before the pause runs out (same long timeout as above)
+     */
+    resumeHardening: (projectId: number) =>
+      client.post<HardeningActionResponse>(
+        `${basePath(projectId)}/hardening/resume`,
+        {},
+        { timeout: 130000 }
+      ),
 
     // =========================================================================
     // SECURITY SCANNING
