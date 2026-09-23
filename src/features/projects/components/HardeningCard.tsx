@@ -148,7 +148,16 @@ export function HardeningCard({ project }: HardeningCardProps) {
     });
   };
 
-  const renderStateTag = (rule: HardeningRuleStatus) => {
+  const renderStateTag = (rule: HardeningRuleStatus | undefined) => {
+    // A status object missing this rule entirely (partial/malformed API reply)
+    // gets the same raw-grey-tag treatment as an unknown state, below.
+    if (!rule) {
+      return (
+        <Tag style={{ margin: 0 }}>
+          {t('projects.hardening.states.unknown', { defaultValue: 'unknown' })}
+        </Tag>
+      );
+    }
     // A state this build does not know (newer plugin) shows as its raw name in a
     // grey tag, not as an i18n key.
     const tag = (
@@ -221,7 +230,7 @@ export function HardeningCard({ project }: HardeningCardProps) {
     }
 
     if (rule.state === 'unsupported') {
-      return <Switch checked={false} disabled />;
+      return <Switch checked={false} disabled aria-label={ruleLabel(key)} />;
     }
 
     // A state this build does not know (newer plugin): show the tag, offer nothing.
@@ -264,6 +273,7 @@ export function HardeningCard({ project }: HardeningCardProps) {
             loading={loading}
             disabled={!allowed || (isBusy && !loading)}
             onChange={checked => (checked ? confirmEnable(key, file, 'enable') : confirmDisable(key, file))}
+            aria-label={ruleLabel(key)}
           />
         </Explained>
       </Space>
@@ -302,7 +312,11 @@ export function HardeningCard({ project }: HardeningCardProps) {
       />
     );
 
-    if (data.plugin_outdated || !data.reachable || !status) {
+    // A status object without a `rules` map (e.g. `{}` from a plugin reply
+    // that didn't parse, or a partial object) is truthy but unusable — treat
+    // it the same as "site not reachable" rather than reading status.rules
+    // below and throwing.
+    if (data.plugin_outdated || !data.reachable || !status?.rules) {
       return (
         <div>
           {overdueAlert}
@@ -325,8 +339,11 @@ export function HardeningCard({ project }: HardeningCardProps) {
         {overdueAlert}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {RULES.map(({ key, file }, index) => {
+            // status.rules is typed as always carrying all three keys, but the
+            // API passes the plugin's reply through — a partial object leaves
+            // this undefined for one key. Render that row as the unknown-state
+            // row (raw grey tag, no control) instead of throwing.
             const rule = status.rules[key];
-            if (!rule) return null;
             return (
               <div
                 key={key}
@@ -354,7 +371,7 @@ export function HardeningCard({ project }: HardeningCardProps) {
                       {t(`projects.hardening.rules.${key}.description`)}
                     </Text>
                   </div>
-                  {rule.last_failure && (
+                  {rule?.last_failure && (
                     <div style={{ marginTop: 4 }}>
                       <Text type="danger" style={{ fontSize: 12 }}>
                         {t('projects.hardening.lastFailure', {
@@ -367,7 +384,7 @@ export function HardeningCard({ project }: HardeningCardProps) {
                     </div>
                   )}
                 </div>
-                {renderControl(key, file, rule)}
+                {rule && renderControl(key, file, rule)}
               </div>
             );
           })}
